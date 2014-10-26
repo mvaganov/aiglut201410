@@ -17,11 +17,11 @@ lesson plan TODO:
 //---wk1day2 --- basic steering behavior
 // player moves (seek)
 /*
-vec2	seek(vec2	target,	Agent	agent)	{
-				vec2	desired	=	target	-	agent.position;
-				desired	*=	agent.maxSpeed	/	desired.mag();
-				vec2	force	=	desired	-	agent.velocity;
-				return	force	*	(agent.maxForce	/	agent.maxSpeed);
+vec2 seek(vec2 target, Agent agent)	{
+	vec2 desired = target - agent.position;
+	desired *= agent.maxSpeed / desired.mag();
+	vec2 force = desired - agent.velocity;
+	return force * (agent.maxForce / agent.maxSpeed);
 }
 */
 // player moves (arrive)
@@ -69,43 +69,42 @@ vec2	seek(vec2	target,	Agent	agent)	{
 //---wk4day7 --- group behavior
 // ai separation
 /*
-vec2	Separation(Agent	agent,	List<Agent>	neighbors)	{
-		if	(neighbors.empty())	return	vec2.zero;
-		vec2	totalForce	=	vec2.zero;
-		for	(Agent	neighbor	:	neighbors)	{
-					vec2	pushForce	=	(agent.pos	-	neighbor.pos)
-					totalForce	+=	1-	(pushForce	/	agent.neighborRadius);
-		}
-		
-		totalForce	/=	neighbors.count();
-		totalForce	*=	agent.maxForce;
+vec2 Separation(Agent agent, List<Agent> neighbors) {
+	if (neighbors.empty())	return	vec2.zero;
+	vec2 totalForce = vec2.zero;
+	for (Agent neighbor : neighbors) {
+		vec2 pushForce = (agent.pos - neighbor.pos)
+		totalForce += 1 - (pushForce / agent.neighborRadius);
+	}
+	totalForce /= neighbors.count();
+	totalForce *= agent.maxForce;
 }
 */
 // ai cohesion
 /*
-vec2	Cohesion(Agent	agent,	List<Agent>	neighbors)	{
-		if	(neighbors.empty())	return	vec2.zero;
-		vec2	centerOfMass	=	agent.position;
-		for	(Agent	neighbor	:	neighbors)
-					centerOfMass	+=	neighbor.position;
-		centerOfMass	/=	neighbors.count();
-		vec2	desired	=	centerOfMass	-	agent.position;
-		desired	*=	agent.maxSpeed	/	desired.mag();
-		vec2	force	=	desired	-	agent.velocity;
-		return	force	*	(agent.maxForce	/	agent.maxSpeed);
+vec2 Cohesion(Agent agent, List<Agent> neighbors) {
+	if (neighbors.empty()) return vec2.zero;
+	vec2 centerOfMass = agent.position;
+	for (Agent neighbor : neighbors)
+		centerOfMass +=	neighbor.position;
+	centerOfMass /=	neighbors.count();
+	vec2 desired =	centerOfMass - agent.position;
+	desired	*= agent.maxSpeed / desired.mag();
+	vec2 force = desired - agent.velocity;
+	return force * (agent.maxForce / agent.maxSpeed);
 }
 */
 // ai alignment
 /*
-vec2	Alignment(Agent	agent,	List<Agent>	neighbors)	{
-		if	(neighbors.empty())	return	vec2.zero;
-		vec2	avgHeading	=	norm(	agent.velocity	);
-		for	(Agent	neighbor	:	neighbors)
-				avgHeading	+=	norm(	neighbor.velocity	);
-		avgHeading	/=	neighbors.count();
-		vec2	desired	=	avgHeading	*	agent.maxSpeed;
-		vec2	force	=	desired	-	agent.velocity;
-		return	force	*	(agent.maxForce	/	agent.maxSpeed);
+vec2 Alignment(Agent agent, List<Agent> neighbors) {
+	if (neighbors.empty()) return vec2.zero;
+	vec2 avgHeading = norm( agent.velocity );
+	for (Agent neighbor : neighbors)
+		avgHeading += norm( neighbor.velocity );
+	avgHeading /= neighbors.count();
+	vec2 desired = avgHeading * agent.maxSpeed;
+	vec2 force = desired - agent.velocity;
+	return force * (agent.maxForce / agent.maxSpeed);
 }
 */
 // ai flocking
