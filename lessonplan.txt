@@ -7,14 +7,19 @@ lesson plan TODO:
 //---wk1day1 --- basic display/input/update loop, display/update list
 // draw colored lines and circle
 // mouse and key input
-// draw player
-// draw ai
-// select with mouse
-// set velocity with key presses
+// draw line, circle, rect, box
+// test contains for circle, rect, box
+// create drawable, updatable lists
+// create and draw agents
+// select agents with mouse
+// player controlled vs ai controlled agent
+// or player controlled agent, set velocity with key presses and/or mouse
 	// turn and strafe with key presses
 // game loop
+// agent collision against collidable list
 
 //---wk1day2 --- basic steering behavior
+// steering behavior namespace
 // player moves (seek)
 /*
 vec2 seek(vec2 target, Agent agent)	{
@@ -24,22 +29,35 @@ vec2 seek(vec2 target, Agent agent)	{
 	return force * (agent.maxForce / agent.maxSpeed);
 }
 */
-// player moves (arrive)
-// ai moves (arrive)
+// flee
+// player attacks with dangerous projectiles
 // ai random-walks
 // multiple ai
 // ai seeks/flees
 	// pursue
 	// evade
 	// offset pursuit
-
-//---wk2day3 --- fuzzy state machines for multiple steering impulses
-// player attacks with dangerous projectiles
-	// context map?
 // player deals damage to ai
 // ai gets killed
 // ai respawns
 // ai flees projectiles
+
+//---wk2day3 --- fuzzy state machines for multiple steering impulses
+// player moves (arrive)
+/*
+float stopDistance(float speed, float acceleration) {
+	return (speed*speed)/(2*acceleration);
+}
+vec2 arrive(vec2 target, Agent agent) {
+	if(distance(agent.position, target) <= stopDistance(agent.velocity.mag(), agent.maxForce)) {
+		return stop();
+	} else {
+		return seek(target, agent);
+	}
+}
+*/
+// ai conflicting ai moves
+	// context map?
 // ai attacks when in range
 // player gets killed
 // player respawns
