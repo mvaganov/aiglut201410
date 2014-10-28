@@ -164,7 +164,7 @@ struct Box {
 	 * @return true if raycast collision happened
 	 */
 	bool raycast(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
-		float & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) {
+		float & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
 		V2<TYPE> points[4];
 		writePoints(points, 4);
 		return V2<TYPE>::raycastPolygon(rayStart, rayDirection, points, 4, out_dist, out_point, out_normal) != -1;

@@ -84,7 +84,7 @@ struct Circle {
 	 * @return true if raycast collision happened
 	 */
 	bool raycast(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
-		float & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) {
+		float & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
 		return V2<TYPE>::raycastCircle(
 			rayStart, rayDirection, center, radius, out_dist, out_point, out_normal);
 	}
