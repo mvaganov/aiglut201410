@@ -1,3 +1,5 @@
+#pragma once
+
 #include "v2.h"
 #include "aabb.h"
 #include "circle.h"
