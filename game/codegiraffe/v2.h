@@ -622,6 +622,15 @@ struct V2 {
 		return velocityDotProduct;
 	}
 
+	static V2<TYPE> randomUnitVector() {
+		V2<TYPE> r;
+		do {
+			r.x = (rand() & 0x7fffffff) - (rand() & 0x7fffffff);
+			r.y = (rand() & 0x7fffffff) - (rand() & 0x7fffffff);
+		} while (r.isZero());
+		return r.normal();
+	}
+
 #ifdef __GL_H__
 // OpenGL specific functions
 
