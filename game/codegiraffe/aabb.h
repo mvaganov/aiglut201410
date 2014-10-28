@@ -1,6 +1,15 @@
 #pragma once
 #include "v2.h"
 
+// to get around the windows API definition of min and max macros
+#define NOMINMAX
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif max
+
 /**
  * An Axis-Aligned Bounding-Box, which includes methods to help with 2D math, including 2D collision
  * Comments assume standard graphics axis alignment: y increases as y goes down (0,0 in upper-left)
@@ -15,50 +24,50 @@ struct AABB {
 	 * corners of box are stored as opposed to x/y w/h.
 	 * m_ (name by scope) used to avoid collision with possible min/max macros
 	 */
-	V2<TYPE> m_min, m_max;
+	V2<TYPE> min, max;
 
 	/** @return top-left */
-	const V2<TYPE> getMin() const { return m_min; }
+	const V2<TYPE> getMin() const { return min; }
 
 	/** @return bottom-right */
-	const V2<TYPE> getMax() const { return m_max; }
+	const V2<TYPE> getMax() const { return max; }
 
 	/** @return y value of top edge */
-	const TYPE getMinY() const { return m_min.y; }
+	const TYPE getMinY() const { return min.y; }
 	/** @return x value of left edge */
-	const TYPE getMinX() const { return m_min.x; }
+	const TYPE getMinX() const { return min.x; }
 	/** @return y value of bottom edge */
-	const TYPE getMaxY() const { return m_max.y; }
+	const TYPE getMaxY() const { return max.y; }
 	/** @return x value of right edge */
-	const TYPE getMaxX() const { return m_max.x; }
+	const TYPE getMaxX() const { return max.x; }
 
 	/** set the left-edge location (resizes the rectangle) */
-	void setMinX(const TYPE a_value) {	m_min.x = a_value; }
+	void setMinX(const TYPE a_value) {	min.x = a_value; }
 	/** set the right-edge location (resizes the rectangle) */
-	void setMaxX(const TYPE a_value) {	m_max.x = a_value; }
+	void setMaxX(const TYPE a_value) {	max.x = a_value; }
 	/** set the top-edge location (resizes the rectangle) */
-	void setMinY(const TYPE a_value) {	m_min.y = a_value; }
+	void setMinY(const TYPE a_value) {	min.y = a_value; }
 	/** set the bottom-edge location (resizes the rectangle) */
-	void setMaxY(const TYPE a_value) { m_max.y = a_value; }
+	void setMaxY(const TYPE a_value) { max.y = a_value; }
 
 	/** add to the left-edge location (resizes the rectangle) */
-	void addMinX(const TYPE a_value) { m_min.x += a_value; }
+	void addMinX(const TYPE a_value) { min.x += a_value; }
 	/** add to the right-edge location (resizes the rectangle) */
-	void addMaxX(const TYPE a_value) { m_max.x += a_value; }
+	void addMaxX(const TYPE a_value) { max.x += a_value; }
 	/** add to the top-edge location (resizes the rectangle) */
-	void addMinY(const TYPE a_value) { m_min.y += a_value; }
+	void addMinY(const TYPE a_value) { min.y += a_value; }
 	/** add to the bottom-edge location (resizes the rectangle) */
-	void addMaxY(const TYPE a_value) { m_max.y += a_value; }
+	void addMaxY(const TYPE a_value) { max.y += a_value; }
 	/** add values to each side */
 	void add(const TYPE minX, const TYPE minY, const TYPE maxX, const TYPE maxY) {
-		m_min.add(minX, minY);
-		m_max.add(maxX, maxY);
+		min.add(minX, minY);
+		max.add(maxX, maxY);
 	}
-	void addMin(const V2<TYPE> delta) { m_min.add(delta); }
-	void addMax(const V2<TYPE> delta) { m_max.add(delta); }
+	void addMin(const V2<TYPE> delta) { min.add(delta); }
+	void addMax(const V2<TYPE> delta) { max.add(delta); }
 
 	bool isEqual(const AABB<TYPE> & b) const {
-		return m_min == b.m_min && m_max == b.m_max;
+		return min == b.min && max == b.max;
 	}
 
 	bool operator==(const AABB<TYPE> & b){ return isEqual(b); }
@@ -68,20 +77,20 @@ struct AABB {
 	*/
 	bool writePoints(V2<TYPE> * a_array, const int pointCount) const {
 		if (pointCount != 4) return false;
-		a_array[0].set(getMinX(), getMinY());
-		a_array[1].set(getMinX(), getMaxY());
-		a_array[2].set(getMaxX(), getMaxY());
-		a_array[3].set(getMaxX(), getMinY());
+		a_array[0].set(min.x, min.y);
+		a_array[1].set(min.x, max.y);
+		a_array[2].set(max.x, max.y);
+		a_array[3].set(max.x, min.y);
 		return true;
 	}
 
 	/** set the upper-left corner location (resizes the rectangle) */
-	void setMin(const V2<TYPE> & p) { m_min = p; }
+	void setMin(const V2<TYPE> & p) { min = p; }
 	/** set the lower-right corner location (resizes the rectangle) */
-	void setMax(const V2<TYPE> & p) { m_max = p; }
+	void setMax(const V2<TYPE> & p) { max = p; }
 
-	TYPE getWidth() const { return m_max.x - m_min.x; }
-	TYPE getHeight() const { return m_max.y - m_min.y; }
+	TYPE getWidth() const { return max.x - min.x; }
+	TYPE getHeight() const { return max.y - min.y; }
 
 	/** set the width value (moves the max value, keeping min value stationary) */
 	void setWidth(const TYPE a_value) {	setMaxX(getMinX()+a_value);	}
@@ -89,9 +98,9 @@ struct AABB {
 	void setHeight(const TYPE a_value) {	setMaxY(getMinY()+a_value);	}
 
 	/** @return x position of rectangle (left edge location) */
-	const TYPE getX() const { return m_min.x; }
+	const TYPE getX() const { return min.x; }
 	/** @return y position of rectangle (top edge location) */
-	const TYPE getY() const { return m_min.y; }
+	const TYPE getY() const { return min.y; }
 
 	/** set the x position value (moves the rectangle) */
 	void setX(const TYPE a_value) {
@@ -107,7 +116,7 @@ struct AABB {
 		setMaxY(a_value+d);
 	}
 	/** the distance vector between the two AABB points */
-	V2<TYPE> diagonal() const { return getMax().difference(getMin()); }
+	V2<TYPE> diagonal() const { return getMax() - getMin(); }
 	
 	/** width/height */
 	V2<TYPE> getDimension() const { return diagonal(); }
@@ -131,7 +140,7 @@ struct AABB {
 	/** re-constructor */
 	void set(const V2<TYPE> & a_center, const TYPE a_radius) {
 		V2<TYPE> corner(a_radius, a_radius);
-		set(a_center.sum(corner), a_center.difference(corner));
+		set(a_center + corner, a_center - corner);
 	}
 
 	/** default constructor, everything is zero */
@@ -143,7 +152,7 @@ struct AABB {
 	/** @param where to center the box, a square a_radius*2 tall and wide */
 	AABB(const V2<TYPE> & a_center, const TYPE a_radius) {
 		V2<TYPE> corner(a_radius, a_radius);
-		set(a_center.sum(corner), a_center.difference(corner));
+		set(a_center + corner, a_center - corner);
 	}
 
 	/** @return the radius of the circle that this rectangle is circumscribed by (circle outside) */
@@ -161,12 +170,12 @@ struct AABB {
 		if(diffRad.isZero()) {
 			diffRad.set(1,1);
 		}
-		TYPE currentRad = diffRad.quotient(2).magnitude();
-		TYPE ratio = a_radius/currentRad;
+		TYPE currentRad = (diffRad / 2).magnitude();
+		TYPE ratio = a_radius / currentRad;
 		V2<TYPE> center(getCenter());
-		diffRad.multiply(ratio);
-		setMin(center.difference(diffRad));
-		setMax(center.sum(diffRad));
+		diffRad *= ratio;
+		setMin(center - diffRad);
+		setMax(center + diffRad);
 	}
 
 	/** resizes the rectangle so it could be inscribed (circle inside) with a circle with the given radius */
@@ -178,40 +187,38 @@ struct AABB {
 		TYPE ratio = a_radius / constrainingDimension;
 		V2<TYPE> center(getCenter());
 		V2<TYPE> diffRad = diagonal() / 2;
-		diffRad.multiply(ratio);
-		setMin(center.difference(diffRad));
-		setMax(center.sum(diffRad));
+		diffRad *= ratio;
+		setMin(center - diffRad);
+		setMax(center + diffRad);
 	}
 
 	V2<TYPE> getCenter() const { return V2<TYPE>::between(getMin(),getMax()); }
 
 	void setCenter(const V2<TYPE> & c) {
-		V2<TYPE> rad = diagonal();
-		rad.divide(2);
-		setMin(c.difference(rad));
-		setMax(c.sum(rad));
+		V2<TYPE> rad = diagonal() / 2;
+		setMin(c - rad);
+		setMax(c + rad);
 	}
 
 	/** @return a new rectangle that is beveled by the given delta x and delta y */
 	AABB expandBorder(const V2<TYPE> & a_bevel) {
-		return AABB<TYPE>(getMin().difference(a_bevel), 
-			getMax().sum(a_bevel));
+		return AABB<TYPE>(getMin() - a_bevel, getMax() + a_bevel);
 	}
 
 	bool intersects(const AABB<TYPE> & b) const {
-		return!(b.getMaxX() < getMinX() ||	b.getMaxY() < getMinY()
-			||	b.getMinX() > getMaxX() ||	b.getMinY() > getMaxY());
+		return!(b.max.x < min.x || b.max.y < min.y
+			||	b.min.x > max.x || b.min.y > max.y);
 	}
 
 	/** @return true if the given AABB is totally contained in this AABB */
 	bool contains(const AABB<TYPE> & b) const {
-		return getMinX() <= b.getMinX() && getMinY() <= b.getMinY()
-			&& getMaxX() >= b.getMaxX() && getMaxY() >= b.getMaxY();
+		return min.x <= b.min.x && min.y <= b.min.y
+			&& max.x >= b.max.x && max.y >= b.max.y;
 	}	
 	/** @return true if the given point is in this AABB */
 	bool contains(const V2<TYPE> & p) const {
-		return getMinX() <= p.x && getMinY() <= p.y
-			&& getMaxX() >= p.x && getMaxY() >= p.y;
+		return min.x <= p.x && min.y <= p.y
+			&& max.x >= p.x && max.y >= p.y;
 	}
 
 	/**
@@ -258,15 +265,15 @@ struct AABB {
 	 */
 	V2<TYPE> getClosestPointOnEdge(const V2<TYPE> point, V2<TYPE> & out_normal) const {
 		V2<TYPE> p = point;
-		out_normal.zero();
+		out_normal.setZero();
 		// check if the point is far out of range
 		bool insideXrange = false, insideYrange = false;
 		int justOutsideOfEdge = BAD_VALUE;
-		if (p.x < m_min.x) { p.x = m_min.x; justOutsideOfEdge = MINX; }
-		else if (p.x > m_max.x) { p.x = m_max.x; justOutsideOfEdge = MAXX; }
+		if (p.x < min.x) { p.x = min.x; justOutsideOfEdge = MINX; }
+		else if (p.x > max.x) { p.x = max.x; justOutsideOfEdge = MAXX; }
 		else insideXrange = true;
-		if (p.y < m_min.y) { p.y = m_min.y; justOutsideOfEdge = MINY; }
-		else if (p.y > m_max.y) { p.y = m_max.y; justOutsideOfEdge = MAXY; }
+		if (p.y < min.y) { p.y = min.y; justOutsideOfEdge = MINY; }
+		else if (p.y > max.y) { p.y = max.y; justOutsideOfEdge = MAXY; }
 		else insideYrange = true;
 		// if is in neither the x or y range (it's closest to a corner)
 		if (!insideXrange && !insideYrange) {
@@ -418,7 +425,7 @@ struct AABB {
 	static const int NUM_DIMENSIONS = V2<TYPE>::NUM_DIMENSIONS;
 
 #ifdef __GL_H__
-	bool glDraw(bool filled) const {
+	void glDraw(bool filled) const {
 		glBegin(filled ? GL_POLYGON : GL_LINE_LOOP);
 		V2<TYPE> Xy(getMaxX(), getMinY());
 		V2<TYPE> xY(getMinX(), getMaxY());
@@ -427,9 +434,8 @@ struct AABB {
 		getMax().glVertex();
 		xY.glVertex();
 		glEnd();
-		return true;
 	}
-	bool glDraw() const { return glDraw(false); }
+	void glDraw() const { glDraw(false); }
 #endif
 };
 

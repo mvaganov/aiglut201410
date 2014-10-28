@@ -32,6 +32,11 @@ struct Circle {
 		return delta.magnitude() < minDist;
 	}
 
+	bool contains(V2<TYPE> const & p) const {
+		V2<TYPE> delta = center - p;
+		return delta.magnitude() < radius;
+	}
+
 	static bool intersects(const V2<TYPE> center, const TYPE radius, const V2<TYPE> & a_min, const V2<TYPE> & a_max) {
 		// check if circle is inside the AABB
 		bool xRange = center.x >= a_min.x && center.x <= a_max.x;

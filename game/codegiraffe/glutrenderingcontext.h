@@ -1,5 +1,7 @@
 #include "v2.h"
 #include "aabb.h"
+#include "circle.h"
+#include "box.h"
 
 /**
  * Handles data & methods related to screen size and cartesian-vs-pixel calculations
@@ -12,15 +14,42 @@ struct GLUTRenderingContext {
 	V2f dimensionPixels;
 	RectF dimensionCartesian;
 
+	/** one of these : {
+	 * GLUT_BITMAP_9_BY_15,
+	 * GLUT_BITMAP_8_BY_13,
+	 * GLUT_BITMAP_TIMES_ROMAN_10,
+	 * GLUT_BITMAP_TIMES_ROMAN_24,
+	 * GLUT_BITMAP_HELVETICA_10,
+	 * GLUT_BITMAP_HELVETICA_12,
+	 * GLUT_BITMAP_HELVETICA_18
+	 * }
+	 */
+	void * glutFont;
+
 	/**
 	 * @param a_dimensionPixels pixel width/height
 	 * @param a_min cartesian minimum
 	 * @param a_max cartesian maximum
 	 */
-	GLUTRenderingContext(const V2f & a_dimensionPixels, 
-		const V2f & a_min, const V2f & a_max)
-		:dimensionPixels(a_dimensionPixels), dimensionCartesian(a_min, a_max)
-	{}
+	GLUTRenderingContext(const V2f & a_dimensionPixels, const V2f & a_min, const V2f & a_max);
+
+	/**
+	 * calls glColor3ubv in such a way that the given 4 byte value is treated like the color ABGR
+	 * R is the red byte, the least-significant byte
+	 * G is the green byte, the least-significant byte
+	 * B is the blue byte, the second most-significant byte
+	 * A is the alpha byte, the most-significant byte, possibly ignored
+	 */
+	void setColor(long fourByteColor);
+
+	void drawLine(V2f const & a, V2f const & b);
+	void drawLine(const float aX, const float aY, const float bX, const float bY);
+	void drawCircle(CircF const & c, bool filled);
+	void drawCircle(V2f const & center, const float radius, const bool filled);
+	void drawRect(RectF const & r, const bool filled);
+	void drawRect(V2f const & min, V2f const & max, const bool filled);
+	void drawBox(BoxF const & b, const bool filled);
+	void drawBox(V2f const & center, V2f const & size, const float rotationInRadians, const bool filled);
 
 	/** sets up the openGL screen according to current variables */
 	void glSetupScreen();
@@ -58,21 +87,13 @@ struct GLUTRenderingContext {
 	 * draw the cartesian plane 
 	 * @param a_dashSize how big to make the unit marks (sample value: 0.1)
 	 */
-	void glDraw(float a_dashSize);
+	void drawPlanarAxis(float const a_dashSize);
+
+	/** draw a graph at the given scale */
+	void GLUTRenderingContext::drawGrid(V2f const gridScale);
 
 	/** @param a_string to draw at the given location */
-	void GLUTRenderingContext::glDrawString(const V2f position, const char * a_string);
+	void GLUTRenderingContext::print(const V2f position, const char * a_string);
 
-	/**
-	* @param font one of these: {
-	*            GLUT_BITMAP_9_BY_15,
-	*            GLUT_BITMAP_8_BY_13,
-	*            GLUT_BITMAP_TIMES_ROMAN_10,
-	*            GLUT_BITMAP_TIMES_ROMAN_24,
-	*            GLUT_BITMAP_HELVETICA_10,
-	*            GLUT_BITMAP_HELVETICA_12,
-	*            GLUT_BITMAP_HELVETICA_18
-	* }
-	*/
-	void GLUTRenderingContext::glDrawString(const V2f position, const char * a_string, void * font);
+	int GLUTRenderingContext::printf(const V2f position, const char *fmt, ...);
 };

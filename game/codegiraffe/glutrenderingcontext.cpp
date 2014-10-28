@@ -1,7 +1,52 @@
 #include <GL/freeglut.h>
 #include "glutrenderingcontext.h"
 
-#include <stdio.h>
+#include <stdio.h> // for printf
+
+/**
+* @param a_dimensionPixels pixel width/height
+* @param a_min cartesian minimum
+* @param a_max cartesian maximum
+*/
+GLUTRenderingContext::GLUTRenderingContext(const V2f & a_dimensionPixels,
+	const V2f & a_min, const V2f & a_max)
+	:dimensionPixels(a_dimensionPixels), dimensionCartesian(a_min, a_max), glutFont(GLUT_BITMAP_HELVETICA_10)
+{}
+
+void GLUTRenderingContext::setColor(long fourByteColor) {
+	glColor3ubv((GLubyte*)&fourByteColor);
+}
+void GLUTRenderingContext::drawLine(const float aX, const float aY, const float bX, const float bY) {
+	glBegin(GL_LINES);
+	glVertex2f(aX, aY);
+	glVertex2f(bX, bY);
+	glEnd();
+}
+
+void GLUTRenderingContext::drawLine(V2f const & a, V2f const & b) {
+	glBegin(GL_LINES);
+	a.glVertex();
+	b.glVertex();
+	glEnd();
+}
+void GLUTRenderingContext::drawCircle(CircF const & c, bool filled) {
+	c.glDraw(filled);
+}
+void GLUTRenderingContext::drawCircle(V2f const & center, const float radius, const bool filled) {
+	glDrawCircle(center, radius, filled);
+}
+void GLUTRenderingContext::drawRect(RectF const & r, const bool filled) {
+	r.glDraw(filled);
+}
+void GLUTRenderingContext::drawRect(V2f const & min, V2f const & max, const bool filled) {
+	RectF(min, max).glDraw(filled);
+}
+void GLUTRenderingContext::drawBox(BoxF const & b, const bool filled) {
+	b.glDraw(filled);
+}
+void GLUTRenderingContext::drawBox(V2f const & center, V2f const & size, const float rotationInRadians, const bool filled) {
+	BoxF(center, size, rotationInRadians).glDraw(filled);
+}
 
 /** sets up the openGL screen according to current variables */
 void GLUTRenderingContext::glSetupScreen() {
@@ -106,8 +151,8 @@ void GLUTRenderingContext::scrollDrag(V2f const draggedMousePosition) {
 void GLUTRenderingContext::zoom(float percentageChange, V2f const centeredHere) {
 	V2f dimension = dimensionCartesian.getDimension();
 	V2f percentOfScreenWhereMouseIs = centeredHere / dimension;
-	dimensionCartesian.m_min *= percentageChange;
-	dimensionCartesian.m_max *= percentageChange;
+	dimensionCartesian.min *= percentageChange;
+	dimensionCartesian.max *= percentageChange;
 	V2f whereMouseIsAfterZoom = percentOfScreenWhereMouseIs * dimensionCartesian.getDimension();
 	V2f delta = centeredHere - whereMouseIsAfterZoom;
 	scroll(delta);
@@ -116,27 +161,46 @@ void GLUTRenderingContext::zoom(float percentageChange, V2f const centeredHere) 
 
 /**
  * draw the cartesian plane 
- * @param a_dashSize how big to make the unit marks (sample value: 0.1)
+ * @param a_gridLineSize how big to make the unit marks (sample value: 0.1f).
  */
-void GLUTRenderingContext::glDraw(float a_dashSize) {
+void GLUTRenderingContext::drawPlanarAxis(float const a_gridLineSize) {
 	glBegin(GL_LINES);
-	glVertex2f(0, dimensionCartesian.getMaxY());	V2f::ZERO().glVertex();
-	glVertex2f(0, dimensionCartesian.getMinY());	V2f::ZERO().glVertex();
-	glVertex2f(dimensionCartesian.getMinX(), 0);	V2f::ZERO().glVertex();
-	glVertex2f(dimensionCartesian.getMaxX(), 0);	V2f::ZERO().glVertex();
-	if(a_dashSize > 0) {
-		int i;
-		for(i = 1; i < dimensionCartesian.getMaxY(); i++)	{glVertex2f((GLfloat)-a_dashSize, (GLfloat)i);	glVertex2f((GLfloat)a_dashSize, (GLfloat)i);}
-		for(i =-1; i > dimensionCartesian.getMinY(); i--)	{glVertex2f((GLfloat)-a_dashSize, (GLfloat)i);	glVertex2f((GLfloat)a_dashSize, (GLfloat)i);}
-		for(i = 1; i < dimensionCartesian.getMaxX(); i++)	{glVertex2f((GLfloat)i, (GLfloat)-a_dashSize);	glVertex2f((GLfloat)i, (GLfloat)a_dashSize);}
-		for(i =-1; i > dimensionCartesian.getMinX(); i--)	{glVertex2f((GLfloat)i, (GLfloat)-a_dashSize);	glVertex2f((GLfloat)i, (GLfloat)a_dashSize);}
+	V2f(0, dimensionCartesian.min.y).glVertex();
+	V2f(0, dimensionCartesian.max.y).glVertex();
+	V2f(dimensionCartesian.min.x, 0).glVertex();
+	V2f(dimensionCartesian.max.x, 0).glVertex();
+	if (a_gridLineSize != 0) {
+		int i, min, max;
+		min = (int)(dimensionCartesian.min.x - 1);
+		max = (int)(dimensionCartesian.max.x + 1);
+		for (i = min; i < max; ++i)	{
+			V2f((float)i, a_gridLineSize).glVertex();
+			V2f((float)i, -a_gridLineSize).glVertex();
+		}
+		min = (int)(dimensionCartesian.min.y - 1);
+		max = (int)(dimensionCartesian.max.y + 1);
+		for (i = min; i < max; ++i)	{
+			V2f(-a_gridLineSize, (float)i).glVertex();
+			V2f(a_gridLineSize, (float)i).glVertex();
+		}
 	}
 	glEnd();
 }
 
-/** @param a_string to draw at the given location */
-void GLUTRenderingContext::glDrawString(const V2f position, const char * a_string) {
-	return glDrawString(position, a_string, GLUT_BITMAP_HELVETICA_10);
+void GLUTRenderingContext::drawGrid(V2f const gridScale) {
+	glBegin(GL_LINES);
+	float divs, extra, i;
+	float minx = (dimensionCartesian.min.x);
+	float maxx = (dimensionCartesian.max.x);
+	float miny = (dimensionCartesian.min.y);
+	float maxy = (dimensionCartesian.max.y);
+	divs = minx / gridScale.x;
+	extra = divs - (int)divs;
+	for (i = minx - extra * gridScale.x; i < maxx; i += gridScale.x)	drawLine(i, miny, i, maxy);
+	divs = miny / gridScale.y;
+	extra = divs - (int)divs;
+	for (i = miny - extra * gridScale.y; i < maxy; i += gridScale.y)	drawLine(minx, i, maxx, i);
+	glEnd();
 }
 
 /**
@@ -150,9 +214,9 @@ void GLUTRenderingContext::glDrawString(const V2f position, const char * a_strin
 *            GLUT_BITMAP_HELVETICA_18
 * }
 */
-void GLUTRenderingContext::glDrawString(const V2f position, const char * a_string, void * font) {
+void GLUTRenderingContext::print(const V2f position, const char * a_string) {
 	float lineHeight = 30;
-	switch ((int)font) {
+	switch ((int)glutFont) {
 	case (int)GLUT_BITMAP_9_BY_15:        lineHeight = 15;	break;
 	case (int)GLUT_BITMAP_8_BY_13:        lineHeight = 13;	break;
 	case (int)GLUT_BITMAP_TIMES_ROMAN_10: lineHeight = 10;	break;
@@ -174,7 +238,7 @@ void GLUTRenderingContext::glDrawString(const V2f position, const char * a_strin
 		char c = a_string[index];
 		while (c) {
 			if (c != '\n' && c != '\r') {
-				glutBitmapCharacter(font, a_string[index]);
+				glutBitmapCharacter(glutFont, a_string[index]);
 			}
 			index++;
 			c = a_string[index];
@@ -184,4 +248,25 @@ void GLUTRenderingContext::glDrawString(const V2f position, const char * a_strin
 			}
 		}
 	} while (a_string[index]);
+}
+
+int GLUTRenderingContext::printf(const V2f position, const char *fmt, ...)
+{
+	int bufferSize = 40, charsPrinted;
+	char * buffer = NULL;
+	do {
+		bufferSize *= 2;
+		va_list valist;
+		va_start(valist, fmt);
+		buffer = (char *)realloc(buffer, bufferSize);
+#if __STDC_WANT_SECURE_LIB__
+		charsPrinted = vsnprintf_s(buffer, bufferSize, _TRUNCATE, fmt, valist);
+#else
+		charsPrinted = vsnprintf(buffer, bufferSize, fmt, valist);
+#endif
+		va_end(valist);
+	} while (charsPrinted >= bufferSize);
+	this->print(position, buffer);
+	free(buffer);
+	return charsPrinted;
 }

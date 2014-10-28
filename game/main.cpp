@@ -4,10 +4,7 @@
 
 #include <stdio.h>
 #include <GL/freeglut.h>
-#include <ctime>
-
 #include "codegiraffe/glutrenderingcontext.h"
-#include "codegiraffe/circle.h"
 
 /** the screen pixels, cartesian plane min, cartesian plane max */
 GLUTRenderingContext g_screen(V2f(600, 600), V2f(-3.0, -3.0), V2f(8.0, 8.0));
@@ -74,11 +71,13 @@ void display() {
 	glClear(GL_COLOR_BUFFER_BIT);	//Clear the screen
 
 	// insert stuff to draw here
-	int red = 0x0000ff, gray = 0x888888, yellow = 0x00ffff, green = 0x00ff00;
-	glColor3ubv((GLubyte*)&gray);
-	g_screen.glDraw(0.1f);			// draw the cartisian plane
+	g_screen.setColor(0xeeeeee); // very light gray
+	g_screen.drawGrid(V2f(4, 4));
+	g_screen.setColor(0x888888); // gray
+	g_screen.drawPlanarAxis(-0.2f);			// draw the cartisian plane
 
-	g_screen.glDrawString(V2f(1, 1), "Hello!\nWorld!");
+	g_screen.setColor(0x000000); // black
+	g_screen.printf(V2f(1, 1), "Hello!\nWorld!");
 
 	glFlush();						// print everything to the (off?) screen buffer
 	glutSwapBuffers();				// swap the draw buffers
@@ -107,7 +106,7 @@ int main(int argc, char * argv[]) {
 	// initialize the application
 	init("hello!");
 	// keeps track of when the update method was called last
-	clock_t lastTime, now = glutGet(GLUT_ELAPSED_TIME), passed;
+	int lastTime, now = glutGet(GLUT_ELAPSED_TIME), passed;
 	int msDelay = 1000 / 50;		// the ideal game loop rate (50 FPS)
 	// the glut game loop
 	while (g_gameLoopRunning) {
@@ -122,7 +121,7 @@ int main(int argc, char * argv[]) {
 
 		passed = glutGet(GLUT_ELAPSED_TIME) - now;	// how long did update take to process?
 		int wait = msDelay-passed-1;// factor that into the next wait
-		Sleep((wait < 0)?0:wait);	// wait (if it makes sense to), to throttle the game engine
+		Sleep((wait > 0)?wait:0);	// wait (if it makes sense to), to throttle the game engine
 	}
 	return 0;
 }

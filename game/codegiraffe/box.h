@@ -1,3 +1,6 @@
+#pragma once
+
+#include "aabb.h"
 #include "circle.h"
 
 //#define SHOW_LOCALSPACE_COLLISION
@@ -15,7 +18,7 @@ struct Box {
 	V2<TYPE> size;
 	V2<TYPE> rotation;
 
-	Box(V2<TYPE> center, V2<TYPE> size, float rotation) : center(center), size(size), rotation(rotation){}
+	Box(V2<TYPE> center, V2<TYPE> size, float rotationInRadians) : center(center), size(size), rotation(rotationInRadians){}
 	Box() :rotation(V2<TYPE>::ZERO_DEGREES()){}
 
 	void set(V2<TYPE> const center, V2<TYPE> const size, float const rotation) {
@@ -116,10 +119,11 @@ struct Box {
 		return false;
 	}
 
+	// TODO make this faster by checking against AABB
 	bool intersects(Box<TYPE> const b) const {
 		Circle<TYPE> c = getCollisionCircle(), bc = b.getCollisionCircle();
 		// if they are even close to the same region
-		if (c.intersects(bc)) { // TODO make this faster by checking against AABB
+		if (c.intersects(bc)) {
 			const int NUM_POINTS = 4;
 			// check if any points are inside the other
 			V2<TYPE> ap[NUM_POINTS], bp[NUM_POINTS];
@@ -168,12 +172,18 @@ struct Box {
 
 #ifdef __GL_H__
 	bool glDraw(bool filled) const {
-		V2<TYPE> points[4];
-		writePoints(points, 4);
-		glBegin(filled ? GL_POLYGON : GL_LINE_LOOP);
-		for (int i = 0; i < 4; ++i)
-			points[i].glVertex();
-		glEnd();
+		AABB<TYPE> aabb = getLocalSpaceAABB();
+		glPushMatrix();
+		center.glTranslate();
+		rotation.glRotate();
+		aabb.glDraw(filled);
+		glPopMatrix();
+		//V2<TYPE> points[4];
+		//writePoints(points, 4);
+		//glBegin(filled ? GL_POLYGON : GL_LINE_LOOP);
+		//for (int i = 0; i < 4; ++i)
+		//	points[i].glVertex();
+		//glEnd();
 #ifdef SHOW_LOCALSPACE_COLLISION
 		AABB<TYPE> aabb = getLocalSpaceAABB();
 		aabb.writePoints(points, 4);

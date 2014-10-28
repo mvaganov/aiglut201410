@@ -24,29 +24,23 @@ struct V2 {
 	static const int DIMENSION_X = 0;
 	static const int DIMENSION_Y = 1;
 
-	/** access X */
-	const TYPE getX() const {return x;}
-	/** access Y */
-	const TYPE getY() const {return y;}
+	/** const access X */
+	TYPE getX() const {return x;}
+	/** const access Y */
+	TYPE getY() const {return y;}
 	/** mutate X */
 	void setX(const TYPE a_value) { x = a_value; }
 	/** mutate Y */
 	void setY(const TYPE a_value) { y = a_value; }
-	/** mutate X */
-	void addX(const TYPE a_value) { x += a_value; }
-	/** mutate Y */
-	void addY(const TYPE a_value) { y += a_value; }
 	/** mutate in bulk */
-	void add(const TYPE a_x, const TYPE a_y) { x += a_x; y += a_y; }
+	void add(const TYPE dx, const TYPE dy) { x += dx; y += dy; }
 
-	/** @return array containing points of this vector ([V2::DIMENSION_X], [V2::DIMENSION_Y]) */
-	const TYPE * getDimensions() const { return &x; }
-	/** @return getDimensions()[a_dimensionField] */
+	/** @return thisAsAnArray[a_dimensionField] */
 	const TYPE getField(const int a_dimensionField) const { return (&x)[a_dimensionField]; }
 	/** getDimensions()[a_dimensionField]=a_value; */
 	void setField(const int a_dimensionField, const TYPE a_value) { (&x)[a_dimensionField]=a_value; }
 	/** @param a_axis which axis to flip around {DIMENSION_X, DIMENSION_Y} */
-	void flipAxis(const int & a_axis){ (&x)[a_axis]*=-1; }
+	void flipAxis(const int a_axis){ (&x)[a_axis]*=-1; }
 	/** @return a version of this flipped around the given axis */
 	V2<TYPE> flippedAxis(int a_axis){ V2<TYPE> p(*this); p.flipAxis(a_axis); return p;}
 
@@ -63,13 +57,13 @@ struct V2 {
 	V2(TYPE a_x, TYPE a_y):x(a_x),y(a_y){}
 	/** de-serialization constructor */
 	V2(TYPE * a_twoValues):x(a_twoValues[0]),y(a_twoValues[1]){}
-	/** turns a pi-radians angle into a vector */
+	/** turns a pi-radians angle into a vector. explicit so that scalars are not all-of-the-sudden turned into vectors */
 	explicit V2(TYPE a_piRadians):x(cos(a_piRadians)), y(sin(a_piRadians)){}
 	/** copy constructor */
 	V2(const V2<TYPE> & v):x(v.x),y(v.y){}
 
 	/** sets x and y to zero */
-	void zero(){ x=y=0; }
+	void setZero() { x=y=0; }
 
 	/**
 	 * declares a "global" variable in a function, which is OK in a template! 
@@ -95,9 +89,6 @@ struct V2 {
 	/** @return the length of the vector (uses sqrt) */
 	TYPE magnitude() const { return sqrt((TYPE)magnitudeSq()); }
 
-	/** @return dot product of this and v2. how "aligned" are these two? 0 = perp, +1 = same dir, -1 = opposite dir */
-	TYPE dot(const V2<TYPE> & v2) const { return (TYPE)(x * v2.x + y * v2.y); }
-
 	/** @return dot product of v1 and v2. how "aligned" are these two? 0 = perp, +1 = same dir, -1 = opposite dir */
 	static TYPE dot(const V2<TYPE> & v1, const V2<TYPE> & v2) { return (TYPE)(v1.x * v2.x + v1.y * v2.y); }
 
@@ -107,32 +98,32 @@ struct V2 {
 	 */
 	TYPE sign(const V2<TYPE> & p) const { return (x*p.y)-(y*p.x); }
 
-	/** @return if this point is clockwise of line a->b */
+	/** @return if this point is clockwise of line a->b (assume Y points down, X to right) */
 	bool isCW(V2<TYPE> const & a, V2<TYPE> const & b) const {
-		return difference(a).sign(b.difference(a)) <= 0;
+		return (*this - a).sign(b - a) <= 0;
 	}
-	/** @return if this point is counter-clockwise of line a->b */
+	/** @return if this point is counter-clockwise of line a->b (assume Y points down, X to right) */
 	bool isCCW(V2<TYPE> const & a, V2<TYPE> const & b) const {
-		return difference(a).sign(b.difference(a)) >= 0;
+		return (*this - a).sign(b - a) >= 0;
 	}
 
-	/** @return true if this point is inside the given triangle */
-	bool isInsideTriangle(V2<TYPE> const & a, V2<TYPE> const & b, V2<TYPE> const & c) const {
-		TYPE signab = difference(a).sign(b.difference(a)), 
-				signbc = difference(b).sign(c.difference(b)), 
-				signac = difference(c).sign(a.difference(c));
-		return(((signab>=0) == (signbc>=0)) && ((signbc>=0) == (signac>=0)))
-			||(((signab<=0) == (signbc<=0)) && ((signbc<=0) == (signac<=0)));
-	}
-
-	/** triangle points are in clock-wise order */
+	/** triangle points are in clock-wise order (assume Y points down, X to right) */
 	bool isInsideTriangleCW(V2<TYPE> const & a, V2<TYPE> const & b, V2<TYPE> const & c) const {
 		return isCW(a,b) && isCW(b,c) && isCW(c,a);
 	}
 
-	/** triangle points are in counter-clock-wise order */
+	/** triangle points are in counter-clock-wise order (assume Y points down, X to right) */
 	bool isInsideTriangleCCW(V2<TYPE> const & a, V2<TYPE> const & b, V2<TYPE> const & c) const {
 		return isCCW(a,b) && isCCW(b,c) && isCCW(c,a);
+	}
+
+	/** @return true if this point is inside the given triangle */
+	bool isInsideTriangle(V2<TYPE> const & a, V2<TYPE> const & b, V2<TYPE> const & c) const {
+		TYPE signab = (*this - a).sign(b - a),
+			signbc = (*this - b).sign(c - b),
+			signac = (*this - c).sign(a - c);
+		return(((signab >= 0) == (signbc >= 0)) && ((signbc >= 0) == (signac >= 0)))
+			|| (((signab <= 0) == (signbc <= 0)) && ((signbc <= 0) == (signac <= 0)));
 	}
 
 	/** @return if the given polygon has all of it's points in clock-wise order. false if CCW or not convex */
@@ -170,21 +161,21 @@ struct V2 {
 		}
 		return true;
 	}
-
-	/** @return true if this point is between points A and B */
-	bool isBetween(V2<TYPE> const & a, V2<TYPE> const & b)const{
-		V2<TYPE> bracket = b.difference(a);
-		bracket.setPerp();
-		TYPE signa = difference(a).sign(bracket), 
-				signb = difference(b).sign(bracket); 
-		return ((signa >= 0) ^ (signb >= 0));
-	}
 	
 	/** @return the vector perpendicular to this one */
 	V2<TYPE> perp() const { return V2(-y, x); }
 
 	/** make this vector perpendicular to itself */
 	void setPerp() { TYPE t = x; x = -y; y = t; }
+
+	/** @return true if this point is between points A and B */
+	bool isBetween(V2<TYPE> const & a, V2<TYPE> const & b)const{
+		V2<TYPE> bracket = b - a;
+		bracket.setPerp();
+		TYPE signa = (*this - a).sign(bracket),
+			signb = (*this - b).sign(bracket);
+		return ((signa >= 0) ^ (signb >= 0));
+	}
 
 	/** @param a_length what to set this vector's magnitude to */
 	void setMagnitude(const TYPE a_length) {
@@ -198,32 +189,20 @@ struct V2 {
 	 * @param a_maxLength x and y adjusts so that the magnitude does not exceed this
 	 */
 	void truncate(const TYPE a_maxLength) {
-		TYPE max2 = a_maxLength*a_maxLength;
-		TYPE mm = magnitudeSq();
-		// do check in quadrance space, to save a sqrt operation
-		if(mm > max2) {
-			TYPE m = sqrt(mm);
+		TYPE mm = magnitude();
+		if (m > a_maxLength) {
 			// "x = (x * a_maxLength) / l" is more precise than "x *= (a_maxLength/l)"
 			x = (x * a_maxLength) / m;
 			y = (y * a_maxLength) / m;
 		}
 	}
 
-	/** @return the quadrance (distance squared) between this vector and v */
-	TYPE distanceSq(const V2<TYPE> & v) const {
-		TYPE dx = x-v.x, dy = y-v.y;
-		return dx*dx+dy*dy;
-	}
+	static TYPE distance(const V2<TYPE> & a, const V2<TYPE> & b) { return (a - b).magnitude(); }
 
-	/** @return the pythagorean distance between this vector and v */
-	TYPE distance(const V2<TYPE> & v) const{ return sqrt(distanceSq(v)); }
-
-	static TYPE distance(const V2<TYPE> & a, const V2<TYPE> & b) { return a.distance(b); }
-
-	static TYPE distanceSq(const V2<TYPE> & a, const V2<TYPE> & b) { return a.distanceSq(b); }
+	static TYPE distanceSq(const V2<TYPE> & a, const V2<TYPE> & b) { return (a - b).magnitudeSq(); }
 
 	/** @return the manhattan distance between this vector and v */
-	TYPE distanceManhattan(const V2<TYPE> & v) const { return abs(v.x-x)+abs(v.y-y); }
+	static TYPE distanceManhattan(const V2<TYPE> & a, const V2<TYPE> & b) { return abs(b.x - a.x) + abs(b.y - a.y); }
 
 	/** @return the vector that is the reverse of this vector, same as multiplying by -1 */
 	V2<TYPE> getReverse() const { return V2<TYPE>(-x, -y); }
@@ -231,68 +210,50 @@ struct V2 {
 	/** make this direction vector go in the opposite direction */
 	void setReverse() { *this *= -1; }
 
+	/** @return a new V2<TYPE> that is the negative value of this V2<TYPE> */
+	V2<TYPE> operator-() const { return V2<TYPE>(-x, -y); }
 	/** @return a new V2<TYPE> that is the sum(+) of this V2<TYPE> and v */
-	V2<TYPE> sum(const V2<TYPE> & v) const { return V2<TYPE>(x+v.x, y+v.y); }
-
+	V2<TYPE> operator+(V2<TYPE> const & v) const { return V2<TYPE>(x + v.x, y + v.y); }
 	/** @return a new V2<TYPE> that is the difference(-) of this V2<TYPE> and v */
-	V2<TYPE> difference(const V2<TYPE> & v) const { return V2<TYPE>(x-v.x, y-v.y); }
-
+	V2<TYPE> operator-(V2<TYPE> const & v) const { return V2<TYPE>(x - v.x, y - v.y); }
 	/** @return a new V2<TYPE> that is the product(*) of this V2<TYPE> and v */
-	V2<TYPE> product(const V2<TYPE> & v) const { return V2<TYPE>(x*v.x, y*v.y); }
-
+	V2<TYPE> operator*(V2<TYPE> const & v) const { return V2<TYPE>(x * v.x, y * v.y); }
 	/** @return a new V2<TYPE> that is the product(*) of this V2<TYPE> and v */
-	V2<TYPE> product(const TYPE a_value) const { return V2<TYPE>(x*a_value, y*a_value); }
-
-	/** @return a new V2<TYPE> that is the quotient of this V2<TYPE> and the given V2*/
-	V2<TYPE> quotient(const TYPE a_value) const { return V2<TYPE>(x/a_value, y/a_value); }
-
-	/** @return a new V2<TYPE> that is the quotient of this V2<TYPE> and the given V2<TYPE> */
-	V2<TYPE> quotient(const V2<TYPE> & v) const { return V2<TYPE>(x/v.x, y/v.y); }
-
+	V2<TYPE> operator*(TYPE const a_scalar) const { return V2<TYPE>(x * a_scalar, y * a_scalar); }
+	/** @return a new V2<TYPE> that is the quotient of this V2<TYPE> and the given scalar */
+	V2<TYPE> operator/(TYPE const a_scalar) const { return V2<TYPE>(x / a_scalar, y / a_scalar); }
+	/** @return a new V2<TYPE> that is the quotient of this V2<TYPE> and the given vector */
+	V2<TYPE> operator/(V2<TYPE> const & v) const { return V2<TYPE>(x / v.x, y / v.y); }
 	/** @return this V2<TYPE> after adding v */
-	V2<TYPE> & add(const V2<TYPE> & v) {
-		x += v.x;
-		y += v.y;
-		return *this;
-	}
-
+	V2<TYPE> operator+=(V2<TYPE> const & v){ x += v.x; y += v.y; return *this; }
 	/** @return this V2<TYPE> after subtracting v */
-	V2<TYPE> & subtract(const V2<TYPE> & v) {
-		x -= v.x;
-		y -= v.y;
-		return *this;
-	}
-
+	V2<TYPE> operator-=(V2<TYPE> const & v){ x -= v.x; y -= v.y; return *this; }
 	/** @return this V2<TYPE> after multiplying v */
-	V2<TYPE> & multiply(const TYPE a_value) {
-		x *= a_value;
-		y *= a_value;
-		return *this;
-	}
-
-	/** @return this V2<TYPE> after multiplying v */
-	V2<TYPE> & multiply(const V2<TYPE> & v) {
-		x *= v.x;
-		y *= v.y;
-		return *this;
-	}
-
+	V2<TYPE> operator*=(V2<TYPE> const & v){ x *= v.x; y *= v.y; return *this; }
+	/** @return this V2<TYPE> after multiplying the given scalar */
+	V2<TYPE> operator*=(TYPE const a_scalar){ x *= a_scalar; y *= a_scalar; return *this; }
 	/** @return this V2<TYPE> after dividing v */
-	V2<TYPE> & divide(const TYPE a_value) {
-		x /= a_value;
-		y /= a_value;
-		return *this;
-	}
+	V2<TYPE> operator/=(TYPE const a_scalar){ x /= a_scalar; y /= a_scalar; return *this; }
+	/** @return this V2<TYPE> after dividing the given scalar */
+	V2<TYPE> operator/=(V2<TYPE> const & v){ x /= v.x; y /= v.y; return *this; }
+	/** @return if this V2<TYPE> is equal to v */
+	bool operator==(V2<TYPE> const & rhs) const { return (x == v.x && y == v.y); }
+	/** @return if this V2<TYPE> is not equal to v */
+	bool operator!=(V2<TYPE> const & rhs) const { return (x != v.x || y != v.y); }
 
-	/** @return this V2<TYPE> after dividing v */
-	V2<TYPE> & divide(const V2<TYPE> & v) {
-		x /= v.x;
-		y /= v.y;
-		return *this;
-	}
-
-	/** @return if this V2<TYPE> is euqal to v */
-	bool isEqual(const V2<TYPE> & v) const { return (x == v.x && y == v.y); }
+	V2<TYPE> sum(V2<TYPE> const & v) const { return operator+(v); }
+	V2<TYPE> difference(const V2<TYPE> & v) const { return operator-(v); }
+	V2<TYPE> product(const V2<TYPE> & v) const { return operator*(v); }
+	V2<TYPE> product(const TYPE a_scalar) const { return operator*(a_scalar); }
+	V2<TYPE> quotient(const TYPE a_scalar) const { return operator/(a_scalar); }
+	V2<TYPE> quotient(const V2<TYPE> & v) const { return operator/(v); }
+	V2<TYPE> & add(const V2<TYPE> & v) { return operator+=(v);  }
+	V2<TYPE> & subtract(const V2<TYPE> & v) { return operator-=(v);  }
+	V2<TYPE> & multiply(const TYPE a_scalar) { return operator*=(a_scalar); }
+	V2<TYPE> & multiply(const V2<TYPE> & v) { return operator*=(v); }
+	V2<TYPE> & divide(const TYPE a_scalar) { return operator/=(a_scalar); }
+	V2<TYPE> & divide(const V2<TYPE> & v) { return operator/=(v); }
+	bool isEqual(const V2<TYPE> & v) const { return operator==(v); }
 
 	/** @return true if this point is within a_radius from a_point */
 	bool isWithin(const TYPE a_radius, const V2<TYPE> & a_point) const {
@@ -325,7 +286,7 @@ struct V2 {
 	TYPE piRadians() const { return (y<0?-1:1)*piRadians(ZERO_DEGREES()); }
 	
 	/** @return how many degrees (standard 360 degree scale) this is */
-	TYPE degrees() const { return ((y > 0)?-1:1)*acos(x)*180/V_PI; }
+	TYPE degrees() const { return ((y > 0) ? -1 : 1)*acos(x) * 180 / (TYPE)V_PI; }
 
 	/** @param a_normal cos(theta), sin(theta) as x,y values */
 	void rotate(const V2<TYPE> & a_normal) {
@@ -341,7 +302,7 @@ struct V2 {
 		// memory copy of structure
 		*this = turned;
 		// put length data back into normalized vector
-		multiply(len);
+		this->operator*=(len);
 	}
 
 	/**
@@ -353,8 +314,7 @@ struct V2 {
 		TYPE x0 = x*a_normal.x - y*a_normal.y; 
 		// y_ = x*sin(theta) + y*cos(theta)
 		TYPE y0 = x*a_normal.y + y*a_normal.x;
-		x = x0;
-		y = y0;
+		set(x0, y0);
 	}
 
 	/** @param a_degreePiRadians in piRadians */
@@ -396,8 +356,7 @@ struct V2 {
 	 * @param a_xAxis rotate this point's x axis to match this vector
 	 * @param a_yAxis rotate this point's y axis to match this vector
 	 */
-	V2<TYPE> toWorldSpace(V2<TYPE> const & a_xAxis, V2<TYPE> const & a_yAxis) const
-	{
+	V2<TYPE> toWorldSpace(V2<TYPE> const & a_xAxis, V2<TYPE> const & a_yAxis) const {
 		return V2<TYPE>((a_xAxis.x*x) + (a_yAxis.x*y), (a_xAxis.y*x) + (a_yAxis.y*y));
 	}
 
@@ -410,10 +369,9 @@ struct V2 {
 	 * @param a_yVector vector of translated y dimension (V2f(0,1).rotate(rotationAngle))
 	 * @param a_origin origin to translate this point in relation to (center of the system)
 	 */
-	V2<TYPE> toLocalSpace(V2<TYPE> const & a_xVector, V2<TYPE> const & a_yVector, V2<TYPE> const & a_origin) const
-	{
-		TYPE tx = -a_origin.dot(a_xVector);
-		TYPE ty = -a_origin.dot(a_yVector);
+	V2<TYPE> toLocalSpace(V2<TYPE> const & a_xVector, V2<TYPE> const & a_yVector, V2<TYPE> const & a_origin) const {
+		TYPE tx = dot(-a_origin, a_xVector);
+		TYPE ty = dot(-a_origin, a_yVector);
 		return V2<TYPE>(
 			(a_xVector.x*x) + (a_xVector.y*y) + (tx),
 			(a_yVector.x*x) + (a_yVector.y*y) + (ty));
@@ -421,8 +379,8 @@ struct V2 {
 
 	static void convertToLocalSpace(const V2<TYPE> * points, const int numPoints, V2<TYPE> const & a_xVector, 
 		V2<TYPE> const & a_yVector, V2<TYPE> const & a_origin) {
-		TYPE tx = -a_origin.dot(a_xVector);
-		TYPE ty = -a_origin.dot(a_yVector);
+		TYPE tx = dot(-a_origin, a_xVector);
+		TYPE ty = dot(-a_origin, a_yVector);
 		for (int i = 0; i < numPoints; ++i) {
 			points[i] = V2<TYPE>(
 				(a_xVector.x*points[i].x) + (a_xVector.y*points[i].y) + (tx),
@@ -457,7 +415,7 @@ struct V2 {
 			// put length data back into normalized vector
 			for (int i = 0; i < a_arcPoints; ++i) {
 				// embarassingly parallel
-				a_list[i].multiply(len);
+				a_list[i] *= (len);
 			}
 		}
 	}
@@ -477,26 +435,23 @@ struct V2 {
 	}
 
 	/** @return the position half-way between line a->b */
-	static V2<TYPE> between(V2<TYPE> const & a, V2<TYPE> const & b) {
-		V2<TYPE> average = b.sum(a);
-		average.divide(2.0);
-		return average;
-	}
+	static V2<TYPE> between(V2<TYPE> const & a, V2<TYPE> const & b) { return (b + a) / 2; }
 
 	/**
 	 * @param percentage 0 is a, 1 is b, .5 is between(a,b). any numeric value should work.
 	 * @return an interpolated point between points a and b.
 	 */
 	static V2<TYPE> lerp(V2<TYPE> const & a, V2<TYPE> const & b, const float percentage) {
-		V2<TYPE> delta = b.difference(a);
-		TYPE len = delta.magnitude();
-		delta.setMagnitude(len * percentage);
-		return a.sum(delta);
+		V2<TYPE> delta = b - a;
+		delta *= percentage;
+		return a + delta;
 	}
 
 	/**
-	 * @param A,B line 1
-	 * @param C,D line 2
+	 * @param A start of line AB
+	 * @param B end of line AB
+	 * @param C start of line CD
+	 * @param D end of line CD
 	 * @param point __OUT to the intersection of line AB and CD
 	 * @param dist __OUT the distance along line AB to the intersection
 	 * @return true if intersection occurs between the lines
@@ -505,37 +460,37 @@ struct V2 {
 								const V2<TYPE> & C, const V2<TYPE> & D, 
 								TYPE & dist, V2<TYPE> & point)
 	{
-		TYPE r, s;
-		if (rayIntersection(A, B, C, D, r, s)) {
-			V2<TYPE> ray = (B - A) * r;
+		TYPE ab, cd;
+		if (rayIntersection(A, B, C, D, ab, cd)) {
+			V2<TYPE> ray = (B - A) * ab;
 			dist = ray.magnitude();
 			point = A + ray;
-			return ( (r > 0) && (r < 1) && (s > 0) && (s < 1) );
+			return ( (ab > 0) && (ab < 1) && (cd > 0) && (cd < 1) );
 		}
 		return false;
 	}
 
 	/**
-	* @param A,B line 1
-	* @param C,D line 2
+	* @param A start of line AB
+	* @param B end of line AB
+	* @param C start of line CD
+	* @param D end of line CD
 	* @param out_alongAB __OUT how far along AB (percentage) the collision happened
 	* @param out_alongCD __OUT how far along CD (percentage) the collision happened
 	* @return false if parallel, true otherwise
 	*/
-	static bool rayIntersection(const V2<TYPE> & A, const V2<TYPE> & B,
-		const V2<TYPE> & C, const V2<TYPE> & D, 
+	static bool rayIntersection(const V2<TYPE> & A, const V2<TYPE> & B, const V2<TYPE> & C, const V2<TYPE> & D, 
 		TYPE & out_alongAB, TYPE & out_alongCD)
 	{
-		TYPE rTop = (A.y - C.y)*(D.x - C.x) - (A.x - C.x)*(D.y - C.y);
-		TYPE rBot = (B.x - A.x)*(D.y - C.y) - (B.y - A.y)*(D.x - C.x);
-		TYPE sTop = (A.y - C.y)*(B.x - A.x) - (A.x - C.x)*(B.y - A.y);
-		TYPE sBot = (B.x - A.x)*(D.y - C.y) - (B.y - A.y)*(D.x - C.x);
-		if ((rBot == 0) || (sBot == 0)) {
-			//lines are parallel
-			return false;
+		TYPE abTop = (A.y - C.y)*(D.x - C.x) - (A.x - C.x)*(D.y - C.y);
+		TYPE abBot = (B.x - A.x)*(D.y - C.y) - (B.y - A.y)*(D.x - C.x);
+		TYPE cdTop = (A.y - C.y)*(B.x - A.x) - (A.x - C.x)*(B.y - A.y);
+		TYPE cdBot = (B.x - A.x)*(D.y - C.y) - (B.y - A.y)*(D.x - C.x);
+		if ((abBot == 0) || (cdBot == 0)) {
+			return false; // lines are parallel
 		}
-		out_alongAB = rTop / rBot; // how far along AB the collision happened
-		out_alongCD = sTop / sBot; // how far along CD the collision happened
+		out_alongAB = abTop / abBot; // how far along AB the collision happened
+		out_alongCD = cdTop / cdBot; // how far along CD the collision happened
 		return true;
 	}
 
@@ -580,27 +535,30 @@ struct V2 {
 
 	/**
 	 * @param a_out_closestPoint will be closest point to a_point on line AB
-	 * @return true if a_out_closestPoint is actually on line AB
+	 * @return true if a_out_closestPoint is actually on line AB, false if parallel or not on line
 	 */
 	static bool closestPointOnLine(const V2<TYPE> & A, const V2<TYPE> & B, 
 		const V2<TYPE> & a_point, V2<TYPE> & a_out_closestPoint)
 	{
-		V2<TYPE> r = B.difference(A).perp();
-		V2<TYPE> d = r.product(2).sum(a_point);
-		V2<TYPE> c = a_point.difference(r);
-		TYPE dist;
-		bool intersected = lineIntersection(A, B, c, d, dist, a_out_closestPoint);
+		V2<TYPE> perp = (B - A).perp();
+		float percentOfAB, percentOfCD;
+		bool intersected = rayIntersection(A, B, a_point, a_point + perp, percentOfAB, percentOfCD);
+		if (!intersected)
+			return false;
+		intersected = percentOfAB > 0 && percentOfAB < 1; // true only if point is on the given line
+		a_out_closestPoint = A + ((B - A) * percentOfAB);
 		return intersected;
 	}
 
 	/** @return if circle (a_point,a_radius) crosses line (A,B) */
 	static bool lineCrossesCircle(const V2<TYPE> & A, const V2<TYPE> & B, 
-		const V2<TYPE> & a_point, const TYPE a_radius, V2<TYPE> & a_out_closePoint)
+		const V2<TYPE> & a_center, const TYPE a_radius, V2<TYPE> & a_out_closePoint)
 	{
-		bool connectionOnLine = closestPointOnLine(A, B, a_point, a_out_closePoint);
-		return(connectionOnLine && a_out_closePoint.distance(a_point) <= a_radius)
-			|| a_point.distance(A) < a_radius
-			|| a_point.distance(B) < a_radius;
+		V2<TYPE> radiusDirection = (B - A).perp();
+		radiusDirection.normalize();
+		float lineDist, radiusDist;
+		rayIntersection(A, B, a_center, a_center + radiusDirection, lineDist, radiusDist);
+		return (radiusDist <= radius);
 	}
 
 	/**
@@ -664,23 +622,6 @@ struct V2 {
 		return velocityDotProduct;
 	}
 
-	// overloaded operators
-	V2<TYPE> operator-()const{return this->getReverse();}
-	V2<TYPE> operator+(V2<TYPE> const & rhs)const{return sum(rhs);}
-	V2<TYPE> operator-(V2<TYPE> const & rhs)const{return difference(rhs);}
-	V2<TYPE> operator*(V2<TYPE> const & rhs)const{ return product(rhs); }
-	V2<TYPE> operator/(V2<TYPE> const & rhs)const{ return quotient(rhs); }
-	V2<TYPE> operator*(TYPE const rhs)const{ return product(rhs); }
-	V2<TYPE> operator/(TYPE const rhs)const{ return quotient(rhs); }
-	bool operator==(V2<TYPE> const & rhs) const{return isEqual(rhs);}
-	bool operator!=(V2<TYPE> const & rhs) const{return !isEqual(rhs);}
-	V2<TYPE> operator+=(V2<TYPE> const & rhs){ return add(rhs); }
-	V2<TYPE> operator-=(V2<TYPE> const & rhs){ return subtract(rhs); }
-	V2<TYPE> operator*=(V2<TYPE> const & rhs){ return multiply(rhs); }
-	V2<TYPE> operator/=(V2<TYPE> const & rhs){ return divide(rhs); }
-	V2<TYPE> operator*=(TYPE const rhs){ return multiply(rhs); }
-	V2<TYPE> operator/=(TYPE const rhs){ return divide(rhs); }
-
 #ifdef __GL_H__
 // OpenGL specific functions
 
@@ -716,12 +657,11 @@ struct V2 {
 		glEnd();
 	}
 
-	bool glDrawTo(const V2<TYPE> & a_next) const {
+	void glDrawTo(const V2<TYPE> & a_next) const {
 		glBegin(GL_LINES);
 		glVertex();
 		a_next.glVertex();
 		glEnd();
-		return true;
 	}
 
 	/**
