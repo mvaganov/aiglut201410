@@ -5,19 +5,23 @@
 #include <stdio.h>
 #include <GL/freeglut.h>
 #include "codegiraffe/glutrenderingcontext.h"
+#include "game.h"
 
 /** the screen pixels, cartesian plane min, cartesian plane max */
 GLUTRenderingContext g_screen(V2f(600, 600), V2f(-3.0, -3.0), V2f(8.0, 8.0));
 /** whether or not to keep running the game loop */
 bool g_gameLoopRunning = true;
 
+
+Game g_game;
+
 /**
-* @param key what keyboard key was pressed (ASCII codes)
-* @param x/y where the mouse was at the time
-* @note: the following may be helpful:<code>
-int state=glutGetModifiers();
-if (state & GLUT_ACTIVE_SHIFT)	// shift is pressed</code>
-*/
+ * @param key what keyboard key was pressed (ASCII codes)
+ * @param x/y where the mouse was at the time
+ * @note: the following may be helpful:<code>
+ int state=glutGetModifiers();
+ if (state & GLUT_ACTIVE_SHIFT)	// shift is pressed</code>
+ */
 void keyboard(unsigned char key, int x, int y) {
 	switch (key) {
 	case 27:	g_gameLoopRunning = false;  break;
@@ -48,23 +52,41 @@ void mouse(int button, int state, int x, int y) {
 		case GLUT_UP:   g_screen.scrollStop(click);  break;
 		}
 		break;
+	case GLUT_LEFT_BUTTON:
+		if(state == GLUT_DOWN) {
+			Agent * a = g_game.getAgentAt(click);
+			if(a != NULL) {
+				g_game.selected = a;
+			} else {
+				g_game.mouseClick = click;
+				if(g_game.selected != NULL) {
+					V2f delta = click - g_game.selected->body.center;
+					delta.normalize();
+					g_game.selected->velocity = delta;
+				}
+			}
+		}
+		break;
 	}
 	glutPostRedisplay();
 }
 
 /** @param x/y the coordinate of where the mouse is */
 void passiveMotion(int x, int y) {
+	g_game.mousePosition = g_screen.convertPixelsToCartesian(V2f((float)x, (float)y));
 }
 
 /** @param x/y the coordinate of where the mouse is being dragged */
 void draggedMotion(int x, int y) {
 	V2f drag = g_screen.convertPixelsToCartesian(V2f((float)x, (float)y));
 	g_screen.scrollDrag(drag);
+	g_game.mouseDragged = drag;
 	glutPostRedisplay();
 }
 
 /** how many milliseconds have passed since the last time update was called */
 void update(int a_ms) {
+	g_game.update(a_ms);
 }
 
 void display() {
@@ -76,8 +98,7 @@ void display() {
 	g_screen.setColor(0x888888); // gray
 	g_screen.drawPlanarAxis(-0.2f);			// draw the cartisian plane
 
-	g_screen.setColor(0x000000); // black
-	g_screen.printf(V2f(1, 1), "Hello!\nWorld!");
+	g_game.display(g_screen);
 
 	glFlush();						// print everything to the (off?) screen buffer
 	glutSwapBuffers();				// swap the draw buffers

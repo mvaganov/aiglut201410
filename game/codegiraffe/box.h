@@ -85,7 +85,7 @@ struct Box {
 		return Circle<TYPE>(center, size.magnitude() / 2);
 	}
 
-	V2<TYPE> getClosestPointOnEdge(V2<TYPE> const point, V2<TYPE> & out_normal) {
+	V2<TYPE> getClosestPointOnEdge(V2<TYPE> const point, V2<TYPE> & out_normal) const {
 		AABB<TYPE> aabb = getLocalSpaceAABB();
 		V2<TYPE> yAxis, xAxis;
 		calculateAxis(xAxis, yAxis);
