@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>
+#include "random.h"
 
 // PI constants redefined to reduce dependency on weird _USE_MATH_DEFINES issues
 const double V_PI = 3.14159265358979323846;
@@ -625,8 +626,8 @@ struct V2 {
 	static V2<TYPE> randomUnitVector() {
 		V2<TYPE> r;
 		do {
-			r.x = (float)((rand() & 0x7fffffff) - (rand() & 0x7fffffff));
-			r.y = (float)((rand() & 0x7fffffff) - (rand() & 0x7fffffff));
+			r.x = Random::PRNGf(-1, 1);
+			r.y = Random::PRNGf(-1, 1);
 		} while (r.isZero());
 		return r.normal();
 	}

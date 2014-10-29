@@ -16,9 +16,6 @@ public:
 	/** who does the user have selected */
 	Agent * selected;
 
-	/** @return a random number form 0 to 1*/
-	float randomFrom0to1() { return (rand() % 10000) / (float)10000; }
-
 	Agent * getAgentAt(V2f const & click) {
 		for(int i = 0; i < agents.size(); ++i) {
 			if(agents[i]->body.contains(click))
@@ -38,12 +35,12 @@ public:
 		obstacles.add(new BoxObject(box));
 
 		for(int i = 0; i < agentCount; ++i) {
-			float extraRadius = randomFrom0to1()*0.5f;
-			CircF c(randomFrom0to1()*5, randomFrom0to1()*5, .1f + extraRadius);
+			float extraRadius = Random::PRNGf()*0.5f;
+			CircF c(Random::PRNGf() * 5, Random::PRNGf() * 5, .1f + extraRadius);
 			Agent * a = new Agent(c);
 			a->direction = V2f::randomUnitVector();
 			a->velocity = a->direction;
-			a->color = (long)(0x1000000 * randomFrom0to1());
+			a->color = Random::PRNG() & 0xffffff;
 			agents.add(a);
 		}
 	}
