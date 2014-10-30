@@ -32,6 +32,15 @@ vec2 seek(vec2 target, Agent agent) {
 // steering behavior namespace
 // flee
 // player attacks with dangerous projectiles
+// destroying objects and managing memory
+/*
+	...
+	#include <crtdbg.h>
+	int main(int argc, char * argv[]) {
+		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	...
+*/
+// agents collide with obstacles
 // random-walk
 // multiple ai
 // ai seeks plyaer and flees projectiles
