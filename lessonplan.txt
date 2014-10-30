@@ -4,43 +4,43 @@ aiglut201410
 a C / C++ game using freeGLUT. Intended for student use, using Microsoft Visual Studio (Express) 2012 or higher.
 
 lesson plan TODO:
-//---wk1day1 --- basic display/input/update loop, display/update list
+//---wk1day1 --- new project!
+// basic game loop (display/input/update)
 // draw colored lines and circle
 // mouse and key input
 // draw line, circle, rect, box
 // test contains for circle, rect, box
-// create drawable, updatable lists
+// create list of objects using polymorphism
+// create random list of agents
+// RNG
 // create and draw agents
 // select agents with mouse
-// player controlled vs ai controlled agent
-// or player controlled agent, set velocity with key presses and/or mouse
-	// turn and strafe with key presses
-// game loop
-// agent collision against collidable list
+// set velocity of selected agent (separate from direction)
 
 //---wk1day2 --- basic steering behavior
-// steering behavior namespace
+// changing the direction of agents to match velocity
+// vector practice - make agents look different (radius pointing in dir, googly eyes, with beaks, other?)
 // player moves (seek)
 /*
-vec2 seek(vec2 target, Agent agent)	{
+vec2 seek(vec2 target, Agent agent) {
 	vec2 desired = target - agent.position;
 	desired *= agent.maxSpeed / desired.mag();
 	vec2 force = desired - agent.velocity;
 	return force * (agent.maxForce / agent.maxSpeed);
 }
 */
+// steering behavior namespace
 // flee
 // player attacks with dangerous projectiles
-// ai random-walks
+// random-walk
 // multiple ai
-// ai seeks/flees
+// ai seeks plyaer and flees projectiles
 	// pursue
 	// evade
 	// offset pursuit
 // player deals damage to ai
 // ai gets killed
 // ai respawns
-// ai flees projectiles
 
 //---wk2day3 --- fuzzy state machines for multiple steering impulses
 // player moves (arrive)
