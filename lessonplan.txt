@@ -29,10 +29,11 @@ vec2 seek(vec2 target, Agent agent) {
 	return force * (agent.maxForce / agent.maxSpeed);
 }
 */
-// steering behavior namespace
-// flee
+// agents collide with obstacles
 // player attacks with dangerous projectiles
 // destroying objects and managing memory
+// player deals damage to ai
+// ai gets killed
 /*
 	...
 	#include <crtdbg.h>
@@ -40,15 +41,14 @@ vec2 seek(vec2 target, Agent agent) {
 		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	...
 */
-// agents collide with obstacles
+// flee
+// steering behavior namespace
 // random-walk
 // multiple ai
 // ai seeks plyaer and flees projectiles
 	// pursue
 	// evade
 	// offset pursuit
-// player deals damage to ai
-// ai gets killed
 // ai respawns
 
 //---wk2day3 --- fuzzy state machines for multiple steering impulses
@@ -140,9 +140,11 @@ vec2 Alignment(Agent agent, List<Agent> neighbors) {
 
 //---wk5day9 --- midterm
 
-//---wk6day10 --- group project
-	//group project
-	//markov chain
+//---wk6day10 --- game project pep talk
+	//game project
+		// implement your own steering behaviors (seek, flee, arrive, obstacle avoidance, path finding with A*)
+		// pusruit, evasion, hide, flocking
+	// markov chain
 
 //---wk6day11 --- behavior trees
 //---wk7day12 --- genetic algorithm, gini impurity, neural network
