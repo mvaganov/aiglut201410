@@ -1,5 +1,6 @@
 #pragma once
 
+#include <GL/freeglut.h>
 #include "codegiraffe/v2.h"
 #include "codegiraffe/circle.h"
 #include "codegiraffe/box.h"
@@ -14,14 +15,14 @@ public:
 		float & out_dist, V2f & out_point, V2f & out_normal) const = 0;
 	virtual V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const = 0;
 	virtual void glDraw(bool filled) const = 0;
+	virtual void resolveCollision(Obstacle * o) = 0;
 };
 
 class CircleObject : public Obstacle, public CircF {
 public:
 	CircleObject(CircF c):CircF(c){}
-	bool intersects(const Obstacle * o) const {
-		return false; // TODO
-	}
+	bool intersects(const Obstacle * o) const;
+	// this method needs BoxObject to be defined before the method can be defined
 	bool contains(V2f const & p) const { return CircF::contains(p); }
 	bool raycast(V2f const & rayStart, V2f const & rayDirection,
 		float & out_dist, V2f & out_point, V2f & out_normal) const {
@@ -31,14 +32,13 @@ public:
 		return CircF::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { CircF::glDraw(filled); }
+	void resolveCollision(Obstacle * o){}
 };
 class BoxObject : public Obstacle, public BoxF {
 public:
 	BoxObject(BoxF b):BoxF(b){}
 	BoxObject(RectF r):BoxF(r.getCenter(), r.getDimension(), 0){}
-		bool intersects(const Obstacle * o) const {
-		return false; // TODO
-	}
+	bool intersects(const Obstacle * o) const;
 	bool contains(V2f const & p) const {return BoxF::contains(p); }
 	bool raycast(V2f const & rayStart, V2f const & rayDirection,
 		float & out_dist, V2f & out_point, V2f & out_normal) const {
@@ -48,4 +48,5 @@ public:
 		return BoxF::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { BoxF::glDraw(filled); }
+	void resolveCollision(Obstacle * o){}
 };

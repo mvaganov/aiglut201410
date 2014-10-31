@@ -24,6 +24,9 @@ public:
 		return 0;
 	}
 
+// helpful for finding memory by it's ID number (thanks _CrtSetDbgFlag!)
+#define TRACE_MEMORY(mem, debugmessage) printf("memID %d is %s\n", ((int*)mem)[-2], debugmessage)
+
 	Game() {
 		selected = NULL;
 		int agentCount = 10;
@@ -31,17 +34,39 @@ public:
 		RectF aabb(V2f(0, 5), V2f(3, 2));
 		BoxF box(V2f(5,1), V2f(1,3), (float)V_PI / 8);
 		obstacles.add(new CircleObject(testCircle));
+		TRACE_MEMORY(obstacles.getLast(), "circle object");
 		obstacles.add(new BoxObject(aabb));
+		TRACE_MEMORY(obstacles.getLast(), "aabb object");
 		obstacles.add(new BoxObject(box));
+		TRACE_MEMORY(obstacles.getLast(), "box object");
 
 		for(int i = 0; i < agentCount; ++i) {
 			float extraRadius = Random::PRNGf()*0.5f;
 			CircF c(Random::PRNGf() * 5, Random::PRNGf() * 5, .1f + extraRadius);
 			Agent * a = new Agent(c);
+			TRACE_MEMORY(a, "agent");
 			a->direction = V2f::randomUnitVector();
-			a->velocity = a->direction;
+			a->maximumSpeed = Random::PRNGf(.1f, 2);
+			a->maximumForce = Random::PRNGf(.1f, 10);
+			a->velocity = a->direction * a->maximumSpeed;
 			a->color = Random::PRNG() & 0xffffff;
+
 			agents.add(a);
+			obstacles.add(a);
+		}
+	}
+	~Game() {
+		//for(int i = 0; i < agents.size(); ++i) {
+		for(int i = agents.size()-1; i >= 0; --i) {
+			Agent * a = agents[i];
+			agents.removeData(a);
+			obstacles.removeData(a);
+			delete a;
+		}
+		for(int i = obstacles.size()-1; i >= 0; --i) {
+			Obstacle * o = obstacles[i];
+			obstacles.removeData(o);
+			delete o;
 		}
 	}
 	void display(GLUTRenderingContext & g_screen) {
@@ -81,10 +106,36 @@ public:
 		for(int i = 0; i < agents.size(); ++i) {
 			agents[i]->draw(g_screen);
 		}
+		if(selected != NULL) {
+			g_screen.setColor(0x00ff00);
+			g_screen.drawCircle(selected->body.center, selected->body.radius+.1f, false);
+		}
 	}
 	void update(int a_ms) {
 		for(int i = 0; i < agents.size(); ++i) {
 			agents[i]->update(a_ms);
+		}
+		for(int a = 0; a < agents.size(); a++) {
+			for(int b = 0; b < obstacles.size(); ++b) {
+				if(agents[a] != obstacles[b]
+				&& agents[a]->intersects(obstacles[b])) {
+					agents[a]->resolveCollision(obstacles[b]);
+					V2f normal;
+					V2f closestPoint = obstacles[b]->getClosestPointOnEdge(
+						agents[a]->body.center, normal);
+					agents[a]->body.center = 
+						closestPoint + normal * agents[a]->body.radius;
+				}
+			}
+		}
+		for(int i = agents.size()-1; i >= 0; --i) {
+			if(!agents[i]->alive) {
+				Agent * a = agents[i];
+				// remove it from the obstacle list too
+				obstacles.removeData(a);
+				agents.removeData(a);
+				delete a;
+			}
 		}
 	}
 };

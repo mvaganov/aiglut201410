@@ -77,7 +77,7 @@ struct Box {
 		V2<TYPE> point;
 #endif
 		point = c.center.toLocalSpace(xAxis, yAxis, center);
-		return Circle<TYPE>::intersects(point, c.radius, aabb.m_min, aabb.m_max);
+		return Circle<TYPE>::intersects(point, c.radius, aabb.min, aabb.max);
 	}
 
 

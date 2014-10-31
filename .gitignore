@@ -41,12 +41,12 @@ ExportedObj/
 *.csproj
 *.pidb
 *.suo
-*.sln
 *.user
 *.unityproj
 *.booproj
-*.vcxproj
-*.vcxproj.filters
+#*.sln
+#*.vcxproj
+#*.vcxproj.filters
  
 # ============ #
 # OS generated #

@@ -183,7 +183,7 @@ public:
 
 	/** @return the index of the first appearance of a_value in this vector. uses == */
 	int indexOf(DATA_TYPE const & a_value) const {
-		return TemplateArray<DATA_TYPE>::indexOf(a_vaule, 0, m_size);
+		return TemplateArray<DATA_TYPE>::indexOf(a_value, 0, m_size);
 	}
 
 	/** @return index of 1st a_value at or after a_startingIndex. uses == */
@@ -255,9 +255,17 @@ public:
 		return aTermWasRemoved;
 	}
 
-	/** @param a_value first appearance is removed. breaks if not in list */
-	void removeData(DATA_TYPE const & a_value) {
-		remove(indexOf(a_value));
+	/**
+	 * @param a_value first appearance is removed. 
+	 * @return if data was removed
+	 */
+	bool removeData(DATA_TYPE const & a_value) {
+		int index = indexOf(a_value);
+		if(index >= 0) {
+			remove(index);
+			return true;
+		}
+		return false;
 	}
 
 	/** destructor */

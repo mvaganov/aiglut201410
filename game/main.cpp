@@ -6,6 +6,7 @@
 #include <GL/freeglut.h>
 #include "codegiraffe/glutrenderingcontext.h"
 #include "game.h"
+#include "bullet.h"
 
 /** the screen pixels, cartesian plane min, cartesian plane max */
 GLUTRenderingContext g_screen(V2f(600, 600), V2f(-3.0, -3.0), V2f(8.0, 8.0));
@@ -25,6 +26,17 @@ Game g_game;
 void keyboard(unsigned char key, int x, int y) {
 	switch (key) {
 	case 27:	g_gameLoopRunning = false;  break;
+	case ' ':
+		{
+			Agent * a = g_game.selected;
+			if(a != NULL) {
+				Agent * bullet = new Bullet(CircF(a->body.center, 0.2f),
+					a->direction, 10);
+				bullet->parent = a;
+				g_game.agents.add(bullet);
+			}
+		}
+		break;
 	}
 	glutPostRedisplay();
 }
@@ -58,11 +70,14 @@ void mouse(int button, int state, int x, int y) {
 			if(a != NULL) {
 				g_game.selected = a;
 			} else {
-				g_game.mouseClick = click;
+//				g_game.mouseClick = click;
 				if(g_game.selected != NULL) {
-					V2f delta = click - g_game.selected->body.center;
+					a = g_game.selected;
+					V2f delta = click - a->body.center;
 					delta.normalize();
-					g_game.selected->velocity = delta;
+					//a->velocity = delta * a->maximumSpeed;
+					a->direction = delta; // normalized move vector
+					a->targetPosition = click;
 				}
 			}
 		}
@@ -121,7 +136,11 @@ void init(const char * windowName) {
 	glClearColor(1, 1, 1, 0); // set default backgorund color to white
 }
 
+
+#include <crtdbg.h>
 int main(int argc, char * argv[]) {
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
 	// initialize GLUT
 	glutInit(&argc, argv);
 	// initialize the application

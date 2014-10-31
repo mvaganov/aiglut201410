@@ -318,9 +318,32 @@ struct V2 {
 		set(x0, y0);
 	}
 
-	/** @param a_degreePiRadians in piRadians */
+	/**
+	 * modifies the vector
+	 * @param a_degreePiRadians in piRadians
+	 */
 	void rotate(const TYPE a_degreePiRadians) {
 		rotate(V2<TYPE>(cos(a_degreePiRadians), sin(a_degreePiRadians)));
+	}
+
+	/**
+	 * does not modify the calling vector, it returns a vector just like this one after a rotation
+	 * @param a_degreePiRadians in piRadians
+	 */
+	V2<TYPE> rotated(const TYPE a_degreePiRadians) {
+		V2<TYPE> result(*this);
+		result.rotate(V2<TYPE>(cos(a_degreePiRadians), sin(a_degreePiRadians)));
+		return result;
+	}
+
+	/**
+	 * does not modify the calling vector, it returns a vector just like this one after a rotation
+	 * @param a_normal cos(theta), sin(theta) as x,y values
+	 */
+	void rotated(const V2<TYPE> & a_normal) {
+		V2<TYPE> result(*this);
+		result.rotate(a_normal);
+		return result;
 	}
 
 	/**
