@@ -15,7 +15,10 @@ public:
 		float & out_dist, V2f & out_point, V2f & out_normal) const = 0;
 	virtual V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const = 0;
 	virtual void glDraw(bool filled) const = 0;
-	virtual void resolveCollision(Obstacle * o) = 0;
+	/** @return a data structure that identifies how this object should resolve collision with the given otherObject */
+	virtual void * calculateCollisionResolution(Obstacle * otherObject) = 0;
+	/** @param collisionData the result of calculateCollisionResolution. If memory is allocated, this method should de-allocate it */
+	virtual void resolveCollision(Obstacle * otherObject, void * collisionData) = 0;
 };
 
 class CircleObject : public Obstacle, public CircF {
@@ -32,7 +35,8 @@ public:
 		return CircF::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { CircF::glDraw(filled); }
-	void resolveCollision(Obstacle * o){}
+	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
+	void resolveCollision(Obstacle * o, void * collisionData){}
 };
 class BoxObject : public Obstacle, public BoxF {
 public:
@@ -48,5 +52,6 @@ public:
 		return BoxF::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { BoxF::glDraw(filled); }
-	void resolveCollision(Obstacle * o){}
+	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
+	void resolveCollision(Obstacle * o, void * collisionData){}
 };

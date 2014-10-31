@@ -23,6 +23,8 @@ public:
 	V2f acceleration;
 	/** where the agent is thinking about for steering behaviors */
 	V2f targetPosition;
+	/** used for physics and collision calculations */
+	float mass;
 
 	/** where did  this agent come from? */
 	void * parent;
@@ -38,7 +40,7 @@ public:
 
 	Agent(CircF circle)
 		:body(circle),direction(V2f::ZERO_DEGREES()),agentLook(LOOK_BEAK),parent(NULL),
-		behavior(BEHAVIOR_SEEK),alive(true)
+		behavior(BEHAVIOR_SEEK), alive(true), mass(1)
 	{}
 
 	virtual void update(int a_ms) {
@@ -131,5 +133,22 @@ public:
 		return body.getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { body.glDraw(filled); }
-	void resolveCollision(Obstacle * o){}
+	// TODO also calculate transfer of momentum, and reflection
+	void * calculateCollisionResolution(Obstacle * otherObject){ 
+		float myResponsibilityToMove = 1;
+		Agent * a = dynamic_cast<Agent*>(otherObject);
+		if (a != NULL) {
+			myResponsibilityToMove = mass / (a->mass + mass);
+		}
+		V2f normal;
+		V2f closestPoint = otherObject->getClosestPointOnEdge(body.center, normal);
+		V2f positionToClipTo = closestPoint + normal * body.radius;
+		V2f clipDelta = positionToClipTo - body.center;
+		return new V2f(clipDelta * myResponsibilityToMove);
+	}
+	void resolveCollision(Obstacle * o, void * collisionData) {
+		V2f * push = (V2f*)collisionData;
+		body.center += *push;
+		delete push;
+	}
 };

@@ -49,8 +49,8 @@ public:
 			a->maximumSpeed = Random::PRNGf(.1f, 2);
 			a->maximumForce = Random::PRNGf(.1f, 10);
 			a->velocity = a->direction * a->maximumSpeed;
+			a->mass = Random::PRNGf(.1f, 100);
 			a->color = Random::PRNG() & 0xffffff;
-
 			agents.add(a);
 			obstacles.add(a);
 		}
@@ -112,22 +112,37 @@ public:
 		}
 	}
 	void update(int a_ms) {
+		// update agents by specified amount of time
 		for(int i = 0; i < agents.size(); ++i) {
 			agents[i]->update(a_ms);
 		}
+		// detect and calculate collisions
+		struct obstaclecollision {
+			// TODO check-for and handle multiple collisions to the same obstacle
+			Obstacle * a;
+			Obstacle * b;
+			void * howAWillRespond;
+		};
+		TemplateVector<obstaclecollision> collisions;
 		for(int a = 0; a < agents.size(); a++) {
 			for(int b = 0; b < obstacles.size(); ++b) {
 				if(agents[a] != obstacles[b]
 				&& agents[a]->intersects(obstacles[b])) {
-					agents[a]->resolveCollision(obstacles[b]);
-					V2f normal;
-					V2f closestPoint = obstacles[b]->getClosestPointOnEdge(
-						agents[a]->body.center, normal);
-					agents[a]->body.center = 
-						closestPoint + normal * agents[a]->body.radius;
+					obstaclecollision collision = { 
+						agents[a], obstacles[b],
+						agents[a]->calculateCollisionResolution(obstacles[b]),
+					};
+					collisions.add(collision);
 				}
 			}
 		}
+		// resolve collision seperately, so that one resolved collision will not impact others mid-loop
+		for (int i = 0; i < collisions.size(); ++i) {
+			obstaclecollision collision = collisions[i];
+			if (collision.howAWillRespond)
+				collision.a->resolveCollision(collision.b, collision.howAWillRespond);
+		}
+		// garbage collection
 		for(int i = agents.size()-1; i >= 0; --i) {
 			if(!agents[i]->alive) {
 				Agent * a = agents[i];
