@@ -89,8 +89,8 @@ public:
 		case LOOK_BEAK:
 			{
 				V2f right = direction * body.radius;
-				V2f top = right.rotated(V_PI / 4);
-				V2f bottom = right.rotated(-V_PI / 4);
+				V2f top = right.rotated((float)V_PI / 4);
+				V2f bottom = right.rotated((float)-V_PI / 4);
 				float rr = body.radius * body.radius;
 				float squareDiagonal = sqrt( rr + rr );
 				right = direction * squareDiagonal;
