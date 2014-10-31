@@ -44,9 +44,9 @@ ExportedObj/
 *.user
 *.unityproj
 *.booproj
-#*.sln
-#*.vcxproj
-#*.vcxproj.filters
+*.sln
+*.vcxproj
+*.vcxproj.filters
  
 # ============ #
 # OS generated #
