@@ -21,8 +21,10 @@ public:
 			this->alive = false;
 		}
 	}
-
-	void resolveCollision(Obstacle * o) {
+	void * calculateCollisionResolution(Obstacle * otherObject) {
+		return (void*)true;
+	}
+	void resolveCollision(Obstacle * o, void * collisionData) {
 		if(o != parent) {
 			this->alive = false;
 			Agent * a = dynamic_cast<Agent *>(o);
