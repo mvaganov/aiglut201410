@@ -41,6 +41,8 @@ vec2 seek(vec2 target, Agent agent) {
 		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	...
 */
+
+//---wk2day3 --- fuzzy state machines for multiple steering impulses
 // flee
 // steering behavior namespace
 // random-walk
@@ -50,8 +52,6 @@ vec2 seek(vec2 target, Agent agent) {
 	// evade
 	// offset pursuit
 // ai respawns
-
-//---wk2day3 --- fuzzy state machines for multiple steering impulses
 // player moves (arrive)
 /*
 float stopDistance(float speed, float acceleration) {
