@@ -65,9 +65,11 @@ vec2 arrive(vec2 target, Agent agent, int a_ms) {
 */
 // ai conflicting ai moves
 // fuzzy logic
-// state machine
+// introduce finite state machine
+// begin implementing finite state machine
 
 //---wk2day4 --- environment aware steering behaviors (more fuzzy logic)
+// implement finite state machine
 // obstacles
 // obstacle collision detection
 // ai avoid obstacles
