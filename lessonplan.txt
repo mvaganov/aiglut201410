@@ -65,7 +65,7 @@ vec2 arrive(vec2 target, Agent agent, int a_ms) {
 */
 // ai conflicting ai moves
 // fuzzy logic
-	// context map?
+// state machine
 
 //---wk2day4 --- environment aware steering behaviors (more fuzzy logic)
 // obstacles
