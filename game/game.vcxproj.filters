@@ -5,17 +5,20 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="codegiraffe">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="agent.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bullet.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="game.h">
@@ -24,34 +27,46 @@
     <ClInclude Include="obstacles.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="codegiraffe\aabb.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\box.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\circle.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\glutrenderingcontext.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\random.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\templatearray.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\templatevector.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\v2.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
     <ClInclude Include="steering.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="bullet.h">
+    <ClInclude Include="codegiraffe\aabb.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\box.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\circle.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\glutrenderingcontext.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\random.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\templatearray.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\templatevector.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\v2.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_followagent.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_idle.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_wander.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_fleebullets.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -59,19 +74,34 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="codegiraffe\circle.cpp">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
-    <ClCompile Include="codegiraffe\glutrenderingcontext.cpp">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
-    <ClCompile Include="codegiraffe\random.cpp">
-      <Filter>Resource Files</Filter>
+    <ClCompile Include="obstacles.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="steering.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="obstacles.cpp">
+    <ClCompile Include="codegiraffe\circle.cpp">
+      <Filter>codegiraffe</Filter>
+    </ClCompile>
+    <ClCompile Include="codegiraffe\glutrenderingcontext.cpp">
+      <Filter>codegiraffe</Filter>
+    </ClCompile>
+    <ClCompile Include="codegiraffe\random.cpp">
+      <Filter>codegiraffe</Filter>
+    </ClCompile>
+    <ClCompile Include="agent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_followagent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_idle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_wander.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_fleebullets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
