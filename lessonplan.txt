@@ -43,14 +43,12 @@ vec2 seek(vec2 target, Agent agent) {
 */
 
 //---wk2day3 --- fuzzy state machines for multiple steering impulses
-// flee
-// steering behavior namespace
-// random-walk <-- student assignment
-// ai seeks plyaer and flees projectiles
-	// pursue
-	// evade
-	// offset pursuit
-// player moves (arrive) <-- student assignment
+// ai seeks player and flees projectiles
+// flee <-- student assignment (not just the opposite of seek! steering force away from target)
+// random-walk <-- student assignment (agents "move randomly" in gameworld)
+// pursue <-- student assignment (agents move toward where their target is going-to-be)
+// evade <-- student assignment (agents move away from where their target is going-to-be)
+// arrive <-- student assignment (agent seeks, but stops at target location)
 /*
 float stopDistance(float speed, float acceleration) {
 	return (speed*speed)/(2*acceleration);
@@ -63,19 +61,16 @@ vec2 arrive(vec2 target, Agent agent, int a_ms) {
 	}
 }
 */
-// ai conflicting ai moves
+// deciding which steering behavior to use at runtime
 // fuzzy logic
-// introduce finite state machine
-// begin implementing finite state machine
 
-//---wk2day4 --- environment aware steering behaviors (more fuzzy logic)
-// implement finite state machine
+//---wk2day4 --- environment aware steering behaviors
 // obstacles
 // obstacle collision detection
 // ai avoid obstacles
 	// ai avoid other ai agents
 	// ai try to keep some sort of comfort zone
-// ai flee behind cover when low on HP
+// hide <-- student assignment (ai flee behind cover when low on HP)
 
 //---wk3day5 --- finite state machines
 // ai follows you when you get in range
