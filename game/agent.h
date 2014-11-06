@@ -81,15 +81,17 @@ public:
 
 	void updateMovement(int a_ms) {
 		if (a_ms != 0) {
-			acceleration.truncate(maximumForce);
-			// check the speed, to adjust acceleration so that it doesn't break the speed limit
-			float currentSpeed = velocity.magnitude();
-			if (currentSpeed > maximumSpeed) {
-				// reduce the acceleration by what it would be contributing to the speed
-				V2f vDir = velocity / currentSpeed;
-				float accelAlignmentWithVelocity = V2f::dot(vDir, acceleration);
-				if (accelAlignmentWithVelocity > 0) {
-					acceleration -= vDir * accelAlignmentWithVelocity;
+			if (!acceleration.isZero()) {
+				acceleration.truncate(maximumForce);
+				// check the speed, to adjust acceleration so that it doesn't break the speed limit
+				float currentSpeed = velocity.magnitude();
+				if (currentSpeed > maximumSpeed) {
+					// reduce the acceleration by what it would be contributing to the speed
+					V2f vDir = velocity / currentSpeed;
+					float accelAlignmentWithVelocity = V2f::dot(vDir, acceleration);
+					if (accelAlignmentWithVelocity > 0) {
+						acceleration -= vDir * accelAlignmentWithVelocity;
+					}
 				}
 			}
 			velocity += acceleration * (float)a_ms / 1000.0f;
