@@ -15,3 +15,23 @@ V2f seek(V2f target, Agent * agent) {
 	return force * (agent->maximumForce / agent->maximumSpeed);
 //}
 }
+
+V2f stop(Agent * agent, int a_ms) {
+	if(!agent->velocity.isZero()) {
+		V2f v = agent->velocity;
+		if (a_ms != 0) {
+			V2f perfectAccelToStop = -v * 1000 / a_ms;
+			float mag = perfectAccelToStop.magnitude();
+			if(mag <= agent->maximumForce)
+				return perfectAccelToStop;
+		}
+		return -v * (agent->maximumForce / v.magnitude());
+	}
+	return V2f::ZERO();
+}
+
+V2f flee(V2f target, Agent * agent) {
+	V2f fleeAccel = -seek(target, agent);
+//	if(fleeAccel.magnitude() > agent->maximumSpeed)
+	return fleeAccel;
+}

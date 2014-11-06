@@ -190,7 +190,7 @@ struct V2 {
 	 * @param a_maxLength x and y adjusts so that the magnitude does not exceed this
 	 */
 	void truncate(const TYPE a_maxLength) {
-		TYPE mm = magnitude();
+		TYPE m = magnitude();
 		if (m > a_maxLength) {
 			// "x = (x * a_maxLength) / l" is more precise than "x *= (a_maxLength/l)"
 			x = (x * a_maxLength) / m;

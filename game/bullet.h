@@ -4,9 +4,10 @@
 class Bullet : public Agent
 {
 public:
-	Bullet(CircF circle, V2f direction, float speed)
-		:Agent(circle)
+	Bullet(CircF circle, Game * g, V2f direction, float speed)
+		:Agent(circle, g)
 	{
+		setFSM(NULL);
 		this->maximumSpeed = speed;
 		this->behavior = BEHAVIOR_NONE;
 		this->direction = direction;
@@ -22,15 +23,14 @@ public:
 		}
 	}
 	void * calculateCollisionResolution(Obstacle * otherObject) {
-		return (void*)true;
+		return (void*)(otherObject != parent);
 	}
 	void resolveCollision(Obstacle * o, void * collisionData) {
-		if(o != parent) {
-			this->alive = false;
-			Agent * a = dynamic_cast<Agent *>(o);
-			if(a != NULL) {
-				a->alive = false;
-			}
+		this->alive = false;
+		Agent * a = dynamic_cast<Agent *>(o);
+		if(a != NULL) {
+//			a->alive = false;
+			a->color = Random::PRNG() & 0xffffff;
 		}
 	}
 };

@@ -30,8 +30,8 @@ void keyboard(unsigned char key, int x, int y) {
 		{
 			Agent * a = g_game.selected;
 			if(a != NULL) {
-				Agent * bullet = new Bullet(CircF(a->body.center, 0.2f),
-					a->direction, 10);
+				Agent * bullet = new Bullet(CircF(a->body.center, 0.2f), &g_game,
+					a->direction, 2);
 				bullet->parent = a;
 				g_game.agents.add(bullet);
 			}
@@ -68,14 +68,19 @@ void mouse(int button, int state, int x, int y) {
 		if(state == GLUT_DOWN) {
 			Agent * a = g_game.getAgentAt(click);
 			if(a != NULL) {
+				if(g_game.selected != NULL) {
+					g_game.selected->playerControlled = false;
+					g_game.selected->behavior = Agent::BEHAVIOR_AGGRO;
+				}
 				g_game.selected = a;
+				a->behavior = Agent::BEHAVIOR_SEEK;
+				a->playerControlled = true;
 			} else {
 //				g_game.mouseClick = click;
 				if(g_game.selected != NULL) {
 					a = g_game.selected;
 					V2f delta = click - a->body.center;
 					delta.normalize();
-					//a->velocity = delta * a->maximumSpeed;
 					a->direction = delta; // normalized move vector
 					a->targetPosition = click;
 				}

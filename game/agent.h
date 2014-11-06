@@ -4,6 +4,11 @@
 #include "codegiraffe/glutrenderingcontext.h"
 
 #include "steering.h"
+#include "fsm.h"
+#include "fsm_idle.h"
+
+class Game; // class prototype, forward declaration "I promise game is a class."
+class Bullet;
 
 class Agent : public Obstacle {
 public:
@@ -28,35 +33,66 @@ public:
 
 	/** where did  this agent come from? */
 	void * parent;
-
+	/** whether or not to keep this in the game (or delete from lists) */
 	bool alive;
+	/**
+	 * the flag that will actually delete an object. this allows a dead object
+	 * to make it through a game loop *one last time*, so that things pointing
+	 * at it can make preparations
+	 */
+	bool readyToDelete;
+	/** true if the player is controlling this guy */
+	bool playerControlled;
+	/** reference to the game that this agent is in */
+	Game * game;
+	/** the finite state machine */
+	FiniteStateMachine * fsm;
+
+	void setFSM(FiniteStateMachine * a_fsm) {
+		if(fsm) {
+			fsm->exit(this);
+			delete fsm;
+		}
+		fsm = a_fsm;
+		if(fsm) {
+			fsm->enter(this);
+		}
+	}
 
 	int agentLook;
 	static const int LOOK_PLAIN = 0, LOOK_TRIANGLE = 1, 
 		LOOK_BEAK = 2, LOOK_GOOGLY_EYES = 3, LOOK_ROCKET = 4;
 
 	int behavior;
-	static const int BEHAVIOR_NONE = 0, BEHAVIOR_SEEK = 1;
+	static const int BEHAVIOR_NONE = 0, BEHAVIOR_SEEK = 1, BEHAVIOR_AGGRO = 2;
 
-	Agent(CircF circle)
+	Agent(CircF circle, Game * game)
 		:body(circle),direction(V2f::ZERO_DEGREES()),agentLook(LOOK_BEAK),parent(NULL),
-		behavior(BEHAVIOR_SEEK), alive(true), mass(1)
-	{}
+		behavior(BEHAVIOR_SEEK), alive(true), readyToDelete(false), mass(1), 
+		playerControlled(false), game(game), fsm(NULL)
+	{
+		setFSM(new FSM_Idle());
+	}
 
-	virtual void update(int a_ms) {
-		switch(behavior) {
-		case BEHAVIOR_NONE:
-			body.center += velocity * (float)a_ms / 1000.0f;
-			break;
-		case BEHAVIOR_SEEK:
-			acceleration = seek(targetPosition, this);
+	~Agent() { if (fsm != NULL) delete fsm;  }
+
+	/** agent behavior, see agent.cpp */
+	virtual void update(int a_ms);
+
+	void updateMovement(int a_ms) {
+		if (a_ms != 0) {
+			acceleration.truncate(maximumForce);
 			velocity += acceleration * (float)a_ms / 1000.0f;
+			velocity.truncate(maximumSpeed);
 			body.center += velocity * (float)a_ms / 1000.0f;
-			break;
 		}
 	}
 
 	void draw(GLUTRenderingContext & g_screen) {
+		if(behavior == BEHAVIOR_AGGRO) {
+			g_screen.setColor(0x0000ff);
+			g_screen.drawCircle(body.center, body.radius*5, false);
+		}
 		g_screen.setColor(color);
 		switch(agentLook) {
 		case LOOK_PLAIN:
@@ -151,4 +187,7 @@ public:
 		body.center += *push;
 		delete push;
 	}
+
+	Bullet * findClosestBullet();
+	Agent * findClosestPlayerControlledAgent();
 };

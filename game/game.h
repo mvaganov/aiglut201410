@@ -7,6 +7,7 @@
 #include "agent.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 
 class Game {
 public:
@@ -43,7 +44,7 @@ public:
 		for(int i = 0; i < agentCount; ++i) {
 			float extraRadius = Random::PRNGf()*0.5f;
 			CircF c(Random::PRNGf() * 5, Random::PRNGf() * 5, .1f + extraRadius);
-			Agent * a = new Agent(c);
+			Agent * a = new Agent(c, this);
 			TRACE_MEMORY(a, "agent");
 			a->direction = V2f::randomUnitVector();
 			a->maximumSpeed = Random::PRNGf(.1f, 2);
@@ -51,6 +52,7 @@ public:
 			a->velocity = a->direction * a->maximumSpeed;
 			a->mass = Random::PRNGf(.1f, 100);
 			a->color = Random::PRNG() & 0xffffff;
+			a->behavior = Agent::BEHAVIOR_AGGRO;
 			agents.add(a);
 			obstacles.add(a);
 		}
@@ -94,14 +96,14 @@ public:
 			Obstacle * THINGY = obstacles[i];
 			THINGY->glDraw(false);
 			if(THINGY->contains(mousePosition)) THINGY->glDraw(true);
-			point = THINGY->getClosestPointOnEdge(mousePosition, normal);
-			g_screen.drawLine(point, point+normal);
-			if(THINGY->raycast(mouseClick, delta, dist, point, normal)) {
-				g_screen.drawLine(point, point-delta);
-				V2f reflected;
-				V2f::calculateReflection(delta, normal, reflected);
-				g_screen.drawLine(point, point+reflected);
-			}
+			//point = THINGY->getClosestPointOnEdge(mousePosition, normal);
+			//g_screen.drawLine(point, point+normal);
+			//if(THINGY->raycast(mouseClick, delta, dist, point, normal)) {
+			//	g_screen.drawLine(point, point-delta);
+			//	V2f reflected;
+			//	V2f::calculateReflection(delta, normal, reflected);
+			//	g_screen.drawLine(point, point+reflected);
+			//}
 		}
 		for(int i = 0; i < agents.size(); ++i) {
 			agents[i]->draw(g_screen);
@@ -144,12 +146,16 @@ public:
 		}
 		// garbage collection
 		for(int i = agents.size()-1; i >= 0; --i) {
-			if(!agents[i]->alive) {
-				Agent * a = agents[i];
-				// remove it from the obstacle list too
-				obstacles.removeData(a);
-				agents.removeData(a);
-				delete a;
+			if (!agents[i]->alive) {
+				if (agents[i]->readyToDelete) {
+					Agent * a = agents[i];
+					// remove it from the obstacle list too
+					obstacles.removeData(a);
+					agents.removeData(a);
+					delete a;
+				} else {
+					agents[i]->readyToDelete = true;
+				}
 			}
 		}
 	}
