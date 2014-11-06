@@ -37,39 +37,9 @@ Agent * Agent::findClosestPlayerControlledAgent() {
 	return aggroed;
 }
 
-
 void Agent::update(int a_ms) {
 	if(fsm != NULL) {
 		fsm->execute(this, a_ms);
-	} else {
-		switch (behavior) {
-		case BEHAVIOR_NONE:
-			break;
-		case BEHAVIOR_SEEK:
-			acceleration = seek(targetPosition, this);
-			break;
-		case BEHAVIOR_AGGRO:
-			V2f seekForce, fleeForce, stopForce;
-			// search the game for nearby agents
-			Agent * aggroed = findClosestPlayerControlledAgent();
-			Bullet * closestBullet = findClosestBullet();
-			// run from the closest bullet.
-			if (closestBullet != NULL) {
-				fleeForce = flee(closestBullet->body.center, this);
-			}
-			// if so, set target location to that player
-			if (aggroed != NULL) {
-				this->targetPosition = aggroed->body.center;
-				// seek the agent
-				seekForce = seek(targetPosition, this);
-			}
-			else { // otherwise
-				stopForce = stop(this, a_ms); // stop moving
-			}
-			// fuzzy logic -- applying weights to multiple steering impulses
-			acceleration = seekForce + fleeForce * 10 + stopForce * 0.5f;
-			break;
-		}
 	}
 	updateMovement(a_ms);
 }

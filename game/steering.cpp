@@ -20,7 +20,7 @@ V2f stop(Agent * agent, int a_ms) {
 	if(!agent->velocity.isZero()) {
 		V2f v = agent->velocity;
 		if (a_ms != 0) {
-			V2f perfectAccelToStop = -v * 1000 / a_ms;
+			V2f perfectAccelToStop = -v * 1000.0f / (float)a_ms;
 			float mag = perfectAccelToStop.magnitude();
 			if(mag <= agent->maximumForce)
 				return perfectAccelToStop;

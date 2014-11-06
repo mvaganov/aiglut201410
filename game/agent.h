@@ -6,6 +6,7 @@
 #include "steering.h"
 #include "fsm.h"
 #include "fsm_idle.h"
+#include <stdio.h>
 
 class Game; // class prototype, forward declaration "I promise game is a class."
 class Bullet;
@@ -66,12 +67,11 @@ public:
 	int behavior;
 	static const int BEHAVIOR_NONE = 0, BEHAVIOR_SEEK = 1, BEHAVIOR_AGGRO = 2;
 
-	Agent(CircF circle, Game * game)
+	Agent(CircF circle, Game * game, FiniteStateMachine * newFSMBehavior)
 		:body(circle),direction(V2f::ZERO_DEGREES()),agentLook(LOOK_BEAK),parent(NULL),
 		behavior(BEHAVIOR_SEEK), alive(true), readyToDelete(false), mass(1), 
-		playerControlled(false), game(game), fsm(NULL)
+		playerControlled(false), game(game), fsm(newFSMBehavior)
 	{
-		setFSM(new FSM_Idle());
 	}
 
 	~Agent() { if (fsm != NULL) delete fsm;  }
@@ -82,8 +82,17 @@ public:
 	void updateMovement(int a_ms) {
 		if (a_ms != 0) {
 			acceleration.truncate(maximumForce);
+			// check the speed, to adjust acceleration so that it doesn't break the speed limit
+			float currentSpeed = velocity.magnitude();
+			if (currentSpeed > maximumSpeed) {
+				// reduce the acceleration by what it would be contributing to the speed
+				V2f vDir = velocity / currentSpeed;
+				float accelAlignmentWithVelocity = V2f::dot(vDir, acceleration);
+				if (accelAlignmentWithVelocity > 0) {
+					acceleration -= vDir * accelAlignmentWithVelocity;
+				}
+			}
 			velocity += acceleration * (float)a_ms / 1000.0f;
-			velocity.truncate(maximumSpeed);
 			body.center += velocity * (float)a_ms / 1000.0f;
 		}
 	}

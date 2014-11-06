@@ -5,9 +5,8 @@ class Bullet : public Agent
 {
 public:
 	Bullet(CircF circle, Game * g, V2f direction, float speed)
-		:Agent(circle, g)
+		:Agent(circle, g, NULL)
 	{
-		setFSM(NULL);
 		this->maximumSpeed = speed;
 		this->behavior = BEHAVIOR_NONE;
 		this->direction = direction;

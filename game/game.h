@@ -44,7 +44,7 @@ public:
 		for(int i = 0; i < agentCount; ++i) {
 			float extraRadius = Random::PRNGf()*0.5f;
 			CircF c(Random::PRNGf() * 5, Random::PRNGf() * 5, .1f + extraRadius);
-			Agent * a = new Agent(c, this);
+			Agent * a = new Agent(c, this, new FSM_Idle());
 			TRACE_MEMORY(a, "agent");
 			a->direction = V2f::randomUnitVector();
 			a->maximumSpeed = Random::PRNGf(.1f, 2);
