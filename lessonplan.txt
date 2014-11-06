@@ -70,7 +70,7 @@ vec2 arrive(vec2 target, Agent agent, int a_ms) {
 // ai avoid obstacles
 	// ai avoid other ai agents
 	// ai try to keep some sort of comfort zone
-// hide <-- student assignment (ai flee behind cover when low on HP)
+// hide (ai flee behind cover when low on HP)
 
 //---wk3day5 --- finite state machines
 // ai follows you when you get in range
