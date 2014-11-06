@@ -41,37 +41,35 @@ vec2 seek(vec2 target, Agent agent) {
 		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	...
 */
+
+//---wk2day3 --- fuzzy state machines for multiple steering impulses
 // flee
 // steering behavior namespace
-// random-walk
-// multiple ai
+// random-walk <-- student assignment
 // ai seeks plyaer and flees projectiles
 	// pursue
 	// evade
 	// offset pursuit
-// ai respawns
-
-//---wk2day3 --- fuzzy state machines for multiple steering impulses
-// player moves (arrive)
+// player moves (arrive) <-- student assignment
 /*
 float stopDistance(float speed, float acceleration) {
 	return (speed*speed)/(2*acceleration);
 }
-vec2 arrive(vec2 target, Agent agent) {
+vec2 arrive(vec2 target, Agent agent, int a_ms) {
 	if(distance(agent.position, target) <= stopDistance(agent.velocity.mag(), agent.maxForce)) {
-		return stop();
+		return stop(agent, a_ms);
 	} else {
 		return seek(target, agent);
 	}
 }
 */
 // ai conflicting ai moves
-	// context map?
-// ai attacks when in range
-// player gets killed
-// player respawns
+// fuzzy logic
+// introduce finite state machine
+// begin implementing finite state machine
 
 //---wk2day4 --- environment aware steering behaviors (more fuzzy logic)
+// implement finite state machine
 // obstacles
 // obstacle collision detection
 // ai avoid obstacles
