@@ -44,10 +44,14 @@ public:
 	bool readyToDelete;
 	/** true if the player is controlling this guy */
 	bool playerControlled;
+	/** whether or not to draw debug information */
+	bool showDebugLines;
 	/** reference to the game that this agent is in */
 	Game * game;
 	/** the finite state machine */
 	FiniteStateMachine * fsm;
+
+	BoxObject sensorArea;
 
 	void setFSM(FiniteStateMachine * a_fsm) {
 		if(fsm) {
@@ -70,22 +74,24 @@ public:
 	Agent(CircF circle, Game * game, FiniteStateMachine * newFSMBehavior)
 		:body(circle),direction(V2f::ZERO_DEGREES()),agentLook(LOOK_BEAK),parent(NULL),
 		behavior(BEHAVIOR_SEEK), alive(true), readyToDelete(false), mass(1), 
-		playerControlled(false), game(game), fsm(newFSMBehavior)
-	{
-	}
+		playerControlled(false), showDebugLines(true), game(game), fsm(newFSMBehavior),
+		sensorArea(BoxF(circle.center, V2f::ZERO(), 0))
+	{ }
 
 	~Agent() { if (fsm != NULL) delete fsm;  }
 
 	/** agent behavior, see agent.cpp */
 	virtual void update(int a_ms);
 
+	V2f getCenter() const {return body.center; }
+
 	void updateMovement(int a_ms) {
 		if (a_ms != 0) {
-			if (!acceleration.isZero()) {
+			if(!acceleration.isZero()) {
 				acceleration.truncate(maximumForce);
 				// check the speed, to adjust acceleration so that it doesn't break the speed limit
 				float currentSpeed = velocity.magnitude();
-				if (currentSpeed > maximumSpeed) {
+				if (currentSpeed >= maximumSpeed) {
 					// reduce the acceleration by what it would be contributing to the speed
 					V2f vDir = velocity / currentSpeed;
 					float accelAlignmentWithVelocity = V2f::dot(vDir, acceleration);
@@ -96,14 +102,12 @@ public:
 			}
 			velocity += acceleration * (float)a_ms / 1000.0f;
 			body.center += velocity * (float)a_ms / 1000.0f;
+			sensorArea.set(velocity / 2 + body.center,
+				V2f(velocity.magnitude(), body.radius*2), velocity.normal());
 		}
 	}
 
 	void draw(GLUTRenderingContext & g_screen) {
-		if(behavior == BEHAVIOR_AGGRO) {
-			g_screen.setColor(0x0000ff);
-			g_screen.drawCircle(body.center, body.radius*5, false);
-		}
 		g_screen.setColor(color);
 		switch(agentLook) {
 		case LOOK_PLAIN:
@@ -163,11 +167,25 @@ public:
 			}
 			break;
 		}
-		g_screen.setColor(0x00ff00);
-		g_screen.drawLine(body.center, body.center + velocity);
-		g_screen.setColor(0x0000ff);
-		g_screen.drawLine(body.center + velocity, 
-			body.center + velocity + acceleration);
+		if (showDebugLines) {
+			g_screen.setColor(0x00ff00);
+			g_screen.drawLine(body.center, body.center + velocity);
+			g_screen.setColor(0x0000ff);
+			g_screen.drawLine(body.center + velocity,
+				body.center + velocity + acceleration);
+			if (fsm != NULL) {
+				g_screen.setColor(0);
+				g_screen.printf(body.center + V2f(-body.radius, 0), fsm->getName());
+				g_screen.setColor(color);
+				fsm->draw(this, &g_screen);
+			}
+			g_screen.setColor(0xff00ff);
+			sensorArea.glDraw(false);
+			if (behavior == BEHAVIOR_AGGRO) {
+				g_screen.setColor(0x0000ff);
+				g_screen.drawCircle(body.center, body.radius * 5, false);
+			}
+		}
 	}
 
 	bool intersects(const Obstacle * o) const { return body.intersects(o); }

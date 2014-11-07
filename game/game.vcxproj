@@ -11,7 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D7D43370-EBA0-435C-BA0D-E0D4CF5620AE}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>game</RootNamespace>
   </PropertyGroup>
@@ -90,14 +89,26 @@
     <ClInclude Include="codegiraffe\templatearray.h" />
     <ClInclude Include="codegiraffe\templatevector.h" />
     <ClInclude Include="codegiraffe\v2.h" />
+    <ClInclude Include="fsm.h" />
+    <ClInclude Include="fsm_fleebullets.h" />
+    <ClInclude Include="fsm_followagent.h" />
+    <ClInclude Include="fsm_hide.h" />
+    <ClInclude Include="fsm_idle.h" />
+    <ClInclude Include="fsm_wander.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="obstacles.h" />
     <ClInclude Include="steering.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="agent.cpp" />
     <ClCompile Include="codegiraffe\circle.cpp" />
     <ClCompile Include="codegiraffe\glutrenderingcontext.cpp" />
     <ClCompile Include="codegiraffe\random.cpp" />
+    <ClCompile Include="fsm_fleebullets.cpp" />
+    <ClCompile Include="fsm_followagent.cpp" />
+    <ClCompile Include="fsm_hide.cpp" />
+    <ClCompile Include="fsm_idle.cpp" />
+    <ClCompile Include="fsm_wander.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="obstacles.cpp" />
     <ClCompile Include="steering.cpp" />

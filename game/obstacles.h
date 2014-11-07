@@ -10,6 +10,7 @@ class Obstacle {
 public:
 	virtual bool intersects(const Obstacle * o) const = 0;
 
+	virtual V2f getCenter() const = 0;
 	virtual bool contains(V2f const & p) const = 0;
 	virtual bool raycast(V2f const & rayStart, V2f const & rayDirection,
 		float & out_dist, V2f & out_point, V2f & out_normal) const = 0;
@@ -24,6 +25,7 @@ public:
 class CircleObject : public Obstacle, public CircF {
 public:
 	CircleObject(CircF c):CircF(c){}
+	V2f getCenter() const {return center;}
 	bool intersects(const Obstacle * o) const;
 	// this method needs BoxObject to be defined before the method can be defined
 	bool contains(V2f const & p) const { return CircF::contains(p); }
@@ -42,6 +44,7 @@ class BoxObject : public Obstacle, public BoxF {
 public:
 	BoxObject(BoxF b):BoxF(b){}
 	BoxObject(RectF r):BoxF(r.getCenter(), r.getDimension(), 0){}
+	V2f getCenter() const {return center;}
 	bool intersects(const Obstacle * o) const;
 	bool contains(V2f const & p) const {return BoxF::contains(p); }
 	bool raycast(V2f const & rayStart, V2f const & rayDirection,

@@ -4,16 +4,17 @@
 #include "fsm_followagent.h"
 #include "fsm_fleebullets.h"
 #include "bullet.h"
+#include "fsm_hide.h"
+#include "game.h"
 
 void FSM_Idle::execute(Agent * a, int a_ms) {
 	if (a->playerControlled) {
-		a->acceleration = seek(a->targetPosition, a);
+		a->setFSM(new FSM_FollowAgent(NULL));
 		return;
 	}
 	Bullet * b = a->findClosestBullet();
 	if(b != NULL) {
 		a->setFSM(new FSM_Flee(b));
-		return;
 	}
 	Agent * other = a->findClosestPlayerControlledAgent();
 	if(other != NULL) {

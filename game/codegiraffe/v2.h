@@ -238,9 +238,9 @@ struct V2 {
 	/** @return this V2<TYPE> after dividing the given scalar */
 	V2<TYPE> operator/=(V2<TYPE> const & v){ x /= v.x; y /= v.y; return *this; }
 	/** @return if this V2<TYPE> is equal to v */
-	bool operator==(V2<TYPE> const & rhs) const { return (x == v.x && y == v.y); }
+	bool operator==(V2<TYPE> const & v) const { return (x == v.x && y == v.y); }
 	/** @return if this V2<TYPE> is not equal to v */
-	bool operator!=(V2<TYPE> const & rhs) const { return (x != v.x || y != v.y); }
+	bool operator!=(V2<TYPE> const & v) const { return (x != v.x || y != v.y); }
 
 	V2<TYPE> sum(V2<TYPE> const & v) const { return operator+(v); }
 	V2<TYPE> difference(const V2<TYPE> & v) const { return operator-(v); }
@@ -603,7 +603,11 @@ struct V2 {
 		V2<TYPE> & out_point, V2<TYPE> & out_normal) {
 		V2<TYPE> radiusDirection = rayDirection.perp();
 		TYPE radiusNeededToHit;
-		if (rayIntersection(
+		if (rayStart == center) {
+			out_point = center + rayDirection * radius;
+			out_normal = rayDirection;
+			return true;
+		} else if (rayIntersection(
 			rayStart, rayStart + rayDirection,
 			center, center + radiusDirection, out_dist, radiusNeededToHit)) {
 			if (out_dist > 0 && abs(radiusNeededToHit) <= radius) {

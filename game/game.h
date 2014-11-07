@@ -73,29 +73,29 @@ public:
 	}
 	void display(GLUTRenderingContext & g_screen) {
 		g_screen.printf(mousePosition, "%.2f, %.2f", mousePosition.x, mousePosition.y);
-		g_screen.printf(mouseClick, "%.2f, %.2f", mouseClick.x, mouseClick.y);
+//		g_screen.printf(mouseClick, "%.2f, %.2f", mouseClick.x, mouseClick.y);
 		g_screen.drawCircle(mousePosition, .1f, false);
-		g_screen.drawCircle(mouseClick, .05f, true);
-		g_screen.setColor(0x0000ff);
-		V2f delta = mouseDragged - mouseClick; // whereYouAre - whereYouWere
-		delta.normalize();
-		g_screen.printf(mouseDragged, "%.2f, %.2f m:%.2f", delta.x, delta.y, delta.magnitude());
-		g_screen.drawLine(mouseClick, mouseClick + delta);
-		V2f a(0,2), b(1,0);
-		g_screen.setColor(0xffaa00);
-		g_screen.drawLine(a, b);
-		float dist;
-		V2f collisionPoint;
-		if(V2f::lineIntersection(mouseClick, mouseDragged, a, b, dist, collisionPoint)) {
-			g_screen.drawCircle(collisionPoint, .1f, false);
-			g_screen.printf(collisionPoint, "%.2f", dist);
-		}
+//		g_screen.drawCircle(mouseClick, .05f, true);
+//		g_screen.setColor(0x0000ff);
+//		V2f delta = mouseDragged - mouseClick; // whereYouAre - whereYouWere
+//		delta.normalize();
+//		g_screen.printf(mouseDragged, "%.2f, %.2f m:%.2f", delta.x, delta.y, delta.magnitude());
+//		g_screen.drawLine(mouseClick, mouseClick + delta);
+//		V2f a(0,2), b(1,0);
+//		g_screen.setColor(0xffaa00);
+//		g_screen.drawLine(a, b);
+//		float dist;
+//		V2f collisionPoint;
+//		if(V2f::lineIntersection(mouseClick, mouseDragged, a, b, dist, collisionPoint)) {
+//			g_screen.drawCircle(collisionPoint, .1f, false);
+//			g_screen.printf(collisionPoint, "%.2f", dist);
+//		}
 		g_screen.setColor(0x008800);
 		V2f point, normal;
 		for(int i = 0; i < obstacles.size(); ++i) {
 			Obstacle * THINGY = obstacles[i];
 			THINGY->glDraw(false);
-			if(THINGY->contains(mousePosition)) THINGY->glDraw(true);
+			//if(THINGY->contains(mousePosition)) THINGY->glDraw(true);
 			//point = THINGY->getClosestPointOnEdge(mousePosition, normal);
 			//g_screen.drawLine(point, point+normal);
 			//if(THINGY->raycast(mouseClick, delta, dist, point, normal)) {

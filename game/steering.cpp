@@ -1,5 +1,6 @@
 #include "agent.h"
 #include "steering.h"
+#include "game.h"
 
 //vec2 seek(vec2 target, Agent agent) {
 V2f seek(V2f target, Agent * agent) {
@@ -34,4 +35,33 @@ V2f flee(V2f target, Agent * agent) {
 	V2f fleeAccel = -seek(target, agent);
 //	if(fleeAccel.magnitude() > agent->maximumSpeed)
 	return fleeAccel;
+}
+
+V2f obstacleAvoidance(TemplateVector<Obstacle*> * obstacles, Obstacle * sensorArea, Agent * a, CalculationsFor_ObstacleAvoidance * calc) {
+	if (calc) calc->clear();
+	V2f totalForce;
+	for (int i = 0; i < obstacles->size(); ++i) {
+		Obstacle * actuallyHit = obstacles->get(i);
+		if (actuallyHit != a && actuallyHit->intersects(sensorArea)) {
+			float totalDistance = a->velocity.magnitude();
+			V2f normal;
+			V2f point = actuallyHit->getClosestPointOnEdge(a->body.center, normal);
+			V2f closestOnVelocity;
+			V2f::closestPointOnLine(
+				a->body.center, a->body.center + a->velocity,
+				point, closestOnVelocity);
+			V2f delta = closestOnVelocity - point;
+			delta.normalize();
+			float distFromStart = (point - a->body.center).magnitude();
+			float forceForThisHit = totalDistance - distFromStart;
+			if (calc) {
+				calc->actualHits.add(actuallyHit);
+				calc->hitLocations.add(point);
+				calc->hitNormals.add(delta);
+				calc->hitForce.add(forceForThisHit);
+			}
+			totalForce += delta * forceForThisHit;
+		}
+	}
+	return totalForce;
 }

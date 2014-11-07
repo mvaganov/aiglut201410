@@ -12,7 +12,7 @@
 GLUTRenderingContext g_screen(V2f(600, 600), V2f(-3.0, -3.0), V2f(8.0, 8.0));
 /** whether or not to keep running the game loop */
 bool g_gameLoopRunning = true;
-
+bool g_paused = false;
 
 Game g_game;
 
@@ -36,6 +36,9 @@ void keyboard(unsigned char key, int x, int y) {
 				g_game.agents.add(bullet);
 			}
 		}
+		break;
+	case 'p':
+		g_paused = !g_paused;
 		break;
 	}
 	glutPostRedisplay();
@@ -84,6 +87,14 @@ void mouse(int button, int state, int x, int y) {
 					a->direction = delta; // normalized move vector
 					a->targetPosition = click;
 				}
+			}
+		}
+		break;
+	case GLUT_RIGHT_BUTTON:
+		if (state == GLUT_DOWN) {
+			Agent * a = g_game.getAgentAt(click);
+			if (a != NULL) {
+				a->showDebugLines = !a->showDebugLines;
 			}
 		}
 		break;
@@ -160,7 +171,8 @@ int main(int argc, char * argv[]) {
 		passed = now - lastTime;	// how much time has passed since update was called?
 
 		glutMainLoopEvent();		// update the glut system
-		update(passed);				// update the game
+		if(!g_paused)
+			update(passed);				// update the game
 
 		glutPostRedisplay();		// request to refresh the display
 
