@@ -4,6 +4,7 @@
 #include "codegiraffe/v2.h"
 #include "codegiraffe/circle.h"
 #include "codegiraffe/box.h"
+#include "codegiraffe/cone.h"
 
 // pure virtual class -- an Interface
 class Obstacle {
@@ -55,6 +56,23 @@ public:
 		return BoxF::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { BoxF::glDraw(filled); }
+	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
+	void resolveCollision(Obstacle * o, void * collisionData){}
+};
+class ConeObject : public Obstacle, public ConeF {
+public:
+	ConeObject(ConeF c) :ConeF(c){}
+	V2f getCenter() const { return ConeF::getCenter(); }
+	bool intersects(const Obstacle * o) const;
+	bool contains(V2f const & p) const { return ConeF::contains(p); }
+	bool raycast(V2f const & rayStart, V2f const & rayDirection,
+		float & out_dist, V2f & out_point, V2f & out_normal) const {
+		return ConeF::raycast(rayStart, rayDirection, out_dist, out_point, out_normal);
+	}
+	V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const {
+		return ConeF::getClosestPointOnEdge(point, out_normal);
+	}
+	void glDraw(bool filled) const { ConeF::glDraw(filled); }
 	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
 	void resolveCollision(Obstacle * o, void * collisionData){}
 };

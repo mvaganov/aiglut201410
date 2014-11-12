@@ -5,15 +5,22 @@
 #include "obstacles.h"
 #include "codegiraffe/glutrenderingcontext.h"
 #include "agent.h"
+#include "codegiraffe/cone.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "graph.h"
+#include "mazegen.h"
 
 class Game {
 public:
 	V2f mousePosition, mouseClick, mouseDragged;
 	TemplateVector<Obstacle*> obstacles;
 	TemplateVector<Agent*> agents;
+
+	Graph * mapGraph;
+
 	/** who does the user have selected */
 	Agent * selected;
 
@@ -28,6 +35,27 @@ public:
 // helpful for finding memory by it's ID number (thanks _CrtSetDbgFlag!)
 #define TRACE_MEMORY(mem, debugmessage) printf("memID %d is %s\n", ((int*)mem)[-2], debugmessage)
 
+	void generateWallBoxesForGraph(Graph * g, float wallEdgeValue) {
+		GraphNode * n;
+		GraphEdge * e;
+		const float wallWidth = 1.0f / 20.0f;
+		for(int node = 0; node < g->nodes.size(); ++node) {
+			n = g->nodes[node];
+			for(int i = 0; i < n->edges.size(); ++i) {
+				e = &n->edges[i];
+				if(e->cost == wallEdgeValue) {
+					V2f delta = e->to->location - e->from->location;
+					V2f inBetween = e->from->location + (delta * (.5f + wallWidth/2));
+					float dist = delta.magnitude();
+					V2f normal = delta / dist;
+					float width = dist * wallWidth;
+					BoxF wall(inBetween, V2f(width, dist), normal);
+					obstacles.add(new BoxObject(wall));
+				}
+			}
+		}
+	}
+
 	Game() {
 		selected = NULL;
 		int agentCount = 10;
@@ -40,6 +68,7 @@ public:
 		TRACE_MEMORY(obstacles.getLast(), "aabb object");
 		obstacles.add(new BoxObject(box));
 		TRACE_MEMORY(obstacles.getLast(), "box object");
+		obstacles.add(new ConeObject(ConeF(V2f(-1, 6), 1, 1.0f, 4.0f)));
 
 		for(int i = 0; i < agentCount; ++i) {
 			float extraRadius = Random::PRNGf()*0.5f;
@@ -56,6 +85,9 @@ public:
 			agents.add(a);
 			obstacles.add(a);
 		}
+		mapGraph = Graph::createDenseGrid(5, 5, V2f(-10, -10), V2f(10, 10));
+		randomMazeGen_prim(mapGraph, -1);
+		generateWallBoxesForGraph(mapGraph, -1);
 	}
 	~Game() {
 		//for(int i = 0; i < agents.size(); ++i) {
@@ -70,8 +102,13 @@ public:
 			obstacles.removeData(o);
 			delete o;
 		}
+		if (mapGraph) {
+			delete mapGraph;
+		}
 	}
 	void display(GLUTRenderingContext & g_screen) {
+		g_screen.setColor(0x00aaff);
+		mapGraph->glDraw(&g_screen);
 		g_screen.printf(mousePosition, "%.2f, %.2f", mousePosition.x, mousePosition.y);
 //		g_screen.printf(mouseClick, "%.2f, %.2f", mouseClick.x, mouseClick.y);
 		g_screen.drawCircle(mousePosition, .1f, false);
@@ -80,7 +117,7 @@ public:
 //		V2f delta = mouseDragged - mouseClick; // whereYouAre - whereYouWere
 //		delta.normalize();
 //		g_screen.printf(mouseDragged, "%.2f, %.2f m:%.2f", delta.x, delta.y, delta.magnitude());
-//		g_screen.drawLine(mouseClick, mouseClick + delta);
+//		g_screen.drawLine(mouseClick, mousePosition);
 //		V2f a(0,2), b(1,0);
 //		g_screen.setColor(0xffaa00);
 //		g_screen.drawLine(a, b);

@@ -19,6 +19,7 @@ struct Box {
 	V2<TYPE> rotation;
 
 	Box(V2<TYPE> center, V2<TYPE> size, float rotationInRadians) : center(center), size(size), rotation(rotationInRadians){}
+	Box(V2<TYPE> center, V2<TYPE> size, V2<TYPE> rotationVector) : center(center), size(size), rotation(rotationVector){}
 	Box() :rotation(V2<TYPE>::ZERO_DEGREES()){}
 
 	void set(V2<TYPE> const center, V2<TYPE> const size, float const rotation) {

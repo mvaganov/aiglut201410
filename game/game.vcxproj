@@ -84,6 +84,7 @@
     <ClInclude Include="codegiraffe\aabb.h" />
     <ClInclude Include="codegiraffe\box.h" />
     <ClInclude Include="codegiraffe\circle.h" />
+    <ClInclude Include="codegiraffe\cone.h" />
     <ClInclude Include="codegiraffe\glutrenderingcontext.h" />
     <ClInclude Include="codegiraffe\random.h" />
     <ClInclude Include="codegiraffe\templatearray.h" />
@@ -96,6 +97,8 @@
     <ClInclude Include="fsm_idle.h" />
     <ClInclude Include="fsm_wander.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="graph.h" />
+    <ClInclude Include="mazegen.h" />
     <ClInclude Include="obstacles.h" />
     <ClInclude Include="steering.h" />
   </ItemGroup>

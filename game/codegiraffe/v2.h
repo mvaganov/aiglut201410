@@ -281,7 +281,7 @@ struct V2 {
 	}
 
 	/** @return radians between these normalized vector is */
-	TYPE piRadians(const V2<TYPE> & v) const { return V_COS(dot(v)); }
+	TYPE piRadians(const V2<TYPE> & v) const { return cos(dot(*this, v)); }
 
 	/** @return radians that this normalized vector is, using ZERO_DEGREES() as the starting point */
 	TYPE piRadians() const { return (y<0?-1:1)*piRadians(ZERO_DEGREES()); }
@@ -596,38 +596,73 @@ struct V2 {
 	* @param out_point where the collision happened
 	* @param out_normal the normal of the collision line
 	*
-	* @return -1 if no collision happened, othewise, the loop segment where the collision happened
+	* @return false if no collision happened
 	*/
 	static bool raycastCircle(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
 		V2<TYPE> const center, const TYPE radius, float & out_dist,
 		V2<TYPE> & out_point, V2<TYPE> & out_normal) {
-		V2<TYPE> radiusDirection = rayDirection.perp();
-		TYPE radiusNeededToHit;
-		if (rayStart == center) {
-			out_point = center + rayDirection * radius;
-			out_normal = rayDirection;
-			return true;
-		} else if (rayIntersection(
-			rayStart, rayStart + rayDirection,
-			center, center + radiusDirection, out_dist, radiusNeededToHit)) {
-			if (out_dist > 0 && abs(radiusNeededToHit) <= radius) {
-				V2<TYPE> linesMeet = rayStart + rayDirection * out_dist;
-				// pythagorean theorum to get missing triangle side
-				float b = sqrt(radius*radius - radiusNeededToHit*radiusNeededToHit);
-				V2<TYPE> hitDelta = rayDirection * b;
-				// find which of the two solutions is closer to the ra start
-				V2<TYPE> p1 = linesMeet + hitDelta;
-				float d1 = V2<TYPE>::distance(rayStart, p1);
-				V2<TYPE> p2 = linesMeet - hitDelta;
-				float d2 = V2<TYPE>::distance(rayStart, p2);
-				if (d1 < d2) {
-					out_point = p1;
-					out_dist = d1;
+		V2f p1, p2;
+		if (raycastCircle(rayStart, rayDirection, center, radius, p1, p2)) {
+			V2<TYPE> dp1 = (p1 - rayStart), dp2 = (p2 - rayStart);
+			// check if the points are in the correct direction
+			bool p1good = V2<TYPE>::dot(rayDirection, dp1) > 0;
+			bool p2good = V2<TYPE>::dot(rayDirection, dp2) > 0;
+			float dist1 = dp1.magnitude(), dist2 = dp2.magnitude();
+			// if both are good, invalidate the further one
+			if (p1good && p2good) {
+				if (dist1 < dist2) {
+					p2good = false;
 				} else {
+					p1good = false;
+				}
+			}
+			// if at least one is good...
+			if (p1good || p2good) {
+				// give the one that is good
+				if (p1good) {
+					out_dist = dist1;
+					out_point = p1;
+				} else {
+					out_dist = dist2;
 					out_point = p2;
-					out_dist = d2;
 				}
 				out_normal = (out_point - center).normal();
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	* Does ray-casting against one circle by detecting line collision
+	*
+	* @param rayStart
+	* @param rayDirection must be a unit vector
+	* @param center center of the circle
+	* @param radius radius of the circle
+	* @param out_p1 one of the points on the line and the circle
+	* @param out_p2 the other point on the line and the circle (may be the same as out_p1)
+	*
+	* @return false if no collision happened
+	*/
+	static bool raycastCircle(V2<TYPE> rayStart, V2<TYPE> rayDirection,
+		V2<TYPE> const center, const TYPE radius, V2<TYPE> & out_p1, V2<TYPE> & out_p2) {
+		V2f rayNorm = rayDirection.normal();
+		if (rayStart == center) {
+			out_p1 = out_p2 = center + rayNorm * radius;
+			return true;
+		}
+		V2<TYPE> radiusDirection = rayNorm.perp();
+		TYPE radHit, rayHit;
+		if (rayIntersection(rayStart, rayStart + rayNorm, center, center + radiusDirection, rayHit, radHit)) {
+			if (abs(radHit) <= radius) {
+				V2<TYPE> intersection = center + radiusDirection * radHit;
+				// pythagorean theorum to get missing triangle side, where radius is the hypontinuse
+				float side = sqrt(radius*radius - radHit*radHit);
+				V2<TYPE> hitDelta = rayDirection * side;
+				// find which of the two solutions is closer to the ra start
+				out_p1 = intersection + hitDelta;
+				out_p2 = intersection - hitDelta;
 				return true;
 			}
 		}

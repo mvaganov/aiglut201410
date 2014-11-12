@@ -1,0 +1,93 @@
+RTS + bullet hell + random maze
+
+basic gameplay: select agents, move them around a maze, kill bad guys, win when all enemy nexi are killed
+
+(2000) game is full of agents: energy point, user agent, nexus, enemy agent
+
+(1999) each agent has HP, radius size, color
+(1998) enemy and user agents have move speed, attack rate, bullet damage, attack cool down
+
+(0805) particle effects
+
+(1000) random map generation:
+* generate dense graph in grid shape
+* do random size adjustment to grid squares
+* use depth-first-search (with random weight to next-neighbor) to identify maze paths
+* create boxes as walls in blocked-off edges
+(0800) energy points are randomly placed
+	energy point is a circle with some particle effect animation
+(0750) enemy nexuses are randomly placed
+	inert energy points of a common enemy color that use particle effects when healing
+(0850) enemy agents are randomly placed
+(0851) user agents are placed in the same spot
+
+(0900) select one agent with left click
+(0890) give agents move orders with right click
+(0400) select multiple agents (with rect tool like other RTS games, and operating systems)
+
+(0205) user agents consume energy points they path over which give the player upgrade points
+(0200) agents can be upgraded with upgrade points
+(0199) when one agent is selected, they can be upgraded
+(0200) agent upgrades:
+	faster move
+	faster attack rate
+	more hp
+	faster regen rate
+	heal other agents
+
+(0950) A: user-controlled agent
+(0851) E: enemy agent
+(0752) P: energy point
+(0751) N: evil nexus
+
+Finite State Machine diagrams below viewable at http://yuml.me/diagram/boring/class/draw
+
+[A upgrade|(198)a spin upgrade dance with particles]
+[A idle|(0949)flocking + obstacle avoidance;agents regenerate 1hp per 2 seconds]
+[A seek|(0948)seek + A* + obstacle avoidance;flee from bullets]
+[A shoot|(0945)shoot a bullet at the nearest enemy;shooting has a 1 second cooldown]
+[A found energy|(0752)destroy energy source;add upgrade points usable by the user]
+
+[A idle]-has target->[A seek]
+[A idle]-sees enemy->[A shoot]
+[A idle]-in range->[A found energy]
+[A idle]-user used upgrade->[A upgrade]
+[A upgrade]-done with dance->[A idle]
+[A seek]-target reached->[A idle]
+[A seek]-sees enemy->[A shoot]
+[A shoot]-shot at nearby enemy->[A idle]
+[A found energy]->[A idle]
+
+[E idle|(0849)sit around like undead]
+[E attack|(0848)attacks player agents;flee from bullets]
+[E shoot|(0847)shoots a bullet at the player agents]
+[E need backup|(0846)look for more enemies to help]
+[E retreat|(0749)go to base for heals]
+
+[E idle]-see agent\nOR\ncontact with aggro->[E attack]
+[E attack]-no agent in LOS\nafter 2 seconds->[E idle]
+[E attack]-outnumbered\nAND\nless than half HP->[E need backup]
+[E attack]-low hp\nAND\nnot near nexus->[E retreat]
+[E attack]-shoot cooldown done->[E shoot]
+[E shoot]->[E idle]
+[E need backup]-passed aggro to someone->[E attack]
+[E need backup]-low hp->[E retreat]
+[E retreat]-see agent->[E attack]
+[E retreat]-full hp->[E idle]
+
+[P idle|(0749)sit around doing the particle effect thing]
+[P consumed|(0748)particle burst when consumed]
+
+[P idle]-consumed by user agent->[P consumed]
+
+[N idle|(747)sit around and do thing;and stuff]
+[N create|(746)makes an enemy; uses 10 energy]
+[N heal|(745)heals an enemy]
+[N add energy|(250)creates a cool particle effect]
+
+[N idle]-energy LT 10\n AND\n numEnemy LT maxEnemy->[N create]
+[N create]->[N idle]
+[N idle]-enemy with\nlow HP\nin range->[N heal]
+[N heal]-enemy to heal not near->[N idle]
+[N idle]-every 10 sec>[N add Energy]
+[N add energy]->[N idle]

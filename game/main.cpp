@@ -79,7 +79,7 @@ void mouse(int button, int state, int x, int y) {
 				a->behavior = Agent::BEHAVIOR_SEEK;
 				a->playerControlled = true;
 			} else {
-//				g_game.mouseClick = click;
+				g_game.mouseClick = click;
 				if(g_game.selected != NULL) {
 					a = g_game.selected;
 					V2f delta = click - a->body.center;

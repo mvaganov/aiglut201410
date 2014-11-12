@@ -69,6 +69,15 @@
     <ClInclude Include="fsm_wander.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="graph.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mazegen.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\cone.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
