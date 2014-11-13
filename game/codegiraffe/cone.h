@@ -25,19 +25,58 @@ public:
 		}
 		return midRad * rad;
 	}
+
+	static bool isInAngle(V2<TYPE> testPoint, V2<TYPE> origin, TYPE startAngle, TYPE endAngle) {
+		V2<TYPE> relativeP = p - origin;
+		V2<TYPE> startRad = V2<TYPE>(startAngle);
+		V2<TYPE> endRad = V2<TYPE>(endAngle);
+		return isInAngle(relativeP, startRad, endRad);
+	}
+
+	/**
+	 * @param relativeP point relative to the origin
+	 * @param startRad line from the origin that is CCW from the endRad
+	 * @param endRad line from the origin that is CW from the startRad
+	 */
+	static bool isInAngle(V2<TYPE> relativeP, V2<TYPE> startRad, V2<TYPE> endRad) {
+		bool cwStart = relativeP.sign(startRad) <= 0, cwEnd = relativeP.sign(endRad) <= 0;
+		return (cwStart && !cwEnd);
+	}
+
 	bool contains(V2<TYPE> const & p) const { 
 		V2<TYPE> relativeP = p - origin;
-		V2<TYPE> startRad = V2<TYPE>(startAngle) * radius;
-		V2<TYPE> endRad = V2<TYPE>(endAngle) * radius;
-		V2<TYPE> zero = V2<TYPE>::ZERO();
-		bool cwStart = relativeP.isCW(zero, startRad);
-		bool cwEnd = relativeP.isCW(zero, endRad);
-		if(cwStart && cwStart != cwEnd) {
+		V2<TYPE> startRad = V2<TYPE>(startAngle);
+		V2<TYPE> endRad = V2<TYPE>(endAngle);
+		if (isInAngle(relativeP, startRad, endRad)) {
 			TYPE distance = relativeP.magnitude();
 			return distance < radius;
 		}
 		return false;
 	}
+
+	int indexOfContained(const V2<TYPE> * points, const int numPoints, const int startIndex) const {
+		V2<TYPE> startRad = V2<TYPE>(startAngle);
+		V2<TYPE> endRad = V2<TYPE>(endAngle);
+		for (int i = startIndex; i < numPoints; ++i) {
+			V2<TYPE> relativeP = points[i] - origin;
+			if (isInAngle(relativeP, startRad, endRad)) {
+				TYPE distance = relativeP.magnitude();
+				if (distance < radius)
+					return i;
+			}
+		}
+		return -1;
+	}
+
+	static int indexOfSmallestPositive(const TYPE * list, const int listSize) {
+		int closest = -1;
+		for (int i = 0; i < listSize; ++i) {
+			if (list[i] >= 0 && ((closest == -1) || (list[i] < list[closest])))
+				closest = i;
+		}
+		return closest;
+	}
+
 	bool raycast(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
 		TYPE & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
 		CircF circ(origin, radius);
@@ -48,9 +87,7 @@ public:
 		V2<TYPE> relativeP = arcPoint - origin;
 		V2<TYPE> startRad = V2<TYPE>(startAngle) * radius;
 		V2<TYPE> endRad = V2<TYPE>(endAngle) * radius;
-		V2<TYPE> zero = V2<TYPE>::ZERO();
-		bool cwStart = relativeP.sign(startRad) <= 0, cwEnd = relativeP.sign(endRad) <= 0;
-		if(!hit || !(cwStart && cwStart != cwEnd)) {
+		if(!hit || !isInAngle(relativeP, startRad, endRad)){
 			distances[0] = -1;
 		}
 		TYPE ray, line;
@@ -68,11 +105,7 @@ public:
 			endRad_normal = V2<TYPE>(endAngle).perp();
 			distances[2] = (rayDirection * ray).magnitude();
 		} else distances[2] = -1;
-		int closest = -1;
-		for (int i = 0; i < numDistances; ++i) {
-			if (distances[i] >= 0 && ((closest == -1) || (distances[i] < distances[closest])))
-				closest = i;
-		}
+		int closest = indexOfSmallestPositive(distances, numDistances);
 		if (closest != -1) {
 			out_dist = distances[closest];
 			switch (closest) {
@@ -89,13 +122,10 @@ public:
 		V2<TYPE> arcPoint = circ.getClosestPointOnEdge(point, out_normal);
 		V2<TYPE> relativeP = arcPoint - origin;
 		V2<TYPE> startRad = V2<TYPE>(startAngle) * radius,endRad = V2<TYPE>(endAngle) * radius;
-		V2<TYPE> zero = V2<TYPE>::ZERO();
 		V2<TYPE> startRadCorner = origin + startRad;
 		V2<TYPE> endRadCorner = origin + endRad;
 		V2<TYPE> onStart, onEnd, p;
-		// check clockwise relationship to the to radii
-		bool cwStart = relativeP.sign(startRad) <= 0, cwEnd = relativeP.sign(endRad) <= 0;
-		bool arcPointValid = cwStart && cwStart != cwEnd;
+		bool arcPointValid = isInAngle(relativeP, startRad, endRad);
 		TYPE line, ray;
 		bool startLineHit = V2<TYPE>::rayIntersection(origin, startRadCorner, point, point + startRad.perp(), line, ray);
 		if (startLineHit && line <= 0 || line >= 1) {
@@ -114,10 +144,7 @@ public:
 			endLineHit ? (point - onEnd).magnitude() : distances[2], // end line
 		};
 		const int numDistances = sizeof(distances) / sizeof(distances[0]);
-		int smallest = 0;
-		for (int i = 1; i < numDistances; ++i) {
-			if (distances[i] < distances[smallest]) smallest = i;
-		}
+		int smallest = indexOfSmallestPositive(distances, numDistances);
 		switch (smallest) {
 		case 0:	out_normal = (point - origin).normal();	p = origin;	break;
 		case 1:	out_normal = (point - startRadCorner).normal();	p = startRadCorner;	break;
@@ -168,8 +195,7 @@ public:
 		V2<TYPE> relativeP = circCenter - origin;
 		// if it is in the circle range, check the harder stuff
 		if (dist < circRadius + radius) {
-			bool cwStart = relativeP.sign(startRad) <= 0, cwEnd = relativeP.sign(endRad) <= 0;
-			if (cwStart && cwStart != cwEnd) {
+			if (isInAngle(relativeP, startRad, endRad)) {
 				return true;
 			}
 			V2<TYPE> prpStart = start.perp(), prpEnd = end.perp();
@@ -181,7 +207,7 @@ public:
 			};
 			const int numPoints = sizeof(points) / sizeof(points[0]);
 			for (int i = 0; i < numPoints; ++i) {
-				if (contains(points[i]))
+				if (isInAngle(points[i] - origin, startRad, endRad))
 					return true;
 			}
 		}
@@ -193,19 +219,44 @@ public:
 	}
 
 	bool intersectsBox(Box<TYPE> box) const {
-		// TODO finish me
 		// check radius intersect, to see if collision is possible
-		// check if box corners are in the cone
-		// check if cone lines cross box lines
+		TYPE boxRad = box.size.magnitude() / 2;
+		V2<TYPE> delta = box.center - origin;
+		TYPE dist = delta.magnitude();
+		if (dist < radius + boxRad) {
+			if (box.contains(origin)) return true;
+			// check if box corners are in the cone
+			const int numPoints = 4;
+			V2<TYPE> points[numPoints];
+			box.writePoints(points, numPoints);
+			if (indexOfContained(points, numPoints, 0) >= 0) {
+				return true;
+			}
+			// check if cone lines cross box lines
+			V2<TYPE> startP = V2f(startAngle) * radius + origin;
+			if (box.contains(startP)) return true;
+			V2<TYPE> endP = V2f(endAngle) * radius + origin;
+			if (box.contains(endP)) return true;
+			TYPE boxLine, coneLine;
+			for (int i = 0; i < numPoints; ++i) {
+				if (V2<TYPE>::rayIntersection(origin, startP, points[i], points[(i + 1) % numPoints], coneLine, boxLine)
+					&& coneLine > 0 && coneLine < 1 && boxLine > 0 && boxLine < 1) {
+					return true;
+				}
+			}
+		}
 		return false;
 	}
 
-	bool intersectsCone(Cone<TYPE> cone) const {
-		// TODO finish me
+	bool intersectsCone(Cone<TYPE> otherCone) const {
 		// check radius intersect
-		// check circle collision against each other, if there is at least one collision there
+		V2<TYPE> delta = otherCone.origin - origin;
+		TYPE dist = delta.magnitude();
+		if (dist < radius + otherCone.radius) {
+			// check circle collision against each other, if there is at least one collision there
 			// check corners inside each other
 			// check crossing lines
+		}
 		return false;
 	}
 };
