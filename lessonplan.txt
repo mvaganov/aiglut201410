@@ -73,16 +73,13 @@ vec2 arrive(vec2 target, Agent agent, int a_ms) {
 // hide (ai flee behind cover when low on HP)
 
 //---wk3day5 --- finite state machines
-// ai follows you when you get in range
-// ai flees when low on hp
-// ai regenerates HP
-// ai heal each other when close
-	// loneliness meter causes ai to seek out friendlies, which reduces loneliness
-	// aggressive meter causes ai to attack if player (or other AI) in range
-	// hungriness meter causes ai to seek out food resources
+// identify game mechanics and finite state machines to develop
+// create a simple game design document
+// start implementing graphs
+// create a graph
+// random map obstacle generation based on graph
 
 //---wk3day6 --- graph navigation
-// create a graph
 // draw the nav graph
 // ai move using the nav graph (A*)
 
