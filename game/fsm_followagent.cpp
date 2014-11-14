@@ -5,6 +5,7 @@
 #include "fsm_fleebullets.h"
 #include "bullet.h"
 #include "game.h"
+#include "astar.h"
 
 void FSM_FollowAgent::execute(Agent * a, int a_ms) {
 	if(!a->playerControlled) {
@@ -18,10 +19,8 @@ void FSM_FollowAgent::execute(Agent * a, int a_ms) {
 			a->setFSM(new FSM_Flee(b));
 			return;
 		}
-		float distance = V2f::distance(a->body.center, followed->body.center);
-		if(distance > a->body.radius * 10 + followed->body.radius
-		|| a->playerControlled 
-		|| !followed->alive) {
+		if (a->playerControlled || !followed->playerControlled || !followed->alive || !a->hasLineOfSight(followed)) {
+			// TODO this would be a good place to search for a path using Astar....
 			a->setFSM(new FSM_Idle());
 			return;
 		}
@@ -36,6 +35,9 @@ void FSM_FollowAgent::execute(Agent * a, int a_ms) {
 void FSM_FollowAgent::draw(Agent * a, GLUTRenderingContext * g_screen) {
 	for(int i = 0; i < calc.actualHits.size(); ++i) {
 		calc.actualHits[i]->glDraw(true);
+	}
+	if (!a->playerControlled && followed) {
+		g_screen->drawLine(followed->body.center, a->body.center);
 	}
 	g_screen->setColor(0x0088ff);
 	for (int i = 0; i < calc.hitLocations.size(); ++i) {

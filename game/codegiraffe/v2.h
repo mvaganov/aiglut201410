@@ -552,6 +552,7 @@ struct V2 {
 			int other = (closestEdge + 1) % polygonLoopCount;
 			V2<TYPE> delta = (polygonLoop[other] - polygonLoop[closestEdge]);
 			out_point = polygonLoop[closestEdge] + delta * closestSurfacePercent;
+			out_dist = closestDistance;
 			out_normal = delta.perp().normal();
 		}
 		return closestEdge;

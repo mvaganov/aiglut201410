@@ -12,6 +12,7 @@
 
 #include "graph.h"
 #include "mazegen.h"
+#include "astar.h"
 
 class Game {
 public:
@@ -20,9 +21,11 @@ public:
 	TemplateVector<Agent*> agents;
 
 	Graph * mapGraph;
+	TemplateVector<GraphNode*> * mapPath;
 
 	/** who does the user have selected */
 	Agent * selected;
+	GraphNode * selectedNode;
 
 	Agent * getAgentAt(V2f const & click) {
 		for(int i = 0; i < agents.size(); ++i) {
@@ -56,18 +59,22 @@ public:
 		}
 	}
 	ConeObject * testcone;
+	BoxObject * testBox;
+
 	Game() {
+		selectedNode = NULL;
 		selected = NULL;
 		int agentCount = 10;
 		CircF testCircle(V2f(5,5), .75f);
 		RectF aabb(V2f(0, 5), V2f(3, 2));
 		BoxF box(V2f(5,1), V2f(1,3), (float)V_PI / 8);
-		obstacles.add(new CircleObject(testCircle));
-		TRACE_MEMORY(obstacles.getLast(), "circle object");
-		obstacles.add(new BoxObject(aabb));
-		TRACE_MEMORY(obstacles.getLast(), "aabb object");
-		obstacles.add(new BoxObject(box));
-		TRACE_MEMORY(obstacles.getLast(), "box object");
+		//obstacles.add(new CircleObject(testCircle));
+		//TRACE_MEMORY(obstacles.getLast(), "circle object");
+		//obstacles.add(new BoxObject(aabb));
+		//testBox = (BoxObject*)obstacles.getLast();
+		//TRACE_MEMORY(obstacles.getLast(), "aabb object");
+		//obstacles.add(new BoxObject(box));
+		//TRACE_MEMORY(obstacles.getLast(), "box object");
 		obstacles.add(new ConeObject(ConeF(V2f(-1, 6), 1, 1.0f, 4.0f)));
 		testcone = (ConeObject*)obstacles.getLast();
 
@@ -89,6 +96,8 @@ public:
 		mapGraph = Graph::createDenseGrid(5, 5, V2f(-10, -10), V2f(10, 10));
 		randomMazeGen_prim(mapGraph, -1);
 		generateWallBoxesForGraph(mapGraph, -1);
+
+		mapPath = Astar(mapGraph->nodes[0], mapGraph->nodes.getLast());
 	}
 	~Game() {
 		//for(int i = 0; i < agents.size(); ++i) {
@@ -107,6 +116,65 @@ public:
 			delete mapGraph;
 		}
 	}
+
+	/** assumes that the graph will always have at least one node */
+	GraphNode * getGraphNodeClosestTo(V2f position) {
+		GraphNode * best = mapGraph->nodes[0];
+		float shortestDistance = V2f::distance(best->location, position);
+		for(int i = 1; i < mapGraph->nodes.size(); ++i) {
+			GraphNode * n = mapGraph->nodes[i];
+			float dist = V2f::distance(n->location, position);
+			if(dist < shortestDistance) {
+				shortestDistance = dist;
+				best = n;
+			}
+		}
+		return best;
+	}
+
+	/** 
+	 * @param start where to look from
+	 * @param direction what direction to look
+	 * @param maxDistance ignore hits that are further than this. Use a negative value to ignore maxDistance
+	 * @param dontCareAboutObstacle if true, will return when even one obstacle is found in the way (out_obstacle is not expected to be the closest Obstacle)
+	 * @param out_obstacle the obstacle hit while raycasting
+	 * @param out_dist how far away the hit happened
+	 * @param out_point where the hit happend
+	 * @param out_normal the direction of the surface at that hit
+	 * @param ignoreList a list of objects to ignore
+	 * @param ignoreCount how many objects to ignore
+	 * @return true if nothing was hit
+	 */
+	bool raycast(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Obstacle * & out_obstacle, float & out_dist, V2f & out_point, V2f & out_normal, Obstacle ** ignoreList, int ignoreCount) {
+		float closest = -1;
+		out_obstacle = NULL;
+		for(int i = 0; i < obstacles.size(); ++i) {
+			Obstacle * o = obstacles[i];
+			bool checkThisOne = true;
+			if(ignoreList != NULL) {
+				for(int ignore = 0; ignore < ignoreCount; ++ignore) {
+					if(ignoreList[ignore] == o) {
+						checkThisOne = false;
+						break;
+					}
+				}
+			}
+			if(checkThisOne) {
+				float dist;
+				V2f point, normal;
+				if(o->raycast(start, direction, dist, point, normal)
+				&& dist > 0 && dist < maxDistance && (closest < 0 || dist < closest)) {
+					out_dist = dist;
+					out_obstacle = o;
+					out_point = point;
+					out_normal = normal;
+					if (dontCareAboutObstacle) return true; // return ASAP if block/no-block is all that is required
+				}
+			}
+		}
+		return (out_obstacle != NULL);
+	}
+
 	void display(GLUTRenderingContext & g_screen) {
 		g_screen.setColor(0x00aaff);
 		mapGraph->glDraw(&g_screen);
@@ -127,19 +195,31 @@ public:
 //			g_screen.printf(collisionPoint, "%.2f", dist);
 //		}
 
-/*		// testing cone stuff
+		// testing cone stuff
 		g_screen.drawCircle(mouseClick, .05f, true);
 		g_screen.drawLine(mouseClick, mousePosition);
 		V2f hit, norm;
 		float dist;
-		if (testcone->raycast(mouseClick, (mousePosition - mouseClick).normal(), dist, hit, norm)) {
+		Obstacle * obs = testcone;//testBox;
+		if (obs->raycast(mouseClick, (mousePosition - mouseClick).normal(), dist, hit, norm)) {
 			g_screen.drawCircle(CircF(hit, .1f), false);
 			g_screen.drawLine(hit, hit + norm);
+			g_screen.setColor(0);
+			g_screen.printf(hit+V2f(0,.2f), "%f", dist);
 		}
-		hit = testcone->getClosestPointOnEdge(mousePosition, norm);
+		hit = obs->getClosestPointOnEdge(mousePosition, norm);
 		g_screen.drawCircle(CircF(hit, .05f), false);
 		g_screen.drawLine(hit, hit + norm * 0.5);
-*/
+
+		if(raycast(mouseClick, (mousePosition - mouseClick).normal(), -1, false, obs, dist, hit, norm, 0, 0)) {
+//			g_screen.setColor(0x0000ff);
+//			obs->glDraw(true);
+		}
+
+		g_screen.setColor(0x0000ff);
+		for(int i = 0; i < mapPath->size(); ++i) {
+			g_screen.printf(mapPath->get(i)->location, "%d", i);
+		}
 
 		g_screen.setColor(0x008800);
 		V2f point, normal;

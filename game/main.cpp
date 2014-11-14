@@ -87,6 +87,13 @@ void mouse(int button, int state, int x, int y) {
 					a->direction = delta; // normalized move vector
 					a->targetPosition = click;
 				}
+				if(g_game.selectedNode == NULL) {
+					g_game.selectedNode = g_game.getGraphNodeClosestTo(click);
+				} else {
+					delete g_game.mapPath;
+					g_game.mapPath = Astar(g_game.selectedNode, g_game.getGraphNodeClosestTo(click));
+					g_game.selectedNode = NULL;
+				}
 			}
 		}
 		break;
