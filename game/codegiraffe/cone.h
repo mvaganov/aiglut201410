@@ -43,6 +43,13 @@ public:
 		return (cwStart && !cwEnd);
 	}
 
+	bool isInAngle(V2<TYPE> const & point) const {
+		V2<TYPE> relativeP = point - origin;
+		V2<TYPE> startRad = V2<TYPE>(startAngle);
+		V2<TYPE> endRad = V2<TYPE>(endAngle);
+		return isInAngle(relativeP, startRad, endRad);
+	}
+
 	bool contains(V2<TYPE> const & p) const { 
 		V2<TYPE> relativeP = p - origin;
 		V2<TYPE> startRad = V2<TYPE>(startAngle);
@@ -173,6 +180,7 @@ public:
 			glScalef(radius, radius, 1);
 			glBegin(GL_LINE_STRIP);
 		} else {
+			glScalef(radius, radius, 1);
 			glBegin(GL_TRIANGLE_FAN);
 			zero.glVertex();
 		}
@@ -229,33 +237,85 @@ public:
 			const int numPoints = 4;
 			V2<TYPE> points[numPoints];
 			box.writePoints(points, numPoints);
-			if (indexOfContained(points, numPoints, 0) >= 0) {
-				return true;
-			}
 			// check if cone lines cross box lines
-			V2<TYPE> startP = V2f(startAngle) * radius + origin;
+			V2<TYPE> startP = V2<TYPE>(startAngle) * radius + origin;
 			if (box.contains(startP)) return true;
-			V2<TYPE> endP = V2f(endAngle) * radius + origin;
+			V2<TYPE> endP = V2<TYPE>(endAngle) * radius + origin;
 			if (box.contains(endP)) return true;
-			TYPE boxLine, coneLine;
-			for (int i = 0; i < numPoints; ++i) {
-				if (V2<TYPE>::rayIntersection(origin, startP, points[i], points[(i + 1) % numPoints], coneLine, boxLine)
-					&& coneLine > 0 && coneLine < 1 && boxLine > 0 && boxLine < 1) {
-					return true;
-				}
+			return intersectsPolygonLineList(points, numPoints);
+		}
+		return false;
+	}
+
+	bool intersectsPolygonLineList(V2<TYPE> * points, const int numPoints) const {
+		if (indexOfContained(points, numPoints, 0) >= 0) {
+			return true;
+		}
+		// check if cone lines cross box lines
+		V2<TYPE> startP = V2<TYPE>(startAngle) * radius + origin;
+		V2<TYPE> endP = V2<TYPE>(endAngle) * radius + origin;
+		TYPE boxLine, coneLine;
+		for (int i = 0; i < numPoints; ++i) {
+			if (V2<TYPE>::rayIntersection(origin, startP, points[i], points[(i + 1) % numPoints], coneLine, boxLine)
+				&& coneLine > 0 && coneLine < 1 && boxLine > 0 && boxLine < 1) {
+				return true;
 			}
 		}
 		return false;
 	}
 
-	bool intersectsCone(Cone<TYPE> otherCone) const {
+	private: static bool checkOneCone(Cone<TYPE> const & a, Cone<TYPE> const & b, const float dist, 
+		V2f const & startRad, V2f const & endRad) {
+		// check if cone b is in cone a's angles
+		if (dist < a.radius && isInAngle(b.origin - a.origin, startRad, endRad)) return true;
+
+		V2<TYPE> point;
+		point = b.origin + V2<TYPE>(b.startAngle) * b.radius;
+		float d = (point - a.origin).magnitude();
+		if (d < a.radius && isInAngle(point - a.origin, startRad, endRad)) return true;
+
+		point = b.origin + V2<TYPE>(b.endAngle) * b.radius;
+		d = (point - a.origin).magnitude();
+		if (d < a.radius && isInAngle(point - a.origin, startRad, endRad)) return true;
+
+		// check if lines are close enough to origins
+		if (V2<TYPE>::closestPointOnLine(a.origin, startRad + a.origin, b.origin, point)
+			&& b.contains(point)) {
+			return true;
+		}
+		if (V2<TYPE>::closestPointOnLine(a.origin, endRad + a.origin, b.origin, point)
+			&& (point - b.origin).magnitude() < b.radius 
+			&& b.contains(point)) {
+			return true;
+		}
+		return false;
+	}
+
+	public: bool intersectsCone(Cone<TYPE> const & otherCone) const {
+		// TODO optimize...? lots of duplicate calculations are happening here.
 		// check radius intersect
 		V2<TYPE> delta = otherCone.origin - origin;
 		TYPE dist = delta.magnitude();
 		if (dist < radius + otherCone.radius) {
-			// check circle collision against each other, if there is at least one collision there
-			// check corners inside each other
-			// check crossing lines
+			V2<TYPE> astartRad = V2<TYPE>(startAngle) * radius;
+			V2<TYPE> aendRad = V2<TYPE>(endAngle) * radius;
+			V2<TYPE> bstartRad = V2<TYPE>(otherCone.startAngle) * otherCone.radius;
+			V2<TYPE> bendRad = V2<TYPE>(otherCone.endAngle) * otherCone.radius;
+			// if they are looking at each other...
+			if (isInAngle(otherCone.origin) && otherCone.isInAngle(origin)) return true;
+			if (checkOneCone(*this, otherCone, dist, astartRad, aendRad)) {
+				return true;
+			}
+			if (checkOneCone(otherCone, *this, dist, bstartRad, bendRad)) {
+				return true;
+			}
+			V2f point;
+			if (V2f::lineIntersection(origin, origin + astartRad, otherCone.origin, otherCone.origin + bstartRad, dist, point)
+			|| V2f::lineIntersection(origin, origin + aendRad, otherCone.origin, otherCone.origin + bstartRad, dist, point)
+			|| V2f::lineIntersection(origin, origin + astartRad, otherCone.origin, otherCone.origin + bendRad, dist, point)
+			|| V2f::lineIntersection(origin, origin + aendRad, otherCone.origin, otherCone.origin + bendRad, dist, point)){
+				return true;
+			}
 		}
 		return false;
 	}

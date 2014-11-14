@@ -284,10 +284,10 @@ struct V2 {
 	TYPE piRadians(const V2<TYPE> & v) const { return cos(dot(*this, v)); }
 
 	/** @return radians that this normalized vector is, using ZERO_DEGREES() as the starting point */
-	TYPE piRadians() const { return (y<0?-1:1)*piRadians(ZERO_DEGREES()); }
+	TYPE piRadians() const { return ((y > 0) ? 1 : -1) * acos(x); }
 	
 	/** @return how many degrees (standard 360 degree scale) this is */
-	TYPE degrees() const { return ((y > 0) ? -1 : 1)*acos(x) * 180 / (TYPE)V_PI; }
+	TYPE degrees() const { return ((y > 0) ? 1 : -1) * acos(x) * 180 / (TYPE)V_PI; }
 
 	/** @param a_normal cos(theta), sin(theta) as x,y values */
 	void rotate(const V2<TYPE> & a_normal) {
