@@ -91,7 +91,7 @@ struct V2 {
 	TYPE magnitude() const { return sqrt((TYPE)magnitudeSq()); }
 
 	/** @return dot product of v1 and v2. how "aligned" are these two? 0 = perp, +1 = same dir, -1 = opposite dir */
-	static TYPE dot(const V2<TYPE> & v1, const V2<TYPE> & v2) { return (TYPE)(v1.x * v2.x + v1.y * v2.y); }
+	static TYPE dot(V2<TYPE> const & v1, V2<TYPE> const & v2) { return (TYPE)(v1.x * v2.x + v1.y * v2.y); }
 
 	/**
 	 * @return positive if position p is clockwise of this vector 
@@ -280,8 +280,8 @@ struct V2 {
 		return norm.normalize();
 	}
 
-	/** @return radians between these normalized vector is */
-	TYPE piRadians(const V2<TYPE> & v) const { return cos(dot(*this, v)); }
+	/** @return radians between these normalized vector is (accounts for negative rotation) */
+	TYPE piRadians(V2<TYPE> const & v) const { return ((sign(v) < 0) ? 1 : -1) * acos(dot(*this, v)); }
 
 	/** @return radians that this normalized vector is, using ZERO_DEGREES() as the starting point */
 	TYPE piRadians() const { return ((y > 0) ? 1 : -1) * acos(x); }
@@ -717,7 +717,7 @@ struct V2 {
 	 * rotate the open GL rendering context.
 	 * @note: Dont forget to push and pop the matrix!
 	 */
-	void glRotate() const { glRotatef(-degrees(), 0, 0, 1); }
+	void glRotate() const { glRotatef(degrees(), 0, 0, 1); }
 
 	/**
 	 * draw an OpenGL line from (0,0) to (V2.x, V2.y)

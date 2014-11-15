@@ -1,11 +1,11 @@
 #pragma once
 #include "codegiraffe/templatevector.h"
 #include "graph.h"
-#include <map>
+#include "codegiraffe/templatehashmap.h" // TemplateHashMap<K,V> is a replacement for std::map<K,V>
 
 inline GraphNode * nodeInOpenSetWithLowestScore(
 	TemplateVector<GraphNode*> & openset, 
-	std::map<GraphNode*, float> & f_score)
+	TemplateHashMap<GraphNode*, float> & f_score)
 {
 	int lowestIndex = 0;
 	GraphNode * best = openset[lowestIndex];
@@ -22,7 +22,7 @@ inline GraphNode * nodeInOpenSetWithLowestScore(
 }
 
 inline TemplateVector<GraphNode*> * reconstruct_path(
-	std::map<GraphNode *, GraphNode *> & came_from, 
+	TemplateHashMap<GraphNode*, GraphNode*> & came_from,
 	GraphNode* current);
 
 // the larger this is, the more direct A* tries to be.
@@ -40,15 +40,15 @@ inline TemplateVector<GraphNode*> * Astar(GraphNode * start, GraphNode * goal) {
 	TemplateVector<GraphNode*> openset;
 	openset.add(start);
     //came_from := the empty map    // The map of navigated nodes.
-	std::map<GraphNode *, GraphNode *> came_from;
+	TemplateHashMap<GraphNode*, GraphNode*>	came_from;
 	came_from[start] = NULL;
  
     //g_score[start] := 0    // Cost from start along best known path.
-	std::map<GraphNode*, float> g_score;
+	TemplateHashMap<GraphNode*, float> g_score;
 	g_score[start] = 0;
     // Estimated total cost from start to goal through y.
     //f_score[start] := g_score[start] + heuristic_cost_estimate(start, goal)
-	std::map<GraphNode*, float> f_score;
+	TemplateHashMap<GraphNode*, float> f_score;
 	f_score[start] = g_score[start] + heuristic_cost_estimate(start, goal);
  
     //while openset is not empty
@@ -101,7 +101,7 @@ inline TemplateVector<GraphNode*> * Astar(GraphNode * start, GraphNode * goal) {
  
 //function reconstruct_path(came_from,current)
 inline TemplateVector<GraphNode*> * reconstruct_path(
-	std::map<GraphNode *, GraphNode *> & came_from, 
+	TemplateHashMap<GraphNode*, GraphNode*> & came_from,
 	GraphNode* current)
 {
     //total_path := [current]
