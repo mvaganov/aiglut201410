@@ -78,6 +78,15 @@
     <ClInclude Include="codegiraffe\cone.h">
       <Filter>codegiraffe</Filter>
     </ClInclude>
+    <ClInclude Include="codegiraffe\templatehashmap.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="astar.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\polygon.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

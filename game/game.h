@@ -202,9 +202,9 @@ public:
 		g_screen.drawCircle(mouseClick, .05f, true);
 		g_screen.drawLine(mouseClick, mousePosition);
 		V2f hit, norm;
-		float dist;
 
 		// used for testing object types
+		//float dist;
 		//Obstacle * obs = testPoly;//testcone;//testBox;
 		//if (obs->raycast(mouseClick, (mousePosition - mouseClick).normal(), dist, hit, norm)) {
 		//	g_screen.drawCircle(CircF(hit, .1f), false);

@@ -54,6 +54,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -80,14 +81,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="agent.h" />
+    <ClInclude Include="astar.h" />
     <ClInclude Include="bullet.h" />
     <ClInclude Include="codegiraffe\aabb.h" />
     <ClInclude Include="codegiraffe\box.h" />
     <ClInclude Include="codegiraffe\circle.h" />
     <ClInclude Include="codegiraffe\cone.h" />
     <ClInclude Include="codegiraffe\glutrenderingcontext.h" />
+    <ClInclude Include="codegiraffe\polygon.h" />
     <ClInclude Include="codegiraffe\random.h" />
     <ClInclude Include="codegiraffe\templatearray.h" />
+    <ClInclude Include="codegiraffe\templatehashmap.h" />
     <ClInclude Include="codegiraffe\templatevector.h" />
     <ClInclude Include="codegiraffe\v2.h" />
     <ClInclude Include="fsm.h" />
