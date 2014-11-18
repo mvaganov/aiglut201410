@@ -36,6 +36,14 @@ public:
 			edges.add(GraphEdge(this, n));
 		}
 	}
+	bool removeNeighbor(GraphNode * n) {
+		int index = getEdgeIndex(n);
+		if (index >= 0) {
+			edges.remove(index);
+			return true;
+		}
+		return false;
+	}
 	void glDraw(GLUTRenderingContext * g_screen) {
 		BoxF(location, V2f(.5f, .5f), 0).glDraw();
 		for(int i = 0; i < edges.size(); ++i) {

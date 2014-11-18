@@ -3,6 +3,8 @@
 #include <math.h>
 #include "random.h"
 
+// TODO move polygon-related code into Polygon2
+
 // PI constants redefined to reduce dependency on weird _USE_MATH_DEFINES issues
 const double V_PI = 3.14159265358979323846;
 const double V_2PI = V_PI * 2;
@@ -146,7 +148,7 @@ struct V2 {
 	}
 
 	/** @return if this point is inside the given convex polygon, who's points are in clock-wise order */
-	bool isInsidePolyCW(V2<TYPE> * const & points, int points_length) const {
+	bool isInsidePolyCW(const V2<TYPE> * const & points, const int points_length) const {
 		for(int i = 0; i < points_length; ++i) {
 			if(isCW(points[i], points[(i+1)%points_length]))
 				return false;
@@ -155,7 +157,7 @@ struct V2 {
 	}
 
 	/** @return if this point is inside the given convex polygon, who's points are in counter-clock-wise order */
-	bool isInsidePolyCCW(V2<TYPE> * const & points, int points_length) const {
+	bool isInsidePolyCCW(const V2<TYPE> * const & points, const int points_length) const {
 		for(int i = 0; i < points_length; ++i){
 			if(isCCW(points[i], points[(i+1)%points_length]))
 				return false;
@@ -330,7 +332,7 @@ struct V2 {
 	 * does not modify the calling vector, it returns a vector just like this one after a rotation
 	 * @param a_degreePiRadians in piRadians
 	 */
-	V2<TYPE> rotated(const TYPE a_degreePiRadians) {
+	V2<TYPE> rotated(const TYPE a_degreePiRadians) const {
 		V2<TYPE> result(*this);
 		result.rotate(V2<TYPE>(cos(a_degreePiRadians), sin(a_degreePiRadians)));
 		return result;
@@ -340,7 +342,7 @@ struct V2 {
 	 * does not modify the calling vector, it returns a vector just like this one after a rotation
 	 * @param a_normal cos(theta), sin(theta) as x,y values
 	 */
-	void rotated(const V2<TYPE> & a_normal) {
+	V2<TYPE> rotated(const V2<TYPE> & a_normal) const {
 		V2<TYPE> result(*this);
 		result.rotate(a_normal);
 		return result;
@@ -499,6 +501,22 @@ struct V2 {
 	* @param B end of line AB
 	* @param C start of line CD
 	* @param D end of line CD
+	* @return true if intersection occurs between the lines, and on the lines
+	*/
+	static bool lineIntersection(const V2<TYPE> & A, const V2<TYPE> & B, const V2<TYPE> & C, const V2<TYPE> & D)
+	{
+		TYPE ab, cd;
+		if (rayIntersection(A, B, C, D, ab, cd)) {
+			return ((ab > 0) && (ab < 1) && (cd > 0) && (cd < 1));
+		}
+		return false;
+	}
+
+	/**
+	* @param A start of line AB
+	* @param B end of line AB
+	* @param C start of line CD
+	* @param D end of line CD
 	* @param out_alongAB __OUT how far along AB (percentage) the collision happened
 	* @param out_alongCD __OUT how far along CD (percentage) the collision happened
 	* @return false if parallel, true otherwise
@@ -575,6 +593,16 @@ struct V2 {
 		return intersected;
 	}
 
+	/** @return if circle (a_point,a_radius) crosses the given ray */
+	static bool rayCrossesCircle(const V2<TYPE> & rayStart, const V2<TYPE> & rayDirection,
+		const V2<TYPE> & a_center, const TYPE a_radius)
+	{
+		V2<TYPE> radiusDirection = rayDirection.perp();
+		radiusDirection.normalize();
+		float rayDist, radiusDist;
+		rayIntersection(rayStart, rayDirection, a_center, a_center + radiusDirection, rayDist, radiusDist);
+		return (radiusDist <= a_radius) && rayDist > 0;
+	}
 	/** @return if circle (a_point,a_radius) crosses line (A,B) */
 	static bool lineCrossesCircle(const V2<TYPE> & A, const V2<TYPE> & B, 
 		const V2<TYPE> & a_center, const TYPE a_radius, V2<TYPE> & a_out_closePoint)
@@ -583,7 +611,30 @@ struct V2 {
 		radiusDirection.normalize();
 		float lineDist, radiusDist;
 		rayIntersection(A, B, a_center, a_center + radiusDirection, lineDist, radiusDist);
-		return (radiusDist <= radius);
+		a_out_closePoint = radiusDirection * radiusDist + a_center;
+		return (abs(radiusDist) <= a_radius) && (lineDist > 0 && lineDist < 1);
+	}
+
+	/**
+	 * @param point the point you are looking for neighbors to
+	 * @param list multiple points
+	 * @param listSize how many points are in list
+	 * @return the index (from list) of the point that is closest to point
+	 */
+	static int indexOfClosest(V2<TYPE> const & point, const V2<TYPE> * const & list, const int listSize) {
+		if (listSize < 0) return -1;
+		int closestIndex = 0;
+		V2<TYPE> delta = list[0] - point;
+		TYPE mag, closestSoFar = delta.magnitude();
+		for (int i = 1; i < listSize; ++i) {
+			delta = list[i] - point;
+			mag = delta.magnitude();
+			if (mag < closestSoFar) {
+				closestSoFar = mag;
+				closestIndex = i;
+			}
+		}
+		return closestIndex;
 	}
 
 	/**

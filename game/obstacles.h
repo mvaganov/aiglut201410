@@ -5,6 +5,7 @@
 #include "codegiraffe/circle.h"
 #include "codegiraffe/box.h"
 #include "codegiraffe/cone.h"
+#include "codegiraffe/polygon.h"
 
 // pure virtual class -- an Interface
 class Obstacle {
@@ -23,7 +24,7 @@ public:
 	virtual void resolveCollision(Obstacle * otherObject, void * collisionData) = 0;
 };
 
-class CircleObject : public Obstacle, public CircF {
+class CircleObject : public CircF, public Obstacle {
 public:
 	CircleObject(CircF c):CircF(c){}
 	V2f getCenter() const {return center;}
@@ -41,7 +42,7 @@ public:
 	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
 	void resolveCollision(Obstacle * o, void * collisionData){}
 };
-class BoxObject : public Obstacle, public BoxF {
+class BoxObject : public BoxF, public Obstacle {
 public:
 	BoxObject(BoxF b):BoxF(b){}
 	BoxObject(RectF r):BoxF(r.getCenter(), r.getDimension(), 0){}
@@ -59,7 +60,7 @@ public:
 	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
 	void resolveCollision(Obstacle * o, void * collisionData){}
 };
-class ConeObject : public Obstacle, public ConeF {
+class ConeObject : public ConeF, public Obstacle {
 public:
 	ConeObject(ConeF c) :ConeF(c){}
 	V2f getCenter() const { return ConeF::getCenter(); }
@@ -73,6 +74,23 @@ public:
 		return ConeF::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { ConeF::glDraw(filled); }
+	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
+	void resolveCollision(Obstacle * o, void * collisionData){}
+};
+class PolygonObject : public Polygon2f, public Obstacle{
+public:
+	PolygonObject(Polygon2f c) :Polygon2f(c){}
+	V2f getCenter() const { return Polygon2f::getCenter(); }
+	bool intersects(const Obstacle * o) const;
+	bool contains(V2f const & p) const { return Polygon2f::contains(p); }
+	bool raycast(V2f const & rayStart, V2f const & rayDirection,
+		float & out_dist, V2f & out_point, V2f & out_normal) const {
+		return Polygon2f::raycast(rayStart, rayDirection, out_dist, out_point, out_normal);
+	}
+	V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const {
+		return Polygon2f::getClosestPointOnEdge(point, out_normal);
+	}
+	void glDraw(bool filled) const { Polygon2f::glDraw(filled); }
 	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
 	void resolveCollision(Obstacle * o, void * collisionData){}
 };

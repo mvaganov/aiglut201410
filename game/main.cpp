@@ -24,6 +24,7 @@ Game g_game;
  if (state & GLUT_ACTIVE_SHIFT)	// shift is pressed</code>
  */
 void keyboard(unsigned char key, int x, int y) {
+	// TODO make some of this code in Game
 	switch (key) {
 	case 27:	g_gameLoopRunning = false;  break;
 	case ' ':
@@ -36,6 +37,9 @@ void keyboard(unsigned char key, int x, int y) {
 				g_game.agents.add(bullet);
 			}
 		}
+		break;
+	case '\t':
+		g_game.drawDebug = !g_game.drawDebug;
 		break;
 	case 'p':
 		g_paused = !g_paused;
@@ -68,7 +72,8 @@ void mouse(int button, int state, int x, int y) {
 		}
 		break;
 	case GLUT_LEFT_BUTTON:
-		if(state == GLUT_DOWN) {
+		// TODO make some of this code in Game
+		if (state == GLUT_DOWN) {
 			Agent * a = g_game.getAgentAt(click);
 			if(a != NULL) {
 				if(g_game.selected != NULL) {
@@ -186,6 +191,9 @@ int main(int argc, char * argv[]) {
 		passed = glutGet(GLUT_ELAPSED_TIME) - now;	// how long did update take to process?
 		int wait = msDelay-passed-1;// factor that into the next wait
 		Sleep((wait > 0)?wait:0);	// wait (if it makes sense to), to throttle the game engine
+
+		// if something caused the game to take a LONG time, ignore that time duration.
+		if (wait <= 0) now = glutGet(GLUT_ELAPSED_TIME);
 	}
 	return 0;
 }

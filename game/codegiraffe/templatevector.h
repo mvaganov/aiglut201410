@@ -195,7 +195,7 @@ public:
 	 * will only work correctly if the TemplateVector is sorted.
 	 * @return the index of the given value, -1 if the value is not in the list
 	 */
-	int indexOfWithBinarySearch(DATA_TYPE const & a_value) {
+	int indexOfWithBinarySearch(DATA_TYPE const & a_value) const {
 		if(m_size) {
 			return TemplateArray::indexOfWithBinarySearch(a_value, 0, m_size);
 		}

@@ -5,7 +5,7 @@
  *
  * written for understandability and convenience. for pure efficiency, use std::array
  *
- * @author mvaganov@hotmail.com October 2014
+ * @author mvaganov@hotmail.com November 2014
  */
 template<typename DATA_TYPE>
 class TemplateArray {
@@ -20,6 +20,9 @@ public:
 	DATA_TYPE get(int const a_index) const { return m_data[a_index]; }
 
 	DATA_TYPE & operator[](int const a_index) { return m_data[a_index]; }
+
+	/** use for const TemplateArray objects */
+	DATA_TYPE operator[](int const a_index) const { return m_data[a_index]; }
 
 	/** simple mutator sets a value in the list */
 	void set(int const a_index, DATA_TYPE const & a_value) {
@@ -138,6 +141,14 @@ public:
 			set(i, a_defaultValue);
 	}
 
+	/** complete constructor */
+	TemplateArray(int const a_size, const DATA_TYPE * const & a_defaultValues) {
+		init();
+		ensureCapacity(a_size);
+		for (int i = 0; i < a_size; ++i)
+			set(i, a_defaultValues[i]);
+	}
+
 	/** @return the size of the list */
 	int const size() const { return m_allocated; }
 
@@ -150,7 +161,10 @@ public:
 	 */
 	DATA_TYPE * getRawList() { return m_data; }
 
-	/** 
+	/**same as above, but const correct. less dangerous. */
+	const DATA_TYPE * getRawListConst() const { return m_data; }
+
+	/**
 	 * @param a_index is overwritten by the next element, which is 
 	 * overwritten by the next element, and so on, till the last element
 	 * @note this operation is memory intensive!
@@ -236,6 +250,15 @@ public:
 		int half = size() / 2;
 		for (int i = 0; i < half; ++i) {
 			swap(i, size() - 1 - i);
+		}
+	}
+	static void reverse(DATA_TYPE * list, int count) {
+		int half = count / 2;
+		DATA_TYPE temp;
+		for (int i = 0; i < half; ++i) {
+			temp = list[i];
+			list[i] = list[count - 1 - i];
+			list[count - 1 - i] = temp;
 		}
 	}
 

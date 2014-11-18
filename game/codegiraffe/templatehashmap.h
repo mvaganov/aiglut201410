@@ -128,6 +128,19 @@ public:
 		}
 		return bucket->operator[](bucketIndex).v;
 	}
+
+	VALUE operator[](KEY const & k) const {
+		KVP_STRUCT kvp(k);
+		int index = KVP_STRUCT::hashFunction(k);
+		TemplateVector<KVP_STRUCT> * bucket = buckets.get(index);
+		int bucketIndex = bucket->indexOfWithBinarySearch(kvp);
+		if (bucketIndex < 0) {
+			// should not be adding elements to a constant map
+			int i = 0; i = 1 / i; // force a loud problem
+		}
+		return bucket->operator[](bucketIndex).v;
+	}
+
 	/** @return the structure that does all the work for the hash map */
 	TemplateVector<TemplateVector<KVP_STRUCT>*> * getRawBuckets() {
 		return buckets;

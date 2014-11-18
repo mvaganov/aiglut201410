@@ -14,6 +14,8 @@
 #include "mazegen.h"
 #include "astar.h"
 
+#include "codegiraffe/polygon.h"
+
 class Game {
 public:
 	V2f mousePosition, mouseClick, mouseDragged;
@@ -26,6 +28,9 @@ public:
 	/** who does the user have selected */
 	Agent * selected;
 	GraphNode * selectedNode;
+
+	/** whether or not to draw debug lines for FSM steering behaviors */
+	bool drawDebug;
 
 	Agent * getAgentAt(V2f const & click) {
 		for(int i = 0; i < agents.size(); ++i) {
@@ -58,25 +63,34 @@ public:
 			}
 		}
 	}
-	ConeObject * testcone;
-	BoxObject * testBox;
 
-	Game() {
+	// used for testing object types
+	//ConeObject * testcone;
+	//BoxObject * testBox;
+	//PolygonObject * testPoly;
+
+	Game() :mapGraph(0), mapPath(0), selected(0), selectedNode(0), drawDebug(true) {
 		selectedNode = NULL;
 		selected = NULL;
 		int agentCount = 10;
-		CircF testCircle(V2f(5,5), .75f);
-		RectF aabb(V2f(0, 5), V2f(3, 2));
-		BoxF box(V2f(5,1), V2f(1,3), (float)V_PI / 8);
-		//obstacles.add(new CircleObject(testCircle));
-		//TRACE_MEMORY(obstacles.getLast(), "circle object");
+		// code for testing object types
+		//CircF testCircle(V2f(5,5), .75f);
+		//RectF aabb(V2f(0, 5), V2f(3, 2));
+		//BoxF box(V2f(5,1), V2f(1,3), (float)V_PI / 8);
+		//CircleObject * cobj = new CircleObject(testCircle);
+		//TRACE_MEMORY(cobj, "circle object");
+		//obstacles.add(cobj);
 		//obstacles.add(new BoxObject(aabb));
 		//testBox = (BoxObject*)obstacles.getLast();
 		//TRACE_MEMORY(obstacles.getLast(), "aabb object");
 		//obstacles.add(new BoxObject(box));
 		//TRACE_MEMORY(obstacles.getLast(), "box object");
-		obstacles.add(new ConeObject(ConeF(V2f(-1, 6), 1, 1.0f, 4.0f)));
-		testcone = (ConeObject*)obstacles.getLast();
+		//obstacles.add(new ConeObject(ConeF(V2f(-1, 6), 1, 1.0f, 4.0f)));
+		//testcone = (ConeObject*)obstacles.getLast();
+		//V2f points[] = { V2f(-1.5f, .9f), V2f(0.0f, 1.0f), V2f(1.2f, .5f), V2f(.2f, -1.0f), V2f(-.9f, -.9f) };
+		//const int numPoints = sizeof(points) / sizeof(points[0]);
+		//testPoly = new PolygonObject(Polygon2f(V2f(4.0f, 7.0f), 1, points, numPoints));
+		//obstacles.add(testPoly);
 
 		for(int i = 0; i < agentCount; ++i) {
 			float extraRadius = Random::PRNGf()*0.5f;
@@ -114,6 +128,9 @@ public:
 		}
 		if (mapGraph) {
 			delete mapGraph;
+		}
+		if (mapPath) {
+			delete mapPath;
 		}
 	}
 
@@ -179,46 +196,44 @@ public:
 		g_screen.setColor(0x00aaff);
 		mapGraph->glDraw(&g_screen);
 		g_screen.printf(mousePosition, "%.2f, %.2f", mousePosition.x, mousePosition.y);
-//		g_screen.printf(mouseClick, "%.2f, %.2f", mouseClick.x, mouseClick.y);
 		g_screen.drawCircle(mousePosition, .1f, false);
-//		g_screen.setColor(0x0000ff);
-//		V2f delta = mouseDragged - mouseClick; // whereYouAre - whereYouWere
-//		delta.normalize();
-//		g_screen.printf(mouseDragged, "%.2f, %.2f m:%.2f", delta.x, delta.y, delta.magnitude());
-//		V2f a(0,2), b(1,0);
-//		g_screen.setColor(0xffaa00);
-//		g_screen.drawLine(a, b);
-//		float dist;
-//		V2f collisionPoint;
-//		if(V2f::lineIntersection(mouseClick, mouseDragged, a, b, dist, collisionPoint)) {
-//			g_screen.drawCircle(collisionPoint, .1f, false);
-//			g_screen.printf(collisionPoint, "%.2f", dist);
-//		}
 
 		// testing cone stuff
 		g_screen.drawCircle(mouseClick, .05f, true);
 		g_screen.drawLine(mouseClick, mousePosition);
 		V2f hit, norm;
 		float dist;
-		Obstacle * obs = testcone;//testBox;
-		if (obs->raycast(mouseClick, (mousePosition - mouseClick).normal(), dist, hit, norm)) {
-			g_screen.drawCircle(CircF(hit, .1f), false);
-			g_screen.drawLine(hit, hit + norm);
-			g_screen.setColor(0);
-			g_screen.printf(hit+V2f(0,.2f), "%f", dist);
-		}
-		hit = obs->getClosestPointOnEdge(mousePosition, norm);
-		g_screen.drawCircle(CircF(hit, .05f), false);
-		g_screen.drawLine(hit, hit + norm * 0.5);
 
-		if(raycast(mouseClick, (mousePosition - mouseClick).normal(), -1, false, obs, dist, hit, norm, 0, 0)) {
-//			g_screen.setColor(0x0000ff);
-//			obs->glDraw(true);
-		}
+		// used for testing object types
+		//Obstacle * obs = testPoly;//testcone;//testBox;
+		//if (obs->raycast(mouseClick, (mousePosition - mouseClick).normal(), dist, hit, norm)) {
+		//	g_screen.drawCircle(CircF(hit, .1f), false);
+		//	g_screen.drawLine(hit, hit + norm);
+		//	g_screen.setColor(0);
+		//	g_screen.printf(hit+V2f(0,.2f), "%f", dist);
+		//}
+		//hit = obs->getClosestPointOnEdge(mousePosition, norm);
+		//g_screen.drawCircle(CircF(hit, .05f), false);
+		//g_screen.drawLine(hit, hit + norm * 0.5);
 
-		g_screen.setColor(0x0000ff);
-		for(int i = 0; i < mapPath->size(); ++i) {
-			g_screen.printf(mapPath->get(i)->location, "%d", i);
+		/*
+		g_screen.setColor(0x00ff00);
+		V2f delta = mousePosition - mouseClick; // whereYouAre - whereYouWere
+		if (delta.isZero()) delta = V2f::ZERO_DEGREES();
+		float len = delta.magnitude();
+		float dragLen = 1;// (mouseClick - mouseDragged).magnitude();
+		norm = delta.normal();
+		float piRad = norm.piRadians();
+		ConeF cursorCone = ConeF(mouseClick, len, piRad, piRad + dragLen);
+		bool intersect = testcone->intersectsCone(cursorCone);
+		cursorCone.glDraw(intersect);
+		*/
+
+		if (mapPath != NULL) {
+			g_screen.setColor(0x0000ff);
+			for (int i = 0; i < mapPath->size(); ++i) {
+				g_screen.printf(mapPath->get(i)->location, "%d", i);
+			}
 		}
 
 		g_screen.setColor(0x008800);
@@ -226,18 +241,16 @@ public:
 		for(int i = 0; i < obstacles.size(); ++i) {
 			Obstacle * THINGY = obstacles[i];
 			THINGY->glDraw(false);
-			//if(THINGY->contains(mousePosition)) THINGY->glDraw(true);
-			//point = THINGY->getClosestPointOnEdge(mousePosition, normal);
-			//g_screen.drawLine(point, point+normal);
-			//if(THINGY->raycast(mouseClick, delta, dist, point, normal)) {
-			//	g_screen.drawLine(point, point-delta);
-			//	V2f reflected;
-			//	V2f::calculateReflection(delta, normal, reflected);
-			//	g_screen.drawLine(point, point+reflected);
-			//}
 		}
 		for(int i = 0; i < agents.size(); ++i) {
 			agents[i]->draw(g_screen);
+		}
+		if (drawDebug) {
+			for (int i = 0; i < agents.size(); ++i) {
+				if (agents[i]->showDebugLines) {
+					agents[i]->drawDebug(g_screen);
+				}
+			}
 		}
 		if(selected != NULL) {
 			g_screen.setColor(0x00ff00);

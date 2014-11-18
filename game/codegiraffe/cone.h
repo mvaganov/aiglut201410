@@ -247,16 +247,25 @@ public:
 		return false;
 	}
 
-	bool intersectsPolygonLineList(V2<TYPE> * points, const int numPoints) const {
+	bool intersectsPolygonLineList(const V2<TYPE> * const & points, const int numPoints) const {
 		if (indexOfContained(points, numPoints, 0) >= 0) {
 			return true;
 		}
-		// check if cone lines cross box lines
 		V2<TYPE> startP = V2<TYPE>(startAngle) * radius + origin;
 		V2<TYPE> endP = V2<TYPE>(endAngle) * radius + origin;
 		TYPE boxLine, coneLine;
 		for (int i = 0; i < numPoints; ++i) {
-			if (V2<TYPE>::rayIntersection(origin, startP, points[i], points[(i + 1) % numPoints], coneLine, boxLine)
+			V2<TYPE> polyA = points[i], polyB = points[(i + 1) % numPoints];
+			// check if the line is in range of the cone
+			V2<TYPE> cross;
+			if (V2<TYPE>::lineCrossesCircle(polyA, polyB, origin, radius, cross) && isInAngle(cross))
+				return true;
+			// check if the cone ends cross the line
+			if (V2<TYPE>::rayIntersection(origin, startP, polyA, polyB, coneLine, boxLine)
+				&& coneLine > 0 && coneLine < 1 && boxLine > 0 && boxLine < 1) {
+				return true;
+			}
+			if (V2<TYPE>::rayIntersection(origin, endP, polyA, polyB, coneLine, boxLine)
 				&& coneLine > 0 && coneLine < 1 && boxLine > 0 && boxLine < 1) {
 				return true;
 			}

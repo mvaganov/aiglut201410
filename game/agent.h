@@ -167,24 +167,25 @@ public:
 			}
 			break;
 		}
-		if (showDebugLines) {
-			g_screen.setColor(0x00ff00);
-			g_screen.drawLine(body.center, body.center + velocity);
+	}
+
+	void drawDebug(GLUTRenderingContext & g_screen) {
+		g_screen.setColor(0x00ff00);
+		g_screen.drawLine(body.center, body.center + velocity);
+		g_screen.setColor(0x0000ff);
+		g_screen.drawLine(body.center + velocity,
+			body.center + velocity + acceleration);
+		if (fsm != NULL) {
+			g_screen.setColor(0);
+			g_screen.printf(body.center + V2f(-body.radius, 0), fsm->getName());
+			g_screen.setColor(color);
+			fsm->draw(this, &g_screen);
+		}
+		g_screen.setColor(0xff00ff);
+		sensorArea.glDraw(false);
+		if (behavior == BEHAVIOR_AGGRO) {
 			g_screen.setColor(0x0000ff);
-			g_screen.drawLine(body.center + velocity,
-				body.center + velocity + acceleration);
-			if (fsm != NULL) {
-				g_screen.setColor(0);
-				g_screen.printf(body.center + V2f(-body.radius, 0), fsm->getName());
-				g_screen.setColor(color);
-				fsm->draw(this, &g_screen);
-			}
-			g_screen.setColor(0xff00ff);
-			sensorArea.glDraw(false);
-			if (behavior == BEHAVIOR_AGGRO) {
-				g_screen.setColor(0x0000ff);
-				g_screen.drawCircle(body.center, body.radius * 5, false);
-			}
+			g_screen.drawCircle(body.center, body.radius * 5, false);
 		}
 	}
 
