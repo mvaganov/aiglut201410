@@ -19,10 +19,13 @@ public:
 	/** @return value from the list at given index */
 	DATA_TYPE get(int const a_index) const { return m_data[a_index]; }
 
+	/** @return value from the list at given index explicitly by reference */
+	DATA_TYPE & getByRef(int const a_index) { return m_data[a_index]; }
+
 	DATA_TYPE & operator[](int const a_index) { return m_data[a_index]; }
 
 	/** use for const TemplateArray objects */
-	DATA_TYPE operator[](int const a_index) const { return m_data[a_index]; }
+	const DATA_TYPE & operator[](int const a_index) const { return m_data[a_index]; }
 
 	/** simple mutator sets a value in the list */
 	void set(int const a_index, DATA_TYPE const & a_value) {
@@ -239,7 +242,7 @@ public:
 	bool isSorted(const int a_startIndex, const int a_endIndex) const {
 		bool sorted = true;
 		for (int i = a_startIndex + 1; sorted && i < a_endIndex; ++i) {
-			sorted = get(i) >= get(i-1);
+			sorted = get(i-1) < get(i);
 		}
 		return sorted;
 	}

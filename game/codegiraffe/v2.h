@@ -474,6 +474,28 @@ struct V2 {
 	}
 
 	/**
+	 * @param a
+	 * @param b
+	 * @param c
+	 * @param out_circumcenter __OUT the circumcenter, if there is one
+	 * @param out_radius __OUT the radius of the inscribed circle
+	 * @return if there is a circle that this triangle is circumscribed into
+	 */
+	static bool circumcenter(V2<TYPE> const & a, V2<TYPE> const & b, V2<TYPE> const & c,
+		V2<TYPE> & out_circumcenter, TYPE & out_radius) {
+		V2<TYPE> ab = b - a, bc = c - b;
+		V2<TYPE> midAB = a + ab / 2, midBC = b + bc / 2;
+		V2<TYPE> bisectorAB = ab.perp(), bisectorBC = bc.perp();
+		float rayMidAB, rayMidBC;
+		if (V2<TYPE>::rayIntersection(midAB, midAB + bisectorAB, midBC, midBC + bisectorBC, rayMidAB, rayMidBC)) {
+			out_circumcenter = midAB + bisectorAB * rayMidAB;
+			out_radius = (out_circumcenter - a).magnitude();
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * @param A start of line AB
 	 * @param B end of line AB
 	 * @param C start of line CD

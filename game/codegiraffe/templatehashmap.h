@@ -129,7 +129,7 @@ public:
 		return bucket->operator[](bucketIndex).v;
 	}
 
-	VALUE operator[](KEY const & k) const {
+	const VALUE & operator[](KEY const & k) const {
 		KVP_STRUCT kvp(k);
 		int index = KVP_STRUCT::hashFunction(k);
 		TemplateVector<KVP_STRUCT> * bucket = buckets.get(index);

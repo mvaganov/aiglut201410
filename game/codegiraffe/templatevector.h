@@ -115,6 +115,7 @@ public:
 	/**
 	 * @param a_value to add to the list if it isnt in the list already
 	 * @return true the index where the element exists
+	 * @note see also: insertSorted(), which also supports no duplicates
 	 */
 	int addNoDuplicates(DATA_TYPE const & a_value) {
 		int index = indexOf(a_value);
@@ -197,38 +198,57 @@ public:
 	 */
 	int indexOfWithBinarySearch(DATA_TYPE const & a_value) const {
 		if(m_size) {
-			return TemplateArray::indexOfWithBinarySearch(a_value, 0, m_size);
+			return TemplateArray::indexOfWithBinarySearch(a_value, 0, m_size-1);
 		}
 		return -1;    // failed to find key
 	}
 
 	/**
-	 * uses binary sort to put values in the correct index. safe if soring is always used
+	* uses binary sort to put values in the correct index.
+	* @param a_value value to insert in order
+	* @return the index where a_value was inserted
+	*/
+	int insertAsSet(DATA_TYPE const & a_value) { return insertSorted(a_value, false); }
+
+	/**
+	 * uses binary sort to put values in the correct index. safe if sorting is always used
 	 * @param a_value value to insert in order
 	 * @param a_allowDuplicates will not insert duplicates if set to false
 	 * @return the index where a_value was inserted
 	 */
 	int insertSorted(DATA_TYPE const & a_value, bool const a_allowDuplicates) {
-		int index;
-		if(!m_size || a_value < get(0)) {
-			index = 0;
-		} else if(!(a_value < get(m_size-1))) {
+		const int a_start = 0, a_size = m_size;
+		int index = 0;
+		if (a_size == 0 || a_value < m_data[a_start])
+			index = a_start;
+		else if (m_data[m_size - 1] < a_value) {
 			index = m_size;
 		} else {
-			int first = 0, last = m_size;
-			while (first <= last) {
-				index = (first + last) / 2;
-				if (!(a_value < m_data[index]))
-					first = index + 1;
-				else if (a_value < m_data[index]) 
-					last = index - 1;
+			int imin = a_start, imax = a_start + a_size - 1;
+			while (imax >= imin) {
+				index = (imin + imax) / 2; // calculate the midpoint for roughly equal partition
+				if (m_data[index] == a_value) { // key found at index. 
+					if (a_allowDuplicates) { // if there are duplicates, and that is ok, find the end of the duplicates
+						while (index + 1 < m_size && m_data[index + 1] == a_value) index++;
+						index++; // go one more, so this is appended to the end of the stream of duplicates
+					}
+					break;
+				} else if (m_data[index] < a_value) { // determine which subarray to search
+					imin = index + 1; // change min index to search upper subarray
+				} else {
+					imax = index - 1; // change max index to search lower subarray
+				}
 			}
-			if(!(a_value < m_data[index]))
-				index++;
+			if (imin > imax) {
+				if (imin == index+1) index = imin;
+				//else if (imax == index - 1) index = imax;
+			}
 		}
-		if(!m_size  || a_allowDuplicates || a_value != m_data[index])
+		if(!m_size  || a_allowDuplicates || !(a_value == m_data[index]))
 			insert(index, a_value);
+		//if (!isSorted()) { printf("bad news... it's not sorted anymore...\n"); }
 		return index;
+
 	}
 
 	/**
