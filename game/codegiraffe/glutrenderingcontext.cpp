@@ -252,17 +252,23 @@ void GLUTRenderingContext::print(const V2f position, const char * a_string) {
 
 int GLUTRenderingContext::printf(const V2f position, const char *fmt, ...)
 {
-	int bufferSize = 40, charsPrinted;
-	char * buffer = NULL;
+	int bufferSize = 20, charsPrinted;
+	char * buffer;
 	do {
-		bufferSize *= 2;
 		va_list valist;
 		va_start(valist, fmt);
-		buffer = (char *)realloc(buffer, bufferSize);
 #if __STDC_WANT_SECURE_LIB__
-		charsPrinted = vsnprintf_s(buffer, bufferSize, _TRUNCATE, fmt, valist);
+		charsPrinted = _vscprintf(fmt, valist);
+		bufferSize = charsPrinted + 2;
+		buffer = (char*)malloc(bufferSize);
+		vsnprintf_s(buffer, bufferSize, _TRUNCATE, fmt, valist);
 #else
+		buffer = (char*)malloc(bufferSize);
 		charsPrinted = vsnprintf(buffer, bufferSize, fmt, valist);
+		if (charsPrinted >= bufferSize) {
+			free(buffer);
+			bufferSize *= 2;
+		}
 #endif
 		va_end(valist);
 	} while (charsPrinted >= bufferSize);
