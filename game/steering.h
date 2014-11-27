@@ -30,3 +30,9 @@ public:
 V2f obstacleAvoidance(TemplateVector<Obstacle*> * obstacles,
 	Obstacle * sensorArea, Agent * agent,
 	CalculationsFor_ObstacleAvoidance * calc);
+
+V2f alignment(Agent * agent, TemplateVector<Agent*> & neighbors);
+
+V2f cohesion(Agent * agent, TemplateVector<Agent*> & neighbors);
+
+V2f separation(Agent * agent, float neighborRadius, TemplateVector<Agent*> & neighbors);

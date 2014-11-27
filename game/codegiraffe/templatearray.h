@@ -297,7 +297,8 @@ public:
 	* @param last - The end of the sequence to be sorted (inclusive).
 	*/
 	void quicksort(int first, int last) {
-		int i = first - 1, j = last; DATA_TYPE v = (*this)[last];
+		int i = first - 1, j = last;
+		DATA_TYPE v = (*this)[last];
 		if (last <= first) return;
 		do {
 			while ((*this)[++i] < v);

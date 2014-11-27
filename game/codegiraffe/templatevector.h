@@ -101,12 +101,10 @@ public:
 	}
 
 	/** @return the last value in the list */
-	DATA_TYPE & getLast() {
-		return (*this)[m_size - 1];
-	}
+	DATA_TYPE & getLast() { return (*this)[m_size - 1]; }
 
 	/** @return the last added value in the list, and lose that value */
-	DATA_TYPE & pop() { return (*this)[--m_size]; }
+	DATA_TYPE & pop() { DATA_TYPE & lastElement = getLast(); --m_size; return lastElement; }
 
 	/** @return add an element to the business end of this list structure */
 	void push(DATA_TYPE const & a_value) { add(a_value); }

@@ -65,3 +65,65 @@ V2f obstacleAvoidance(TemplateVector<Obstacle*> * obstacles, Obstacle * sensorAr
 	}
 	return totalForce;
 }
+
+//vec2 Separation(Agent agent, List<Agent> neighbors) {
+V2f separation(Agent * agent, float neighborRadius, TemplateVector<Agent*> & neighbors) {
+	V2f totalPush;
+	int countTooClose = 0;
+	bool inRange = false;
+	for(int i = 0; i < neighbors.size(); ++i) {
+		V2f delta = agent->body.center - neighbors[i]->body.center;
+		float dist = delta.magnitude() - (agent->body.radius + neighbors[i]->body.radius);
+		if(dist < neighborRadius) {
+			countTooClose++;
+			totalPush += delta.normal();
+		}
+	}
+	if(countTooClose > 0)
+		return totalPush / countTooClose;
+	return V2f::ZERO();
+}
+
+//vec2 Cohesion(Agent agent, List<Agent> neighbors) {
+V2f cohesion(Agent * agent, TemplateVector<Agent*> & neighbors) {
+	//if (neighbors.empty()) return vec2.zero;
+	if(neighbors.size() == 0) return V2f::ZERO();
+	//vec2 centerOfMass = agent.position;
+	V2f centerOfMass = agent->body.center;
+	//for (Agent neighbor : neighbors)
+	for(int i = 0; i < neighbors.size(); ++i)
+		//centerOfMass += neighbor.position;
+		centerOfMass += neighbors[i]->body.center;
+	//centerOfMass /= neighbors.count();
+	centerOfMass /= (float)neighbors.size();
+	//vec2 desired = centerOfMass - agent.position;
+	V2f desired = centerOfMass - agent->body.center;
+	//desired *= agent.maxSpeed / desired.mag();
+	desired *= agent->maximumSpeed / desired.magnitude();
+	//vec2 force = desired - agent.velocity;
+	V2f force = desired - agent->velocity;
+	//return force * (agent.maxForce / agent.maxSpeed);
+	return force * (agent->maximumForce / agent->maximumSpeed);
+//}
+}
+
+//vec2 Alignment(Agent agent, List<Agent> neighbors) {
+	//if (neighbors.empty()) return vec2.zero;
+	//vec2 avgHeading = norm( agent.velocity );
+	//for (Agent neighbor : neighbors)
+		//avgHeading += norm( neighbor.velocity );
+	//avgHeading /= neighbors.count();
+	//vec2 desired = avgHeading * agent.maxSpeed;
+	//vec2 force = desired - agent.velocity;
+	//return force * (agent.maxForce / agent.maxSpeed);
+//}
+
+V2f alignment(Agent * agent, TemplateVector<Agent*> & neighbors) {
+	V2f avgHeading = agent->velocity.normal();
+	for(int i = 0; i < neighbors.size(); ++i) {
+		avgHeading += neighbors[i]->velocity.normal();
+	}
+	avgHeading /= (float)neighbors.size();
+	agent->direction = avgHeading.normal();
+	return agent->direction;
+}

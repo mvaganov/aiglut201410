@@ -40,8 +40,19 @@ public:
 		return 0;
 	}
 
+	/** generate a list of agents in the given area */
+	void gatherListOfAgentsAt(CircF const & area, TemplateVector<Agent*> & out_agents) {
+		for(int i = 0; i < agents.size(); ++i) {
+			if(V2f::distance(agents[i]->body.center, area.center) 
+				< area.radius + agents[i]->body.radius) {
+					out_agents.add(agents[i]);
+			}
+		}
+	}
+
 // helpful for finding memory by it's ID number (thanks _CrtSetDbgFlag!)
-#define TRACE_MEMORY(mem, debugmessage) printf("memID %d is %s\n", ((int*)mem)[-2], debugmessage)
+#define TRACE_MEMORY(mem, debugmessage) \
+	printf("memID %d is %s\n", ((int*)mem)[-2], debugmessage)
 
 	void generateWallBoxesForGraph(Graph * g, float wallEdgeValue) {
 		GraphNode * n;
