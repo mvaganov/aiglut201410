@@ -37,6 +37,27 @@ public:
 		m_size = 0;
 	}
 
+	/** deep copy with assignment operator, so allocated arrays don't have duplicate references */
+	TemplateVector<DATA_TYPE> & operator=(TemplateArray<DATA_TYPE> const & src) { copy(src); return *this; }
+
+	DATA_TYPE & operator[](const int a_index) {
+		if (a_index < 0 || a_index >= m_size) { int i = 0; i = 1 / i; }
+		return TemplateArray<DATA_TYPE>::operator[](a_index);
+	}
+	const DATA_TYPE & operator[](const int a_index) const {
+		if (a_index < 0 || a_index >= m_size) { int i = 0; i = 1 / i; }
+		return TemplateArray<DATA_TYPE>::operator[](a_index);
+	}
+
+	/** @return true if this array and the given array contain the same data */
+	bool operator==(TemplateArray<DATA_TYPE> const & arr) const {
+		if (m_size != arr.m_size) return false;
+		for (int i = 0; i < m_size; ++i) {
+			if ((*this)[i] != arr[i]) return false;
+		}
+		return true;
+	}
+
 	/** @return true if the copy finished correctly */
 	bool copy(TemplateVector<DATA_TYPE> const & a_vector) {
 		if(ensureCapacity(a_vector.m_size)) {
@@ -81,13 +102,11 @@ public:
 
 	/** @return the last value in the list */
 	DATA_TYPE & getLast() {
-		return m_data[m_size-1];
+		return (*this)[m_size - 1];
 	}
 
 	/** @return the last added value in the list, and lose that value */
-	DATA_TYPE & pop() {
-		return m_data[--m_size];
-	}
+	DATA_TYPE & pop() { return (*this)[--m_size]; }
 
 	/** @return add an element to the business end of this list structure */
 	void push(DATA_TYPE const & a_value) { add(a_value); }
@@ -108,8 +127,8 @@ public:
 			// make a bigger list
 			allocateToSize(m_allocated*2);
 		}
-		set(m_size, a_value);
 		m_size++;
+		set(m_size-1, a_value);
 	}
 
 	/**
@@ -155,6 +174,11 @@ public:
 	void remove(int const a_index) {
 		moveDown(a_index, -1, m_size);
 		setSize(m_size-1);
+	}
+
+	void set(const int a_index, DATA_TYPE const & a_value) {
+		if (a_index < 0 || a_index >= m_size) { int i = 0; i = 1 / i; }
+		TemplateArray<DATA_TYPE>::set(a_index, a_value);
 	}
 
 	/** 
@@ -208,7 +232,7 @@ public:
 	* @param a_value value to insert in order
 	* @return the index where a_value was inserted
 	*/
-	int insertAsSet(DATA_TYPE const & a_value) { return insertSorted(a_value, false); }
+	//int insertAsSet(DATA_TYPE const & a_value) { return insertSorted(a_value, false); }
 
 	/**
 	 * uses binary sort to put values in the correct index. safe if sorting is always used
@@ -219,21 +243,23 @@ public:
 	int insertSorted(DATA_TYPE const & a_value, bool const a_allowDuplicates) {
 		const int a_start = 0, a_size = m_size;
 		int index = 0;
-		if (a_size == 0 || a_value < m_data[a_start])
+		if (a_size == 0 || a_value < (*this)[a_start])
 			index = a_start;
-		else if (m_data[m_size - 1] < a_value) {
-			index = m_size;
+		else if ((*this)[a_start + a_size - 1] < a_value) {
+			index = a_start+a_size;
 		} else {
 			int imin = a_start, imax = a_start + a_size - 1;
 			while (imax >= imin) {
 				index = (imin + imax) / 2; // calculate the midpoint for roughly equal partition
-				if (m_data[index] == a_value) { // key found at index. 
+				if ((*this)[index] == a_value) { // key found at index. 
 					if (a_allowDuplicates) { // if there are duplicates, and that is ok, find the end of the duplicates
-						while (index + 1 < m_size && m_data[index + 1] == a_value) index++;
+						while (index + 1 < m_size && (*this)[index + 1] == a_value) {
+							index++;
+						}
 						index++; // go one more, so this is appended to the end of the stream of duplicates
 					}
 					break;
-				} else if (m_data[index] < a_value) { // determine which subarray to search
+				} else if ((*this)[index] < a_value) { // determine which subarray to search
 					imin = index + 1; // change min index to search upper subarray
 				} else {
 					imax = index - 1; // change max index to search lower subarray
@@ -244,7 +270,7 @@ public:
 				//else if (imax == index - 1) index = imax;
 			}
 		}
-		if(!m_size  || a_allowDuplicates || !(a_value == m_data[index]))
+		if (!m_size || a_allowDuplicates || index == m_size || !(a_value == (*this)[index]))
 			insert(index, a_value);
 		//if (!isSorted()) { printf("bad news... it's not sorted anymore...\n"); }
 		return index;

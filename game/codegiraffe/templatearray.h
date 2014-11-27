@@ -17,20 +17,44 @@ protected:
 	int m_allocated;
 public:
 	/** @return value from the list at given index */
-	DATA_TYPE get(int const a_index) const { return m_data[a_index]; }
+	DATA_TYPE get(int const a_index) const {
+		if (a_index < 0 || a_index >= m_allocated) { int i = 0; i = 1 / i; }
+		return m_data[a_index];
+	}
 
 	/** @return value from the list at given index explicitly by reference */
-	DATA_TYPE & getByRef(int const a_index) { return m_data[a_index]; }
+	DATA_TYPE & getByRef(int const a_index) {
+		if (a_index < 0 || a_index >= m_allocated) { int i = 0; i = 1 / i; }
+		return m_data[a_index];
+	}
 
-	DATA_TYPE & operator[](int const a_index) { return m_data[a_index]; }
+	DATA_TYPE & operator[](int const a_index) {
+		if (a_index < 0 || a_index >= m_allocated) { int i = 0; i = 1 / i; }
+		return m_data[a_index];
+	}
 
 	/** use for const TemplateArray objects */
-	const DATA_TYPE & operator[](int const a_index) const { return m_data[a_index]; }
+	const DATA_TYPE & operator[](int const a_index) const {
+		if (a_index < 0 || a_index >= m_allocated) { int i = 0; i = 1 / i; }
+		return m_data[a_index];
+	}
+
+	/** deep copy with assignment operator, so allocated arrays don't have duplicate references */
+	TemplateArray<DATA_TYPE> & operator=(TemplateArray<DATA_TYPE> const & src) { copy(src); return *this; }
+
+	/** @return true if this array and the given array contain the same data */
+	bool operator==(TemplateArray<DATA_TYPE> const & arr) const {
+		if (m_allocated != arr.m_allocated) return false;
+		for (int i = 0; i < m_allocated; ++i) {
+			if ((*this)[i] != arr[i]) return false;
+		}
+		return true;
+	}
 
 	/** simple mutator sets a value in the list */
 	void set(int const a_index, DATA_TYPE const & a_value) {
 		// complex types must overload DATA_TYPE & operator=(const DATA_TYPE &)
-		m_data[a_index] = a_value;
+		(*this)[a_index] = a_value;
 	}
 	/** used for deleting elements */
 	void moveDown(int const a_from, int const a_offset, int a_last) {
@@ -223,9 +247,9 @@ public:
 			int first = a_first, last = a_limit;
 			while (first <= last) {
 				int mid = (first + last) / 2;  // compute mid point.
-				if (a_value > m_data[mid]) 
+				if (a_value > (*this)[mid])
 					first = mid + 1;  // repeat search in top half.
-				else if (a_value < m_data[mid]) 
+				else if (a_value < (*this)[mid])
 					last = mid - 1; // repeat search in bottom half.
 				else return mid;     // found it. return position
 			}
@@ -273,11 +297,11 @@ public:
 	* @param last - The end of the sequence to be sorted (inclusive).
 	*/
 	void quicksort(int first, int last) {
-		int i = first - 1, j = last; DATA_TYPE v = m_data[last];
+		int i = first - 1, j = last; DATA_TYPE v = (*this)[last];
 		if (last <= first) return;
 		do {
-			while (m_data[++i] < v);
-			while (v < m_data[--j]) if (j == first) break;
+			while ((*this)[++i] < v);
+			while (v < (*this)[--j]) if (j == first) break;
 			if (i >= j) break;
 			swap(i, j);
 		} while (true);

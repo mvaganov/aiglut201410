@@ -202,6 +202,8 @@ struct V2 {
 
 	static TYPE distance(const V2<TYPE> & a, const V2<TYPE> & b) { return (a - b).magnitude(); }
 
+	TYPE distance(const V2<TYPE> & v) const { return (*this - v).magnitude(); }
+
 	static TYPE distanceSq(const V2<TYPE> & a, const V2<TYPE> & b) { return (a - b).magnitudeSq(); }
 
 	/** @return the manhattan distance between this vector and v */
