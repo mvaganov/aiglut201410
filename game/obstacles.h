@@ -22,6 +22,7 @@ public:
 	virtual void * calculateCollisionResolution(Obstacle * otherObject) = 0;
 	/** @param collisionData the result of calculateCollisionResolution. If memory is allocated, this method should de-allocate it */
 	virtual void resolveCollision(Obstacle * otherObject, void * collisionData) = 0;
+	virtual ~Obstacle(){};
 };
 
 class CircleObject : public CircF, public Obstacle {
@@ -41,6 +42,7 @@ public:
 	void glDraw(bool filled) const { CircF::glDraw(filled); }
 	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
 	void resolveCollision(Obstacle * o, void * collisionData){}
+	~CircleObject(){}
 };
 class BoxObject : public BoxF, public Obstacle {
 public:
@@ -59,6 +61,7 @@ public:
 	void glDraw(bool filled) const { BoxF::glDraw(filled); }
 	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
 	void resolveCollision(Obstacle * o, void * collisionData){}
+	~BoxObject(){}
 };
 class ConeObject : public ConeF, public Obstacle {
 public:
@@ -76,6 +79,7 @@ public:
 	void glDraw(bool filled) const { ConeF::glDraw(filled); }
 	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
 	void resolveCollision(Obstacle * o, void * collisionData){}
+	~ConeObject(){}
 };
 class PolygonObject : public Polygon2f, public Obstacle{
 public:
@@ -93,4 +97,5 @@ public:
 	void glDraw(bool filled) const { Polygon2f::glDraw(filled); }
 	void * calculateCollisionResolution(Obstacle * otherObject){ return 0; }
 	void resolveCollision(Obstacle * o, void * collisionData){}
+	~PolygonObject(){}
 };

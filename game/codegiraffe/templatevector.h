@@ -50,7 +50,7 @@ public:
 	}
 
 	/** @return true if this array and the given array contain the same data */
-	bool operator==(TemplateArray<DATA_TYPE> const & arr) const {
+	bool operator==(TemplateVector<DATA_TYPE> const & arr) const {
 		if (m_size != arr.m_size) return false;
 		for (int i = 0; i < m_size; ++i) {
 			if ((*this)[i] != arr[i]) return false;
@@ -60,7 +60,7 @@ public:
 
 	/** @return true if the copy finished correctly */
 	bool copy(TemplateVector<DATA_TYPE> const & a_vector) {
-		if(ensureCapacity(a_vector.m_size)) {
+		if(setSize(a_vector.m_size)) {
 			for(int i = 0; i < a_vector.m_size; ++i) {
 				set(i, a_vector.get(i));
 			}
@@ -80,7 +80,7 @@ public:
 	TemplateVector(){ init(); }
 
 	/** add an array to this vector */
-	void add(int const a_size, DATA_TYPE * const & a_values) {
+	void add(int const a_size, const DATA_TYPE * const & a_values) {
 		ensureCapacity(size()+a_size);
 		for(int i = 0; i < a_size; ++i)
 			add(a_values[i]);
@@ -270,6 +270,8 @@ public:
 		}
 		if (!m_size || a_allowDuplicates || index == m_size || !(a_value == (*this)[index]))
 			insert(index, a_value);
+		else
+			index = -1;
 		//if (!isSorted()) { printf("bad news... it's not sorted anymore...\n"); }
 		return index;
 
@@ -326,4 +328,13 @@ public:
 	bool isSorted() { return TemplateArray<DATA_TYPE>::isSorted(0, size()); }
 
 	void quicksort() { TemplateArray<DATA_TYPE>::quicksort(0, size() - 1); }
+
+	bool containsDuplicates() const {
+		for (int i = 0; i < size(); ++i) { if (indexOf((*this)[i], i + 1) >= 0) { return true; } }
+		return false;
+	}
+
+	bool containsAll(const DATA_TYPE * subset, const int subsetCount) const {
+		return TemplateArray<DATA_TYPE>::containsAll(getRawListConst(), size(), subset, subsetCount);
+	}
 };

@@ -96,7 +96,7 @@ struct V2 {
 	static TYPE dot(V2<TYPE> const & v1, V2<TYPE> const & v2) { return (TYPE)(v1.x * v2.x + v1.y * v2.y); }
 
 	/**
-	 * @return positive if position p is clockwise of this vector 
+	 * @return positive if position p is clockwise of this vector, 0 if the same. same as dot product of a vector perpendicular to the given vector
 	 * (assume Y points down, X to right)
 	 */
 	TYPE sign(const V2<TYPE> & p) const { return (x*p.y)-(y*p.x); }
@@ -548,16 +548,22 @@ struct V2 {
 	static bool rayIntersection(const V2<TYPE> & A, const V2<TYPE> & B, const V2<TYPE> & C, const V2<TYPE> & D, 
 		TYPE & out_alongAB, TYPE & out_alongCD)
 	{
-		TYPE abTop = (A.y - C.y)*(D.x - C.x) - (A.x - C.x)*(D.y - C.y);
-		TYPE abBot = (B.x - A.x)*(D.y - C.y) - (B.y - A.y)*(D.x - C.x);
-		TYPE cdTop = (A.y - C.y)*(B.x - A.x) - (A.x - C.x)*(B.y - A.y);
-		TYPE cdBot = (B.x - A.x)*(D.y - C.y) - (B.y - A.y)*(D.x - C.x);
-		if ((abBot == 0) || (cdBot == 0)) {
-			return false; // lines are parallel
-		}
-		out_alongAB = abTop / abBot; // how far along AB the collision happened
-		out_alongCD = cdTop / cdBot; // how far along CD the collision happened
+		V2<TYPE> deltaAB = B - A, deltaCD = D - C, a_c = A - C;
+		TYPE alignmentDifference = deltaAB.sign(deltaCD); // checks the dot product of perpendicular angles
+		if (alignmentDifference == 0) { return false; } // fail if the lines are parallel
+		out_alongAB = deltaCD.sign(a_c) / alignmentDifference; // how far along AB the collision happened
+		out_alongCD = deltaAB.sign(a_c) / alignmentDifference; // how far along CD the collision happened
 		return true;
+		//TYPE abTop = (A.y - C.y)*(D.x - C.x) - (A.x - C.x)*(D.y - C.y);
+		//TYPE abBot = (B.x - A.x)*(D.y - C.y) - (B.y - A.y)*(D.x - C.x);
+		//TYPE cdTop = (A.y - C.y)*(B.x - A.x) - (A.x - C.x)*(B.y - A.y);
+		//TYPE cdBot = (B.x - A.x)*(D.y - C.y) - (B.y - A.y)*(D.x - C.x);
+		//if ((abBot == 0) || (cdBot == 0)) {
+		//	return false; // lines are parallel
+		//}
+		//out_alongAB = abTop / abBot; // how far along AB the collision happened
+		//out_alongCD = cdTop / cdBot; // how far along CD the collision happened
+		//return true;
 	}
 
 	/**

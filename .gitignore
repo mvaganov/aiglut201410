@@ -35,6 +35,7 @@ $RECYCLE.BIN/
 # Visual Studio generated #
 # ======================= #
 [Dd]ebug/
+[Rr]elease/
 ExportedObj/
 *.svd
 *.userprefs

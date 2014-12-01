@@ -44,7 +44,7 @@ public:
 		int subIndex = a_index % m_allocationSize;
 		return m_allocations.get(arrIndex)[subIndex];
 	}
-	const DATA_TYPE & getCONST(int const & a_index) const {
+	const DATA_TYPE & getCONST(int const a_index) const {
 		int arrIndex = a_index / m_allocationSize;
 		int subIndex = a_index % m_allocationSize;
 		return m_allocations[arrIndex][subIndex];
@@ -109,9 +109,9 @@ public:
 		return indexOf(a_value, 0);
 	}
 	int indexOf(DATA_TYPE * const a_memoryLocation) const {
-		DATA_TYPE * start, * end;
+		const DATA_TYPE * start, * end;
 		for(int i = 0; i < m_allocations.size(); ++i){
-			start = m_allocations.getCONST(i);
+			start = m_allocations[i];
 			end = start+m_allocationSize;
 			if(a_memoryLocation >= start && a_memoryLocation < end)
 			{

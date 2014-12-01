@@ -219,6 +219,13 @@ public:
 		set(a_index1, temp);
 	}
 
+
+	/** @return index of 1st a_value range: [a_startingIndex, a_endingIndex). uses == */
+	static int indexOf(DATA_TYPE const & a_value, const DATA_TYPE * a_list, int const a_startingIndex, int const a_endingIndex) {
+		for (int i = a_startingIndex; i < a_endingIndex; ++i) { if (a_list[i] == a_value) return i; }
+		return -1;
+	}
+
 	/** @return index of 1st a_value at or after a_startingIndex. uses == */
 	int indexOf(DATA_TYPE const & a_value, int const a_startingIndex, int const a_endingIndex) const {
 		for(int i = a_startingIndex; i < a_endingIndex; ++i) {
@@ -309,5 +316,20 @@ public:
 		swap(i, last);
 		quicksort(first, i - 1);
 		quicksort(i + 1, last);
+	}
+
+	bool containsDuplicates() const {
+		for (int i = 0; i < size(); ++i) { if (indexOf((*this)[i], i + 1) >= 0) { return true; } }
+		return false;
+	}
+
+	/** @return true if superset has every element in subset */
+	static bool containsAll(const DATA_TYPE * superset, const int supersetCount, const DATA_TYPE * subset, const int subsetCount) {
+		bool found = false;
+		for (int i = 0; i < subsetCount; ++i) {
+			found = indexOf(subset[i], superset, 0, supersetCount) >= 0;
+			if (!found) break;
+		}
+		return found;
 	}
 };

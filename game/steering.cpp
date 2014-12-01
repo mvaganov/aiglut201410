@@ -79,8 +79,8 @@ V2f separation(Agent * agent, float neighborRadius, TemplateVector<Agent*> & nei
 			totalPush += delta.normal();
 		}
 	}
-	if(countTooClose > 0)
-		return totalPush / countTooClose;
+	if(countTooClose > 1)
+		return totalPush / (float)countTooClose;
 	return V2f::ZERO();
 }
 
