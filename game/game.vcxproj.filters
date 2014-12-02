@@ -87,6 +87,24 @@
     <ClInclude Include="codegiraffe\polygon.h">
       <Filter>codegiraffe</Filter>
     </ClInclude>
+    <ClInclude Include="delauny.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\templatevectorlist.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\templateset.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_alignment.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_cohesion.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_separation.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -123,6 +141,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fsm_wander.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_alignment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_cohesion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_separation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

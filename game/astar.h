@@ -53,6 +53,9 @@ inline TemplateVector<GraphNode*> * Astar(GraphNode * start, GraphNode * goal) {
  
     //while openset is not empty
 	while(openset.size() > 0) {
+		//for (int i = 0; i < closedset.size(); ++i) { GraphNode * n = closedset[i]; printf("%03x<%03x ", (((int)n >> 4) & 0xfff), (((int)came_from[n] >> 4) & 0xfff)); } printf("|");
+		//for (int i = 0; i < openset.size(); ++i) { GraphNode * n = openset[i]; printf(" %03x<%03x", (((int)n >> 4) & 0xfff), (((int)came_from[n] >> 4) & 0xfff)); } printf("\n");
+
         //current := the node in openset having the lowest f_score[] value
 		GraphNode * current = nodeInOpenSetWithLowestScore(openset, f_score);
         //if current = goal

@@ -13,8 +13,10 @@
 #include "graph.h"
 #include "mazegen.h"
 #include "astar.h"
-
 #include "codegiraffe/polygon.h"
+#include "delauny.h"
+//#define DELAUNY_TESTING
+//#define TESTING_SHAPES
 
 class Game {
 public:
@@ -28,6 +30,8 @@ public:
 	/** who does the user have selected */
 	Agent * selected;
 	GraphNode * selectedNode;
+
+	DelaunySet * delauny;
 
 	/** whether or not to draw debug lines for FSM steering behaviors */
 	bool drawDebug;
@@ -49,7 +53,7 @@ public:
 			}
 		}
 	}
-
+	
 // helpful for finding memory by it's ID number (thanks _CrtSetDbgFlag!)
 #define TRACE_MEMORY(mem, debugmessage) \
 	printf("memID %d is %s\n", ((int*)mem)[-2], debugmessage)
@@ -75,35 +79,48 @@ public:
 		}
 	}
 
+#ifdef TESTING_SHAPES
 	// used for testing object types
-	//ConeObject * testcone;
-	//BoxObject * testBox;
-	//PolygonObject * testPoly;
+	BoxObject * testBox;
+	CircleObject * testCircle;
+	ConeObject * testcone;
+	PolygonObject * testPoly;
+	PolygonObject * testPoly2;
+#endif
 
-	Game() :mapGraph(0), mapPath(0), selected(0), selectedNode(0), drawDebug(true) {
+	Game() :mapGraph(NULL), mapPath(NULL), selected(NULL), selectedNode(NULL), delauny(NULL), drawDebug(true) {
 		selectedNode = NULL;
 		selected = NULL;
 		int agentCount = 10;
+#ifdef TESTING_SHAPES
 		// code for testing object types
-		//CircF testCircle(V2f(5,5), .75f);
-		//RectF aabb(V2f(0, 5), V2f(3, 2));
-		//BoxF box(V2f(5,1), V2f(1,3), (float)V_PI / 8);
-		//CircleObject * cobj = new CircleObject(testCircle);
+		CircF testCircle(V2f(5,5), .75f);
+		BoxF box(V2f(5,1), V2f(1,3), (float)V_PI / 8);
+		this->testCircle = new CircleObject(testCircle);
 		//TRACE_MEMORY(cobj, "circle object");
-		//obstacles.add(cobj);
-		//obstacles.add(new BoxObject(aabb));
-		//testBox = (BoxObject*)obstacles.getLast();
+		obstacles.add(this->testCircle);
+		obstacles.add(new BoxObject(box));
+		testBox = (BoxObject*)obstacles.getLast();
 		//TRACE_MEMORY(obstacles.getLast(), "aabb object");
 		//obstacles.add(new BoxObject(box));
 		//TRACE_MEMORY(obstacles.getLast(), "box object");
-		//obstacles.add(new ConeObject(ConeF(V2f(-1, 6), 1, 1.0f, 4.0f)));
-		//testcone = (ConeObject*)obstacles.getLast();
-		//V2f points[] = { V2f(-1.5f, .9f), V2f(0.0f, 1.0f), V2f(1.2f, .5f), V2f(.2f, -1.0f), V2f(-.9f, -.9f) };
-		//const int numPoints = sizeof(points) / sizeof(points[0]);
-		//testPoly = new PolygonObject(Polygon2f(V2f(4.0f, 7.0f), 1, points, numPoints));
-		//obstacles.add(testPoly);
+		obstacles.add(new ConeObject(ConeF(V2f(-1, 6), 1, 1.0f, 4.0f)));
+		testcone = (ConeObject*)obstacles.getLast();
 
-		for(int i = 0; i < agentCount; ++i) {
+		V2f points[] = { V2f(-1.5f, .9f), V2f(0.0f, 1.0f), V2f(1.2f, .5f), V2f(.2f, -1.0f), V2f(-.9f, -.9f) };
+		const int numPoints = sizeof(points) / sizeof(points[0]);
+		testPoly = new PolygonObject(Polygon2f(V2f(4.0f, 7.0f), 1, points, numPoints));
+		obstacles.add(testPoly);
+
+//		V2f points2[] = { V2f(-2.5f, 2.9f), V2f(1.2f, 2.5f), V2f(.2f, -1.0f), V2f(-1.9f, -.9f) };
+//		const int numPoints2 = sizeof(points2) / sizeof(points2[0]);
+//		testPoly2 = new PolygonObject(Polygon2f(V2f(4.0f, 7.0f), 1, points2, numPoints2));
+		BoxF box2 = BoxF(V2f(2, -3), V2f(.3f, 2), .1f);
+		testPoly2 = new PolygonObject(Polygon2f(box2));
+		obstacles.add(testPoly2);
+#endif
+
+		for (int i = 0; i < agentCount; ++i) {
 			float extraRadius = Random::PRNGf()*0.5f;
 			CircF c(Random::PRNGf() * 5, Random::PRNGf() * 5, .1f + extraRadius);
 			Agent * a = new Agent(c, this, new FSM_Idle());
@@ -118,11 +135,39 @@ public:
 			agents.add(a);
 			obstacles.add(a);
 		}
-		mapGraph = Graph::createDenseGrid(5, 5, V2f(-10, -10), V2f(10, 10));
+		V2f min(-10, -10), max(10, 10);
+		mapGraph = Graph::createDenseGrid(5, 5, min, max);
 		randomMazeGen_prim(mapGraph, -1);
 		generateWallBoxesForGraph(mapGraph, -1);
 
 		mapPath = Astar(mapGraph->nodes[0], mapGraph->nodes.getLast());
+
+#ifdef DELAUNY_TESTING
+		V2f boxPoints[] = { V2f(-200, 200), V2f(200, 200), V2f(200, -200), V2f(-200, -200) };
+		const int boxPointCount = sizeof(boxPoints) / sizeof(boxPoints[0]);
+		Polygon2f::pair boxSides[] = {
+			Polygon2f::pair(0, 1),
+			Polygon2f::pair(1, 2),
+			Polygon2f::pair(2, 3),
+			Polygon2f::pair(3, 0),
+		};
+		const int boxSidesCount = sizeof(boxSides) / sizeof(boxSides[0]);
+		PolygonObject * po = new PolygonObject(Polygon2f(V2f::ZERO(), 0, boxPoints, boxPointCount, boxSides, boxSidesCount));
+		delauny = new DelaunySet(po);
+//		delauny.makeRandom(30, min, max);
+		delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(4, 4)));
+		delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(5, 4)));
+		delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(4, 5)));
+		delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(5, 5)));
+		V2f p(5, -5);
+		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(0.0f) * 2));
+		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(1.0f) * 2));
+		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(2.0f) * 2));
+		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(3.0f) * 2));
+		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(4.0f) * 2));
+
+		delauny->calculateAllTriangles();
+#endif
 	}
 	~Game() {
 		//for(int i = 0; i < agents.size(); ++i) {
@@ -142,6 +187,12 @@ public:
 		}
 		if (mapPath) {
 			delete mapPath;
+		}
+		if (delauny){
+			if (delauny->boundary){
+				delete delauny->boundary;
+			}
+			delete delauny;
 		}
 	}
 
@@ -204,41 +255,60 @@ public:
 	}
 
 	void display(GLUTRenderingContext & g_screen) {
+		if (delauny != NULL) {
+			g_screen.setColor(0xff00ff);
+			delauny->glDraw(g_screen);
+			return;
+		}
+
 		g_screen.setColor(0x00aaff);
 		mapGraph->glDraw(&g_screen);
 		g_screen.printf(mousePosition, "%.2f, %.2f", mousePosition.x, mousePosition.y);
 		g_screen.drawCircle(mousePosition, .1f, false);
+
 
 		// testing cone stuff
 		g_screen.drawCircle(mouseClick, .05f, true);
 		g_screen.drawLine(mouseClick, mousePosition);
 		V2f hit, norm;
 
+#ifdef TESTING_SHAPES
 		// used for testing object types
-		//float dist;
-		//Obstacle * obs = testPoly;//testcone;//testBox;
-		//if (obs->raycast(mouseClick, (mousePosition - mouseClick).normal(), dist, hit, norm)) {
-		//	g_screen.drawCircle(CircF(hit, .1f), false);
-		//	g_screen.drawLine(hit, hit + norm);
-		//	g_screen.setColor(0);
-		//	g_screen.printf(hit+V2f(0,.2f), "%f", dist);
-		//}
-		//hit = obs->getClosestPointOnEdge(mousePosition, norm);
-		//g_screen.drawCircle(CircF(hit, .05f), false);
-		//g_screen.drawLine(hit, hit + norm * 0.5);
+		float dist;
+		Obstacle * obs = testPoly;//testcone;//testBox;
+		if (obs->raycast(mouseClick, (mousePosition - mouseClick).normal(), dist, hit, norm)) {
+			g_screen.drawCircle(CircF(hit, .1f), false);
+			g_screen.drawLine(hit, hit + norm);
+			g_screen.setColor(0);
+			g_screen.printf(hit+V2f(0,.2f), "%f", dist);
+		}
+		hit = obs->getClosestPointOnEdge(mousePosition, norm);
+		g_screen.drawCircle(CircF(hit, .05f), false);
+		g_screen.drawLine(hit, hit + norm * 0.5);
 
-		/*
+		
 		g_screen.setColor(0x00ff00);
 		V2f delta = mousePosition - mouseClick; // whereYouAre - whereYouWere
 		if (delta.isZero()) delta = V2f::ZERO_DEGREES();
 		float len = delta.magnitude();
 		float dragLen = 1;// (mouseClick - mouseDragged).magnitude();
 		norm = delta.normal();
+		testPoly->rotation = norm.piRadians();
 		float piRad = norm.piRadians();
 		ConeF cursorCone = ConeF(mouseClick, len, piRad, piRad + dragLen);
-		bool intersect = testcone->intersectsCone(cursorCone);
+		bool intersect;
+		intersect = cursorCone.intersectCircle(testCircle->center, testCircle->radius);
 		cursorCone.glDraw(intersect);
-		*/
+
+//		testPoly->origin = mousePosition;
+
+		intersect = testPoly->intersects(testBox);
+		g_screen.setColor(intersect?0x0000ff:0x00ff00);
+		g_screen.drawCircle(mousePosition, 1, intersect);
+		testBox->glDraw(intersect);
+
+		testPoly2->glDraw(false);
+#endif
 
 		if (mapPath != NULL) {
 			g_screen.setColor(0x0000ff);

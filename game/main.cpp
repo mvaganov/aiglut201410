@@ -9,7 +9,7 @@
 #include "bullet.h"
 
 /** the screen pixels, cartesian plane min, cartesian plane max */
-GLUTRenderingContext g_screen(V2f(600, 600), V2f(-3.0, -3.0), V2f(8.0, 8.0));
+GLUTRenderingContext g_screen(V2f(600, 600), V2f(-10.0, -10.0), V2f(10.0, 10.0));
 /** whether or not to keep running the game loop */
 bool g_gameLoopRunning = true;
 bool g_paused = false;
@@ -44,6 +44,22 @@ void keyboard(unsigned char key, int x, int y) {
 	case 'p':
 		g_paused = !g_paused;
 		break;
+	}
+	if (g_game.delauny != NULL) {
+		switch (key) {
+		case '`':
+			g_game.delauny->addNode(g_game.mousePosition);
+			break;
+		case '~':
+			printf("...\n");
+			g_game.delauny->calculateAllTriangles();
+			break;
+		case '\b':
+			if (g_game.delauny->selectedNode) {
+				g_game.delauny->removeNode(g_game.delauny->selectedNode);
+				g_game.delauny->selectedNode = NULL;
+			}
+		}
 	}
 	glutPostRedisplay();
 }
@@ -117,12 +133,21 @@ void mouse(int button, int state, int x, int y) {
 /** @param x/y the coordinate of where the mouse is */
 void passiveMotion(int x, int y) {
 	g_game.mousePosition = g_screen.convertPixelsToCartesian(V2f((float)x, (float)y));
+	if (g_game.delauny != NULL && g_game.delauny->specialCursor != g_game.mousePosition) {
+		g_game.delauny->specialCursor = g_game.mousePosition;
+		//g_game.delauny->selectedNode = g_game.delauny->getNodePolyhedronContains(g_game.mousePosition);
+		g_game.delauny->selectedNode = g_game.delauny->getNodeAt(CircF(g_game.mousePosition, .5f), 0, 0, 0);
+	}
 }
 
 /** @param x/y the coordinate of where the mouse is being dragged */
 void draggedMotion(int x, int y) {
 	V2f drag = g_screen.convertPixelsToCartesian(V2f((float)x, (float)y));
 	g_screen.scrollDrag(drag);
+
+	if (g_game.delauny != NULL && g_game.delauny->selectedNode && drag != g_game.mouseDragged) {
+		g_game.delauny->moveNode(g_game.delauny->selectedNode, drag);
+	}
 	g_game.mouseDragged = drag;
 	glutPostRedisplay();
 }

@@ -45,6 +45,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir)\freeglut\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)\freeglut\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -92,13 +94,19 @@
     <ClInclude Include="codegiraffe\random.h" />
     <ClInclude Include="codegiraffe\templatearray.h" />
     <ClInclude Include="codegiraffe\templatehashmap.h" />
+    <ClInclude Include="codegiraffe\templateset.h" />
     <ClInclude Include="codegiraffe\templatevector.h" />
+    <ClInclude Include="codegiraffe\templatevectorlist.h" />
     <ClInclude Include="codegiraffe\v2.h" />
+    <ClInclude Include="delauny.h" />
     <ClInclude Include="fsm.h" />
+    <ClInclude Include="fsm_alignment.h" />
+    <ClInclude Include="fsm_cohesion.h" />
     <ClInclude Include="fsm_fleebullets.h" />
     <ClInclude Include="fsm_followagent.h" />
     <ClInclude Include="fsm_hide.h" />
     <ClInclude Include="fsm_idle.h" />
+    <ClInclude Include="fsm_separation.h" />
     <ClInclude Include="fsm_wander.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="graph.h" />
@@ -111,10 +119,13 @@
     <ClCompile Include="codegiraffe\circle.cpp" />
     <ClCompile Include="codegiraffe\glutrenderingcontext.cpp" />
     <ClCompile Include="codegiraffe\random.cpp" />
+    <ClCompile Include="fsm_alignment.cpp" />
+    <ClCompile Include="fsm_cohesion.cpp" />
     <ClCompile Include="fsm_fleebullets.cpp" />
     <ClCompile Include="fsm_followagent.cpp" />
     <ClCompile Include="fsm_hide.cpp" />
     <ClCompile Include="fsm_idle.cpp" />
+    <ClCompile Include="fsm_separation.cpp" />
     <ClCompile Include="fsm_wander.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="obstacles.cpp" />

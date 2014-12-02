@@ -34,6 +34,7 @@ public:
 			if (m == pairm) { return max() > pair.max(); }
 			return m > pairm;
 		}
+		bool contains(const int value) const { return a == value || b == value; }
 	};
 	/** how the points connect. If this is size 0 then the points are considered a line loop */
 	TemplateSet<pair> connectionPairs;
@@ -79,9 +80,9 @@ public:
 			points[i] = list[i];
 			center += points[i];
 		}
-		center /= (float)points.size();
+		center /= (TYPE)points.size();
 		for (int i = 0; i < points.size(); ++i) {
-			float mag = (center - points[i]).magnitude();
+			TYPE mag = (center - points[i]).magnitude();
 			if (mag > radius) {
 				radius = mag;
 			}
@@ -107,16 +108,79 @@ public:
 		box.writePointsRelative(boxP, 4);
 		setPoints(boxP, 4);
 	}
+	Polygon2(V2<TYPE> const & origin, TYPE const & rotation, const V2<TYPE> * const & list, const int count, const pair * const & pairs, const int pairsCount) {
+		set(origin, rotation, list, count, pairs, pairsCount, true);
+	}
 
-	Polygon2(V2<TYPE> const & origin, TYPE const & rotation, const V2<TYPE> * const & list, const int count, const pair * const & pairs, const int pairsCount)
-		:radius(0), origin(origin), rotation(rotation) {
-		setPoints(list, count);
-		for (int i = 0; i < pairsCount; ++i) {
-			connectionPairs.add(pairs[i]);
+	void set(V2<TYPE> const & origin, TYPE const & rotation, const V2<TYPE> * const & list, const int count, const pair * const & pairs, const int pairsCount, bool attemptClockwiseOptimization) {
+		this->origin = origin;
+		this->rotation = rotation;
+		bool clockwiseOptimize = attemptClockwiseOptimization;
+		if (clockwiseOptimize) {
+			// try to make this non-clockwise polygon into a clockwise polygon.
+			for (int i = 0; i < pairsCount; ++i) {
+				printf("%d %d, ", pairs[i].a, pairs[i].b);
+			}
+			printf("\n");
+			// every point needs to be referenced by the pairs twice to make the loop (to and from)
+			int numIncompletes = 0, start = -1, end = -1;
+			for (int i = 0; i < count; ++i) {
+				int timesReferenced = 0;
+				for (int p = 0; p < pairsCount; ++p) {
+					if (pairs[p].contains(i)) {
+						timesReferenced++;
+						if (timesReferenced > 2) break;
+					}
+				}
+				printf("%d:%d ", i, timesReferenced);
+				if (timesReferenced == 1) {
+					if (start == -1) start = i;
+					else end = i;
+					numIncompletes++;
+				}
+				if (timesReferenced != 2 && numIncompletes > 2) {
+					clockwiseOptimize = false;
+					break;
+				}
+			}
+			printf("\n");
+			// every point needs to be clockwise to the next one
+			if (clockwiseOptimize) {
+				printf("%s\n", (numIncompletes==0)?"clockwise!":"close enough to clockwise");
+				setPoints(list, count);
+				calculatePolygonCW(points.getRawList(), points.size(), center);
+				// if it's true, the points can be re-arranged to be clockwise, and the pairs can be discarded
+				connectionPairs.clear();
+				// TODO if incompletes is 2 and start and end are valid, make connection pairs as a strip from start to end (or end to start, whichever is actually CW)
+			}
 		}
-		//for (int i = 0; i < connectionPairs.size(); ++i) {
-		//	printf("%d %d\n", connectionPairs[i].min(), connectionPairs[i].max());
-		//}
+		if (!clockwiseOptimize) {
+			setPoints(list, count);
+			connectionPairs.clear();
+			connectionPairs.ensureCapacity(pairsCount);
+			for (int i = 0; i < pairsCount; ++i) {
+				if (pairs[i].a < points.size() && pairs[i].b < points.size()) {
+					connectionPairs.add(pairs[i]);
+				}
+				else {
+					int i = 0; i = 1 / i; // OOB...
+				}
+				connecitonPairsAreSafe();
+			}
+			connecitonPairsAreSafe();
+		}
+		connecitonPairsAreSafe();
+	}
+
+	bool connecitonPairsAreSafe() const {
+		if (this->isLineStripPolygon()) return true;
+		for (int i = 0; i < connectionPairs.size(); ++i) {
+			if (connectionPairs[i].a >= points.size() || connectionPairs[i].b >= points.size()) {
+				int x = 0; x = 1 / x;
+				return false;
+			}
+		}
+		return true;
 	}
 
 	V2<TYPE> getCenter() const { return origin + center; }
@@ -126,7 +190,7 @@ public:
 		relativeP.rotate(-rotation);
 		bool knownToBeClockwise = this->isLineStripPolygon();
 		bool isClockwise = knownToBeClockwise;
-		float pSign, cSign;
+		TYPE pSign, cSign;
 		for (int i = 0; i < getLineCount(); ++i) {
 			gatherLineRelative(i, a, b);
 			lineDelta = b - a;
@@ -154,7 +218,7 @@ public:
 		// test if the ray would hit a sphere that contains this polygon
 		if (V2<TYPE>::rayCrossesCircle(relativeRayStart, relativeRayDirection, center, radius)) {
 			V2<TYPE> a, b, delta, point, centerDelta;
-			float line, ray, dist, bestDist = -1;
+			TYPE line, ray, dist, bestDist = -1;
 			for (int i = 0; i < this->getLineCount(); ++i) {
 				gatherLineRelative(i, a, b);
 				bool hitPossible = V2<TYPE>::rayIntersection(a, b, relativeRayStart, relativeRayStart + relativeRayDirection, line, ray);
@@ -226,7 +290,7 @@ public:
 	void glDraw(bool filled) const {
 		glPushMatrix();
 		origin.glTranslate();
-		float degrees = rotation * 180 / (float)V_PI;
+		TYPE degrees = rotation * 180 / (TYPE)V_PI;
 		glRotatef(degrees, 0, 0, 1);
 		if (isLineStripPolygon()) {
 			glDrawCircle(center, radius, false);
@@ -240,12 +304,27 @@ public:
 			for (int i = 0; i < points.size(); ++i) {
 				points[i].glVertex();
 			}
+			if (points.size() > 0) points[0].glVertex();
 			glEnd();
+
+			if (filled) {
+				glColor3f(0, 0, 0);
+				glBegin(GL_LINES);
+				for (int i = 0; i < points.size(); ++i) {
+					center.glVertex();
+					points[i].glVertex();
+				}
+				glEnd();
+			}
 		} else {
+			connecitonPairsAreSafe();
 			glBegin(GL_LINES);
+			int numa, numb;
 			for (int i = 0; i < connectionPairs.size(); ++i) {
-				points[connectionPairs[i].a].glVertex();
-				points[connectionPairs[i].b].glVertex();
+				numa = connectionPairs[i].a;
+				numb = connectionPairs[i].b;
+				points[numa].glVertex();
+				points[numb].glVertex();
 			}
 			glEnd();
 		}
@@ -264,7 +343,7 @@ public:
 		V2<TYPE> relativeP = circCenter - origin;
 		relativeP.rotate(-rotation);
 		V2<TYPE> delta = center - relativeP, a, b;
-		float dist = delta.magnitude();
+		TYPE dist = delta.magnitude();
 		// check if the circle approximation would collide.
 		if (dist < radius + circRadius) {
 			// check if the circle's center is inside the approximation, and if it is inside the polygon
@@ -289,7 +368,7 @@ public:
 
 	bool intersectsPolygon(Polygon2<TYPE> const & poly) const {
 		V2<TYPE> delta = (origin + center.rotated(rotation)) - (poly.origin + poly.center.rotated(poly.rotation));
-		float dist = delta.magnitude();
+		TYPE dist = delta.magnitude();
 		// check if circle approximations collide
 		if (dist < radius + poly.radius) {
 			V2<TYPE> a, b, c, d;
@@ -317,7 +396,7 @@ public:
 
 	bool intersectsCone(Cone<TYPE> const & cone) const {
 		V2<TYPE> delta = (origin + center.rotated(rotation)) - cone.origin;
-		float dist = delta.magnitude();
+		TYPE dist = delta.magnitude();
 		// check if the circle approximations meet
 		if (dist < cone.radius + radius) {
 			if (contains(cone.origin)) return true;
@@ -329,6 +408,63 @@ public:
 		}
 		return false;
 	}
+
+	/**
+	* @param io_points __OUT __IN a list of points to re-arrange in order (clockwise)
+	* @param numPoints how many points there are
+	* @param out_center where the average location of these points is
+	*/
+	static void calculatePolygonCW(V2<TYPE> * io_points, const int numPoints, V2<TYPE>  & out_center) {
+		if (numPoints == 0) return;
+		// calculate where to start the polygon, and where to center it too.
+		int start = 0;
+		out_center = io_points[0];
+		for (int i = 1; i < numPoints; ++i) {
+			if (io_points[i].y > io_points[start].y) { start = i; }
+			out_center += io_points[i];
+		}
+		out_center /= (TYPE)numPoints;
+		// calculate the angle of the starting point
+		V2<TYPE>  currentAngle, testAngle, *startAngle = &io_points[start];
+		currentAngle = (io_points[start] - out_center).normal();
+		// calculate the angles of all of the points relative to the starting point
+		TYPE * angles = new TYPE[numPoints];
+		angles[start] = 0;
+		for (int i = 0; i < numPoints; ++i) {
+			if (i != start) {
+				testAngle = (io_points[i] - out_center).normal();
+				angles[i] = currentAngle.piRadians(testAngle);
+				if (angles[i] < 0) angles[i] += (TYPE)V_2PI; // no going backwards
+			}
+		}
+		// sort the list of points according to it's angle
+		quicksort<TYPE, V2f>(angles, io_points, 0, numPoints - 1);
+		// the angle list has served it's purpose.
+		delete[] angles;
+	}
+
+	template<typename COMPARE, typename PARALLEL>
+	static void quicksort(COMPARE * comparorList, PARALLEL * parallelList, int first, int last) {
+		int i = first - 1, j = last;
+		COMPARE v = comparorList[last], tempf;
+		if (last <= first) return;
+		PARALLEL tempv;
+		do {
+			while (comparorList[++i] < v);
+			while (v < comparorList[--j]) if (j == first) break;
+			if (i >= j) break;
+			//swap(i, j);
+			tempf = comparorList[i]; comparorList[i] = comparorList[j]; comparorList[j] = tempf;
+			tempv = parallelList[i]; parallelList[i] = parallelList[j]; parallelList[j] = tempv;
+		} while (true);
+		//swap(i, last);
+		tempf = comparorList[i]; comparorList[i] = comparorList[last]; comparorList[last] = tempf;
+		tempv = parallelList[i]; parallelList[i] = parallelList[last]; parallelList[last] = tempv;
+		quicksort(comparorList, parallelList, first, i - 1);
+		quicksort(comparorList, parallelList, i + 1, last);
+	}
+
+
 };
 
 typedef Polygon2<float> Polygon2f;
