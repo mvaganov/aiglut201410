@@ -59,7 +59,7 @@ struct V2 {
 	/** complete constructor */
 	V2(TYPE a_x, TYPE a_y):x(a_x),y(a_y){}
 	/** de-serialization constructor */
-	V2(TYPE * a_twoValues):x(a_twoValues[0]),y(a_twoValues[1]){}
+	explicit V2(TYPE * a_twoValues):x(a_twoValues[0]),y(a_twoValues[1]){}
 	/** turns a pi-radians angle into a vector. explicit so that scalars are not all-of-the-sudden turned into vectors */
 	explicit V2(TYPE a_piRadians):x(cos(a_piRadians)), y(sin(a_piRadians)){}
 	/** copy constructor */
