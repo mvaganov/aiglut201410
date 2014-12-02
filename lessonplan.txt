@@ -53,8 +53,9 @@ vec2 seek(vec2 target, Agent agent) {
 float stopDistance(float speed, float acceleration) {
 	return (speed*speed)/(2*acceleration);
 }
-vec2 arrive(vec2 target, Agent agent, int a_ms) {
-	if(distance(agent.position, target) <= stopDistance(agent.velocity.mag(), agent.maxForce)) {
+vec2 arrive(vec2 target, Agent agent, int a_ms, float arriveThreshold) {
+	float dist = distance(agent.position, target);
+	if(dist < arriveThreshold || dist <= stopDistance(agent.velocity.mag(), agent.maxForce)) {
 		return stop(agent, a_ms);
 	} else {
 		return seek(target, agent);
