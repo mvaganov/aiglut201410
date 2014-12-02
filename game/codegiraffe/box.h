@@ -48,13 +48,23 @@ struct Box {
 	 * writes {(minx,miny), (minx,maxy), (maxx,maxy), (maxx,miny)}
 	 */
 	bool writePoints(V2<TYPE> * points, const int pointCount) const {
+		if (pointCount != 4) return false;
 		V2<TYPE> rad = size / 2, xAxis, yAxis;
 		calculateAxis(xAxis, yAxis);
-		if (pointCount != 4) return false;
 		points[0].set(center - xAxis * rad.x - yAxis * rad.y); // min
 		points[1].set(center - xAxis * rad.x + yAxis * rad.y);
 		points[2].set(center + xAxis * rad.x + yAxis * rad.y); // max
 		points[3].set(center + xAxis * rad.x - yAxis * rad.y);
+		return true;
+	}
+
+	bool writePointsRelative(V2<TYPE> * points, const int pointCount) {
+		if (pointCount != 4) return false;
+		V2<TYPE> rad = size / 2;
+		points[0].set(-rad.x, -rad.y); // min
+		points[1].set(-rad.x, +rad.y);
+		points[2].set(+rad.x, +rad.y); // max
+		points[3].set(+rad.x, -rad.y);
 		return true;
 	}
 

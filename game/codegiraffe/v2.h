@@ -336,7 +336,7 @@ struct V2 {
 	 */
 	V2<TYPE> rotated(const TYPE a_degreePiRadians) const {
 		V2<TYPE> result(*this);
-		result.rotate(V2<TYPE>(cos(a_degreePiRadians), sin(a_degreePiRadians)));
+		if (!result.isZero()) result.rotate(V2<TYPE>(cos(a_degreePiRadians), sin(a_degreePiRadians)));
 		return result;
 	}
 
