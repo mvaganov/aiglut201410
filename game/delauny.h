@@ -15,9 +15,7 @@
 
 #define ABORT { int NUMBER = 0; NUMBER = 1 / NUMBER; }
 
-//#define NO_TEST
-
-inline void printv2f(const V2f & v2f) { printf("(%.1f %.1f)", v2f.x, v2f.y); }
+#define NO_TEST
 
 /** a structure to manage delauny triangulation */
 class DelaunySet {
@@ -182,7 +180,9 @@ public:
 			for (int i = edges.size() - 1; i >= 0; --i) {
 				Edge * e = edges[i];
 				if (!e->removeNeighborTriangulation(this)) {
+#ifndef NO_TEST
 					printf("uhhh... could not remove this triangle, it's not a neighbor...\n"); ABORT
+#endif
 				}
 				if (e->getNeighborTriangulationCount() == 0) {
 					e->invalidateEdge();
@@ -296,13 +296,15 @@ public:
 		/** where this node is in space */
 		V2f point;
 		Polygon2f polygon;
+		/** identifies if this is on the edge of the voronoi diagram (near the boundaries) */
+		Obstacle * atBoundaryOf;
 		/** */
 		bool valid;
 		/** whenever data changes, the node should flag itself as needed recalculation */
 		bool needsModelRecalculated;
 
 	public:
-		VoronoiNode() : valid(false), needsModelRecalculated(true) {}
+		VoronoiNode() : atBoundaryOf(NULL), valid(false), needsModelRecalculated(true){}
 		VoronoiNode(V2f const & p) { set(p); }
 
 		const V2f & getPoint() const { return point; }
@@ -312,12 +314,14 @@ public:
 		/** identify that the polygon needs to be recalculated */
 		void setDirty() { needsModelRecalculated = true; }
 
+		bool isBorderPolygon() const { return atBoundaryOf != NULL; }
+
 		int getEdgeCount() const { return delaunyEdges.size(); }
 		Edge * getEdge(const int i) const { return delaunyEdges[i]; }
 		bool removeEdge(Edge * e) { setDirty(); return delaunyEdges.removeData(e); }
 		bool addEdge(Edge * e) { setDirty(); return delaunyEdges.add(e); }
 
-		void set(V2f const & p) { point = p; valid = true; setDirty(); }
+		void set(V2f const & p) { point = p; valid = true; setDirty(); atBoundaryOf = NULL; }
 
 		bool isValidNode() const { return valid; }
 
@@ -349,7 +353,8 @@ public:
 		/** calculate the Voronoi polygon*/
 		Polygon2f & getPolygon2f(Obstacle * boundary) {
 			if (needsModelRecalculated) {
-				printf("-------------------\n");
+				atBoundaryOf = NULL;
+				//printf("-------------------\n");
 				//TemplateVector<LineF> lines;
 				polygon.points.clear();
 				TemplateSet<VoronoiNode*> nodes;
@@ -363,10 +368,7 @@ public:
 				for (int i = 0; i < triangles.size(); ++i) {
 					points[i] = triangles[i]->circum.center;
 				}
-				for (int i = 0; i < points.size(); ++i) {
-					printf("(%.1f %.1f)", points[i].x, points[i].y);
-				}
-				printf("\n");
+				//for (int i = 0; i < points.size(); ++i) { printf("(%.1f %.1f)", points[i].x, points[i].y); } printf("\n");
 				// for each triangle
 				TemplateSet<Triangulation*> neighborTriangles;
 				for (int triIndex = 0; triIndex < triangles.size(); ++triIndex) {
@@ -382,7 +384,7 @@ public:
 							}
 						}					
 						// if this triangle borders the entire system (it doesn't have enough triangles to fully surround the edge)
-						if (e->getNeighborTriangulationCount() == 1 && e->has(this) && e->isNeighbor(t) ) {
+						if (e->getNeighborTriangulationCount() == 1 && e->has(this)) {
 							// find the dividing plane
 							V2f ray = e->voronoiFace.normal.perp(), end, otherPoint;//-(delta.perp().normal()), end;
 							V2f::closestPointOnLine(e->n0->getPoint(), e->n1->getPoint(), t->centerMass, otherPoint);
@@ -396,18 +398,19 @@ public:
 								V2f hitNorm;
 								float dist;
 								if (boundary->raycast(t->circum.center, ray, dist, end, hitNorm)) {
-									printf("should have hit from %.1f %.1f\n");
+									//printf("should have hit from %.1f %.1f\n");
 									// add that location to the list of points (noting it's index)
 									points.add(end);
-									printf("A %.1f %.1f\n", end.x, end.y);
+									//printf("A %.1f %.1f\n", end.x, end.y);
 									int index = points.size() - 1;
 									// add a line to that boundary point
 									pairs.add(Polygon2f::pair(triIndex, index));
 								} else {
 									end = t->circum.center;
-									printf("should have hit from %.1f %.1f\n");
+									//printf("should have hit from %.1f %.1f\n");
 								}
 							}
+							atBoundaryOf = boundary;
 						}
 					}
 					// draw lines from this triangle to all other node-adjacent triangles
@@ -415,52 +418,30 @@ public:
 						int otherTriIndex = triangles.indexOf(neighborTriangles[n]);
 						// a single point cannot make a line...
 						if (triIndex == otherTriIndex) continue;
-						V2f thisPoint = triangles[triIndex]->circum.center;
-						V2f otherPoint = triangles[otherTriIndex]->circum.center;
-						// if that other point is outside of the boundary
-						if (boundary && !boundary->contains(otherPoint)) {
-							// TODO what if triIndex is OOB? what if triIndex AND otherTriIndex are OOB?
-							// raycast to the endge of the boundary
-							V2f ray = otherPoint - thisPoint, hit, norm;
-							float dist;
-							if (boundary->raycast(thisPoint, ray, dist, hit, norm)) {
-								// if this point was not already replaced
-								if (points[otherTriIndex] == otherPoint) {
-									// replace it, and do the pairs addition as normal.
-									points[otherTriIndex] = hit;
-									printf("R %.1f %.1f\n", hit.x, hit.y);
-									pairs.add(Polygon2f::pair(triIndex, otherTriIndex));
-								}
-								// if this OOB triangle was already replaced
-								else {
-									// add the new point to the list
-									points.add(hit);
-									printf("B %.1f %.1f\n", hit.x, hit.y);
-									// use that new point
-									pairs.add(Polygon2f::pair(triIndex, points.size()-1));
-								}
+						if (boundary != NULL) {
+							V2f thisPoint = triangles[triIndex]->circum.center;
+							V2f thatPoint = triangles[otherTriIndex]->circum.center;
+							bool thisInBoundary = boundary->contains(thisPoint);
+							bool thatInBoundary = boundary->contains(thatPoint);
+							if (!thisInBoundary && !thatInBoundary) continue;
+							if (!thisInBoundary || !thatInBoundary) {
+								atBoundaryOf = boundary;
 							}
 						}
-						else
-							pairs.add(Polygon2f::pair(triIndex, otherTriIndex));
+						pairs.add(Polygon2f::pair(triIndex, otherTriIndex));
+
 					}
 				}
 				// to make the list of points relative to the node center (since polygon models are relative to a center)
-				for (int i = 0; i < points.size(); ++i) {
-					printf("(%.1f %.1f)", points[i].x, points[i].y);
-				}
-				printf("\n");
+				//for (int i = 0; i < points.size(); ++i) { printf("(%.1f %.1f)", points[i].x, points[i].y); } printf("\n");
 				for (int i = 0; i < points.size(); ++i) {
 					points[i] -= this->point;
-					printf("(%.1f %.1f)", points[i].x, points[i].y);
+					//printf("(%.1f %.1f)", points[i].x, points[i].y);
 				}
-				printf("\n");
+				//printf("\n");
 				// that should be all the data needed for a polygon
 				polygon.set(this->point, 0, points.getRawListConst(), points.size(), pairs.getRawListConst(), pairs.size(), true);
-				for (int i = 0; i < polygon.points.size(); ++i) {
-					printf("(%.1f %.1f)", polygon.points[i].x, polygon.points[i].y);
-				}
-				printf("\n");
+				//for (int i = 0; i < polygon.points.size(); ++i) { printf("(%.1f %.1f)", polygon.points[i].x, polygon.points[i].y); } printf("\n");
 				needsModelRecalculated = false;
 			}
 			return polygon;
@@ -809,8 +790,8 @@ public:
 			dupTest();
 #endif
 		}
-		printf("%d triangles\n", currentTriangles.size());
 #ifndef NO_TEST
+		printf("%d triangles\n", currentTriangles.size());
 		bigValidationTest();
 #endif
 	}
@@ -821,11 +802,22 @@ public:
 		}
 	}
 
-	void makeRandom(int count, V2f min, V2f max) {
+	/** @param count how many random points to make in this diagram's boundary */
+	void makeRandom(int count) {
+		V2f center = boundary->getCenter();
+		float rad = boundary->getRadius();
+		V2f r(rad, rad);
+		V2f min = center - r;
+		V2f max = center + r;
 		V2f d = max - min;
 		for (int i = 0; i < count; ++i) {
 			float x = Random::PRNGf(), y = Random::PRNGf();
-			currentNodes.add(VoronoiNode(V2f(x*d.x + min.x, y*d.y + min.y)));
+			V2f randomPoint = V2f(x*d.x + min.x, y*d.y + min.y);
+			if (boundary->contains(randomPoint)) {
+				currentNodes.add(VoronoiNode(randomPoint));
+			} else {
+				--i;
+			}
 		}
 	}
 
@@ -1047,11 +1039,22 @@ public:
 		return NULL;
 	}
 
+	void gatherVoronoi(TemplateVector<VoronoiNode*> & nodes, bool includeBorderPolygons) {
+		for (int i = 0; i < currentNodes.size(); ++i) {
+			VoronoiNode * vn = &currentNodes[i];
+			if (vn->isValidNode()) {
+				vn->getPolygon2f(boundary);
+				if (includeBorderPolygons || !vn->isBorderPolygon()) {
+					nodes.add(vn);
+				}
+			}
+		}
+	}
+
 	void glDraw(GLUTRenderingContext & g_screen) const {
 		if (boundary) boundary->glDraw(false);
 
-		// TODO draw debug info showing how many Triangulations are next to each edge
-
+#ifndef NO_TEST
 		for (int i = 0; i < currentTriangles.size(); ++i) {
 			if (!currentTriangles[i].isValidTriangle()) continue;
 			glColor3f(1.0f, .9f, 1.0f);
@@ -1066,17 +1069,17 @@ public:
 				glColor3f(0.5f, 1.0f, 0.5f);
 				e->glDraw();
 				// draw which triangles are neighboring the edges. useful for debugging, if you think triangles might be overlapping
-				//glColor3f(0, 0.7f, 0);
-				//V2f c = V2f::between(e->n0->getPoint(), e->n1->getPoint());
-				//g_screen.printf(c, "%d", e->getNeighborTriangulationCount());
-				//for (int n = 0; n < e->getNeighborTriangulationCount(); ++n) {
-				//	Triangulation * t = e->getNeighborTriangulation(n);
-				//	V2f delta = t->centerMass - c;
-				//	g_screen.drawLine(c, c + delta*0.9f);
-				//}
+				glColor3f(0, 0.7f, 0);
+				V2f c = V2f::between(e->n0->getPoint(), e->n1->getPoint());
+				g_screen.printf(c, "%d", e->getNeighborTriangulationCount());
+				for (int n = 0; n < e->getNeighborTriangulationCount(); ++n) {
+					Triangulation * t = e->getNeighborTriangulation(n);
+					V2f delta = t->centerMass - c;
+					g_screen.drawLine(c, c + delta*0.9f);
+				}
 			}
 		}
-
+#endif
 		if (selectedNode) {
 			const Triangulation * t;
 			TemplateSet<Triangulation*> trianglefaces;
@@ -1178,20 +1181,8 @@ public:
 				}
 			}
 		}
-		//glColor3f(1, 0, 0);
-		//for (int i = 0; i < _t.size(); ++i) {
-		//	Triangulation * t = _t[i];
-		//	if (!t->isValidTriangle()) return;
-		//	t->circum.glDraw(false);
-		//	t->glDrawEdges();
-		//}
-		//glColor3f(1, .5f, 0);
-		//for (int i = 0; i < _p.size(); ++i) {
-		//	glDrawCircle(_p[i]->point, .2f, true);
-		//}
+
 		if (selectedNode) {
-//			Polygon2f * poly = &selectedNode->getPolygon();
-//			poly->glDraw(true);
 
 			TemplateVector<V2f> points;
 			V2f center;
@@ -1209,8 +1200,8 @@ public:
 					delta.normalize();
 				}
 			}
-			g_screen.setColor(0xffff00);
 			Polygon2f * calcedPoly = &selectedNode->getPolygon2f(boundary);
+			g_screen.setColor(selectedNode->isBorderPolygon()?0x0000ff:0xffff00);
 			calcedPoly->glDraw(true);
 		}
 	}

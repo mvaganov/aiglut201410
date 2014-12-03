@@ -45,19 +45,18 @@ void keyboard(unsigned char key, int x, int y) {
 		g_paused = !g_paused;
 		break;
 	}
-	if (g_game.delauny != NULL) {
+	if (g_game.delaunyEdit != NULL) {
 		switch (key) {
 		case '`':
-			g_game.delauny->addNode(g_game.mousePosition);
+			g_game.delaunyEdit->addNode(g_game.mousePosition);
 			break;
 		case '~':
-			printf("...\n");
-			g_game.delauny->calculateAllTriangles();
+			g_game.delaunyEdit->calculateAllTriangles();
 			break;
 		case '\b':
-			if (g_game.delauny->selectedNode) {
-				g_game.delauny->removeNode(g_game.delauny->selectedNode);
-				g_game.delauny->selectedNode = NULL;
+			if (g_game.delaunyEdit->selectedNode) {
+				g_game.delaunyEdit->removeNode(g_game.delaunyEdit->selectedNode);
+				g_game.delaunyEdit->selectedNode = NULL;
 			}
 		}
 	}
@@ -133,10 +132,10 @@ void mouse(int button, int state, int x, int y) {
 /** @param x/y the coordinate of where the mouse is */
 void passiveMotion(int x, int y) {
 	g_game.mousePosition = g_screen.convertPixelsToCartesian(V2f((float)x, (float)y));
-	if (g_game.delauny != NULL && g_game.delauny->specialCursor != g_game.mousePosition) {
-		g_game.delauny->specialCursor = g_game.mousePosition;
-		//g_game.delauny->selectedNode = g_game.delauny->getNodePolyhedronContains(g_game.mousePosition);
-		g_game.delauny->selectedNode = g_game.delauny->getNodeAt(CircF(g_game.mousePosition, .5f), 0, 0, 0);
+	if (g_game.delaunyEdit != NULL && g_game.delaunyEdit->specialCursor != g_game.mousePosition) {
+		g_game.delaunyEdit->specialCursor = g_game.mousePosition;
+		//g_game.delaunyEdit->selectedNode = g_game.delaunyEdit->getNodePolyhedronContains(g_game.mousePosition);
+		g_game.delaunyEdit->selectedNode = g_game.delaunyEdit->getNodeAt(CircF(g_game.mousePosition, .5f), 0, 0, 0);
 	}
 }
 
@@ -145,8 +144,8 @@ void draggedMotion(int x, int y) {
 	V2f drag = g_screen.convertPixelsToCartesian(V2f((float)x, (float)y));
 	g_screen.scrollDrag(drag);
 
-	if (g_game.delauny != NULL && g_game.delauny->selectedNode && drag != g_game.mouseDragged) {
-		g_game.delauny->moveNode(g_game.delauny->selectedNode, drag);
+	if (g_game.delaunyEdit != NULL && g_game.delaunyEdit->selectedNode && drag != g_game.mouseDragged) {
+		g_game.delaunyEdit->moveNode(g_game.delaunyEdit->selectedNode, drag);
 	}
 	g_game.mouseDragged = drag;
 	glutPostRedisplay();

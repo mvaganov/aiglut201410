@@ -118,12 +118,10 @@ public:
 		bool clockwiseOptimize = attemptClockwiseOptimization;
 		if (clockwiseOptimize) {
 			// try to make this non-clockwise polygon into a clockwise polygon.
-			for (int i = 0; i < pairsCount; ++i) {
-				printf("%d %d, ", pairs[i].a, pairs[i].b);
-			}
-			printf("\n");
+			//for (int i = 0; i < pairsCount; ++i) { printf("%d %d, ", pairs[i].a, pairs[i].b); } printf("\n");
 			// every point needs to be referenced by the pairs twice to make the loop (to and from)
 			int numIncompletes = 0, start = -1, end = -1;
+			TemplateVector<int> ignoredPoints;
 			for (int i = 0; i < count; ++i) {
 				int timesReferenced = 0;
 				for (int p = 0; p < pairsCount; ++p) {
@@ -132,26 +130,65 @@ public:
 						if (timesReferenced > 2) break;
 					}
 				}
-				printf("%d:%d ", i, timesReferenced);
-				if (timesReferenced == 1) {
+				//printf("%d:%d ", i, timesReferenced);
+				if(timesReferenced == 0) {
+					ignoredPoints.add(i);
+				} else if (timesReferenced == 1) {
 					if (start == -1) start = i;
 					else end = i;
 					numIncompletes++;
-				}
-				if (timesReferenced != 2 && numIncompletes > 2) {
+					if(numIncompletes > 2) {
+						clockwiseOptimize = false;
+						break;
+					}
+				} else if (timesReferenced > 2) {
 					clockwiseOptimize = false;
 					break;
 				}
 			}
-			printf("\n");
+			if(clockwiseOptimize && ignoredPoints.size() > 0) {
+				//printf("removing unused points\n");
+				for(int i = ignoredPoints.size()-1; i >= 0; --i) {
+					points.remove(ignoredPoints[i]);
+					if (ignoredPoints[i] < start) start--;
+					if (ignoredPoints[i] < end) end--;
+				}
+			}
+			//printf("\n");
 			// every point needs to be clockwise to the next one
 			if (clockwiseOptimize) {
-				printf("%s\n", (numIncompletes==0)?"clockwise!":"close enough to clockwise");
-				setPoints(list, count);
-				calculatePolygonCW(points.getRawList(), points.size(), center);
 				// if it's true, the points can be re-arranged to be clockwise, and the pairs can be discarded
 				connectionPairs.clear();
+				V2f startP, endP;
 				// TODO if incompletes is 2 and start and end are valid, make connection pairs as a strip from start to end (or end to start, whichever is actually CW)
+				if (numIncompletes == 2 && start != -1 && end != -1) {
+					startP = list[start];
+					endP = list[end];
+				}
+				//printf("%s\n", (numIncompletes==0)?"clockwise!":"close enough to clockwise");
+				setPoints(list, count);
+				calculatePolygonCW(points.getRawList(), points.size(), center);
+				if (numIncompletes == 2 && start != -1 && end != -1) {
+					//for (int i = 0; i < points.size(); ++i) {
+					//	if (points[i] == startP) printf("start@%d ", i);
+					//	if (points[i] == endP) printf("end@%d ", i);
+					//}
+					int index;
+					for (index = 0; index < points.size(); ++index) {
+						if (points[index] == endP || points[index] == startP) {
+							if (points[index + 1] == endP || points[index + 1] == startP) {
+								index++;
+							}
+							break;
+						}
+					}
+					for (int i = 0; i < points.size() - 1; ++i) {
+						int a = (index + i) % points.size(), b = (index + i + 1) % points.size();
+					//	printf("%d %d, ", a, b);
+						connectionPairs.add(pair(a, b));
+					}
+					//printf("\n");
+				}
 			}
 		}
 		if (!clockwiseOptimize) {
@@ -184,6 +221,7 @@ public:
 	}
 
 	V2<TYPE> getCenter() const { return origin + center; }
+	float getRadius() const { return radius; }
 
 	bool contains(V2<TYPE> const & p) const {
 		V2<TYPE> relativeP = p - origin, a, b, lineP, lineC, lineDelta;
@@ -293,11 +331,10 @@ public:
 		TYPE degrees = rotation * 180 / (TYPE)V_PI;
 		glRotatef(degrees, 0, 0, 1);
 		if (isLineStripPolygon()) {
-			glDrawCircle(center, radius, false);
+			//glDrawCircle(center, radius, false);
 			if (!filled) {
 				glBegin(GL_LINE_LOOP);
-			}
-			else {
+			} else {
 				glBegin(GL_TRIANGLE_FAN);
 				center.glVertex();
 			}
@@ -307,22 +344,27 @@ public:
 			if (points.size() > 0) points[0].glVertex();
 			glEnd();
 
-			if (filled) {
-				glColor3f(0, 0, 0);
-				glBegin(GL_LINES);
-				for (int i = 0; i < points.size(); ++i) {
-					center.glVertex();
-					points[i].glVertex();
-				}
-				glEnd();
-			}
+			//if (filled) {
+			//	glColor3f(0, 0, 0);
+			//	glBegin(GL_LINES);
+			//	for (int i = 0; i < points.size(); ++i) {
+			//		center.glVertex();
+			//		points[i].glVertex();
+			//	}
+			//	glEnd();
+			//}
 		} else {
 			connecitonPairsAreSafe();
-			glBegin(GL_LINES);
+			if (!filled) {
+				glBegin(GL_LINES);
+			} else {
+				glBegin(GL_TRIANGLES);
+			}
 			int numa, numb;
 			for (int i = 0; i < connectionPairs.size(); ++i) {
 				numa = connectionPairs[i].a;
 				numb = connectionPairs[i].b;
+				if (filled) center.glVertex();
 				points[numa].glVertex();
 				points[numb].glVertex();
 			}

@@ -84,6 +84,7 @@ public:
 	virtual void update(int a_ms);
 
 	V2f getCenter() const {return body.center; }
+	float getRadius() const {return body.radius;}
 
 	void updateMovement(int a_ms) {
 		if (a_ms != 0) {

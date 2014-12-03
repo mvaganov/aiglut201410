@@ -13,6 +13,7 @@ public:
 	virtual bool intersects(const Obstacle * o) const = 0;
 
 	virtual V2f getCenter() const = 0;
+	virtual float getRadius() const = 0;
 	virtual bool contains(V2f const & p) const = 0;
 	virtual bool raycast(V2f const & rayStart, V2f const & rayDirection,
 		float & out_dist, V2f & out_point, V2f & out_normal) const = 0;
@@ -29,6 +30,7 @@ class CircleObject : public CircF, public Obstacle {
 public:
 	CircleObject(CircF c):CircF(c){}
 	V2f getCenter() const {return center;}
+	float getRadius() const { return radius; }
 	bool intersects(const Obstacle * o) const;
 	// this method needs BoxObject to be defined before the method can be defined
 	bool contains(V2f const & p) const { return CircF::contains(p); }
@@ -49,6 +51,7 @@ public:
 	BoxObject(BoxF b):BoxF(b){}
 	BoxObject(RectF r):BoxF(r.getCenter(), r.getDimension(), 0){}
 	V2f getCenter() const {return center;}
+	float getRadius() const { return size.magnitude()/2; }
 	bool intersects(const Obstacle * o) const;
 	bool contains(V2f const & p) const {return BoxF::contains(p); }
 	bool raycast(V2f const & rayStart, V2f const & rayDirection,
@@ -67,6 +70,7 @@ class ConeObject : public ConeF, public Obstacle {
 public:
 	ConeObject(ConeF c) :ConeF(c){}
 	V2f getCenter() const { return ConeF::getCenter(); }
+	float getRadius() const { return radius; }
 	bool intersects(const Obstacle * o) const;
 	bool contains(V2f const & p) const { return ConeF::contains(p); }
 	bool raycast(V2f const & rayStart, V2f const & rayDirection,
@@ -85,6 +89,7 @@ class PolygonObject : public Polygon2f, public Obstacle{
 public:
 	PolygonObject(Polygon2f c) :Polygon2f(c){}
 	V2f getCenter() const { return Polygon2f::getCenter(); }
+	float getRadius() const { return Polygon2f::getRadius(); }
 	bool intersects(const Obstacle * o) const;
 	bool contains(V2f const & p) const { return Polygon2f::contains(p); }
 	bool raycast(V2f const & rayStart, V2f const & rayDirection,

@@ -15,7 +15,7 @@
 #include "astar.h"
 #include "codegiraffe/polygon.h"
 #include "delauny.h"
-//#define DELAUNY_TESTING
+#define DELAUNY_TESTING
 //#define TESTING_SHAPES
 
 class Game {
@@ -32,6 +32,8 @@ public:
 	GraphNode * selectedNode;
 
 	DelaunySet * delauny;
+	DelaunySet * delaunyEdit;
+	TemplateVector<DelaunySet::VoronoiNode*> voronoiNodes;
 
 	/** whether or not to draw debug lines for FSM steering behaviors */
 	bool drawDebug;
@@ -89,9 +91,9 @@ public:
 #endif
 
 	Game() :mapGraph(NULL), mapPath(NULL), selected(NULL), selectedNode(NULL), delauny(NULL), drawDebug(true) {
+		delaunyEdit = NULL;
 		selectedNode = NULL;
 		selected = NULL;
-		int agentCount = 10;
 #ifdef TESTING_SHAPES
 		// code for testing object types
 		CircF testCircle(V2f(5,5), .75f);
@@ -119,7 +121,7 @@ public:
 		testPoly2 = new PolygonObject(Polygon2f(box2));
 		obstacles.add(testPoly2);
 #endif
-
+		int agentCount = 10;
 		for (int i = 0; i < agentCount; ++i) {
 			float extraRadius = Random::PRNGf()*0.5f;
 			CircF c(Random::PRNGf() * 5, Random::PRNGf() * 5, .1f + extraRadius);
@@ -143,7 +145,7 @@ public:
 		mapPath = Astar(mapGraph->nodes[0], mapGraph->nodes.getLast());
 
 #ifdef DELAUNY_TESTING
-		V2f boxPoints[] = { V2f(-200, 200), V2f(200, 200), V2f(200, -200), V2f(-200, -200) };
+		V2f boxPoints[] = { V2f(-10, 10), V2f(10, 10), V2f(10, -10), V2f(-10, -10) };
 		const int boxPointCount = sizeof(boxPoints) / sizeof(boxPoints[0]);
 		Polygon2f::pair boxSides[] = {
 			Polygon2f::pair(0, 1),
@@ -152,21 +154,28 @@ public:
 			Polygon2f::pair(3, 0),
 		};
 		const int boxSidesCount = sizeof(boxSides) / sizeof(boxSides[0]);
-		PolygonObject * po = new PolygonObject(Polygon2f(V2f::ZERO(), 0, boxPoints, boxPointCount, boxSides, boxSidesCount));
+		Obstacle * po = 
+			//new PolygonObject(Polygon2f(V2f::ZERO(), 0, boxPoints, boxPointCount, boxSides, boxSidesCount));
+			new CircleObject(CircF(V2f::ZERO(), 50));
 		delauny = new DelaunySet(po);
-//		delauny.makeRandom(30, min, max);
-		delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(4, 4)));
-		delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(5, 4)));
-		delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(4, 5)));
-		delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(5, 5)));
-		V2f p(5, -5);
-		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(0.0f) * 2));
-		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(1.0f) * 2));
-		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(2.0f) * 2));
-		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(3.0f) * 2));
-		delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(4.0f) * 2));
+		delauny->makeRandom(100);
+		//delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(4, 4)));
+		//delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(5, 4)));
+		//delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(4, 5)));
+		//delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(5, 5)));
+		//V2f p(5, -5);
+		//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(0.0f) * 2));
+		//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(1.0f) * 2));
+		//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(2.0f) * 2));
+		//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(3.0f) * 2));
+		//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(4.0f) * 2));
+		//delaunyEdit = delauny;
 
 		delauny->calculateAllTriangles();
+
+		delauny->gatherVoronoi(voronoiNodes, true);
+
+		// TODO make GraphNode and VoronoiNode extend the same graph interface so that either the grid graph or the voronoi graph can be used for maze generation
 #endif
 	}
 	~Game() {
@@ -256,9 +265,15 @@ public:
 
 	void display(GLUTRenderingContext & g_screen) {
 		if (delauny != NULL) {
-			g_screen.setColor(0xff00ff);
-			delauny->glDraw(g_screen);
-			return;
+			g_screen.setColor(0xdddddd);
+//			delauny->glDraw(g_screen);
+//			return;
+			Polygon2f * p2f;
+			for (int i = 0; i < voronoiNodes.size(); ++i) {
+				p2f = &voronoiNodes[i]->getPolygon2f(delauny->boundary);
+				bool filled = p2f->contains(mousePosition);// false;
+				p2f->glDraw(filled);
+			}
 		}
 
 		g_screen.setColor(0x00aaff);
