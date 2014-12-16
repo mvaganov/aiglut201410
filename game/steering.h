@@ -13,8 +13,6 @@ V2f stop(Agent * agent, int a_ms);
 
 V2f flee(V2f target, Agent * agent);
 
-V2f arrive(V2f target, Agent * agent);
-
 class CalculationsFor_ObstacleAvoidance {
 public:
 	TemplateVector<Obstacle *> actualHits;

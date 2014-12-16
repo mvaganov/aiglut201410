@@ -13,7 +13,6 @@
   <PropertyGroup Label="Globals">
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>game</RootNamespace>
-    <ProjectGuid>{23CB23DA-5F13-4A7A-AEEA-5E3F3B5EFDBA}</ProjectGuid>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -103,12 +102,10 @@
     <ClInclude Include="fsm.h" />
     <ClInclude Include="fsm_alignment.h" />
     <ClInclude Include="fsm_cohesion.h" />
-    <ClInclude Include="fsm_evade.h" />
     <ClInclude Include="fsm_fleebullets.h" />
     <ClInclude Include="fsm_followagent.h" />
     <ClInclude Include="fsm_hide.h" />
     <ClInclude Include="fsm_idle.h" />
-    <ClInclude Include="fsm_pursuit.h" />
     <ClInclude Include="fsm_separation.h" />
     <ClInclude Include="fsm_wander.h" />
     <ClInclude Include="game.h" />
@@ -124,12 +121,10 @@
     <ClCompile Include="codegiraffe\random.cpp" />
     <ClCompile Include="fsm_alignment.cpp" />
     <ClCompile Include="fsm_cohesion.cpp" />
-    <ClCompile Include="fsm_evade.cpp" />
     <ClCompile Include="fsm_fleebullets.cpp" />
     <ClCompile Include="fsm_followagent.cpp" />
     <ClCompile Include="fsm_hide.cpp" />
     <ClCompile Include="fsm_idle.cpp" />
-    <ClCompile Include="fsm_pursuit.cpp" />
     <ClCompile Include="fsm_separation.cpp" />
     <ClCompile Include="fsm_wander.cpp" />
     <ClCompile Include="main.cpp" />

@@ -138,5 +138,5 @@ vec2 Alignment(Agent agent, List<Agent> neighbors) {
 	// markov chain
 
 //---wk6day11 --- behavior trees
-//---wk7day12 --- genetic algorithm, gini impurity, neural network
+//---wk7day12 --- genetic algorithm, neural network
 //---wk7day13 --- project presentations

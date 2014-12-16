@@ -31,8 +31,6 @@ void FSM_FollowAgent::execute(Agent * a, int a_ms) {
 		a->acceleration = seek(a->targetPosition, a);
 	}
 	a->acceleration += obstacleAvoidance(&a->game->obstacles, &a->sensorArea, a, &calc) * 10;
-	a->acceleration += arrive(a->targetPosition,a)*10;
-
 }
 void FSM_FollowAgent::draw(Agent * a, GLUTRenderingContext * g_screen) {
 	for(int i = 0; i < calc.actualHits.size(); ++i) {
