@@ -16,7 +16,25 @@ V2f seek(V2f target, Agent * agent) {
 	return force * (agent->maximumForce / agent->maximumSpeed);
 //}
 }
-
+V2f arrive(V2f target, Agent * agent){
+	//find the length from the target to current position
+	float distance, clipped_speed;
+	V2f target_offset = target - agent->body.center;
+	distance=target_offset.magnitude();
+	float slowing_distance=agent->maximumSpeed*3;
+	float ramped_speed = agent->maximumSpeed * (distance / slowing_distance);
+    if(distance<slowing_distance){
+		clipped_speed = ramped_speed;
+	}
+	if(distance>slowing_distance){
+		clipped_speed = 0;
+	}
+	
+	target_offset*=(clipped_speed / distance);
+    V2f desired_velocity = target_offset;
+	V2f force = desired_velocity - agent->velocity;
+	return force;
+}
 V2f stop(Agent * agent, int a_ms) {
 	if(!agent->velocity.isZero()) {
 		V2f v = agent->velocity;

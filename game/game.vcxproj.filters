@@ -105,6 +105,12 @@
     <ClInclude Include="fsm_separation.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="fsm_pursuit.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_evade.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -150,6 +156,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fsm_separation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_pursuit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_evade.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

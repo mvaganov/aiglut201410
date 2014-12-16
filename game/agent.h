@@ -31,7 +31,7 @@ public:
 	V2f targetPosition;
 	/** used for physics and collision calculations */
 	float mass;
-
+	float wanderEnd,wanderTime;
 	/** where did  this agent come from? */
 	void * parent;
 	/** whether or not to keep this in the game (or delete from lists) */
@@ -75,7 +75,7 @@ public:
 		:body(circle),direction(V2f::ZERO_DEGREES()),agentLook(LOOK_BEAK),parent(NULL),
 		behavior(BEHAVIOR_SEEK), alive(true), readyToDelete(false), mass(1), 
 		playerControlled(false), showDebugLines(true), game(game), fsm(newFSMBehavior),
-		sensorArea(BoxF(circle.center, V2f::ZERO(), 0))
+		sensorArea(BoxF(circle.center, V2f::ZERO(), 0)),wanderEnd(5),wanderTime(0)
 	{ }
 
 	~Agent() { if (fsm != NULL) delete fsm;  }
