@@ -6,9 +6,11 @@ Bullet * Agent::findClosestBullet() {
 	Bullet * closestBullet = NULL;
 	float closestBulletDistance;
 	float thisBulletDistance;
+	TemplateVector<Agent*> nearbyAgents;
+	game->gatherListOfAgentsAt(CircF(body.center, body.radius * 5), nearbyAgents);
 	// if there are any bullets nearby
-	for(int i = 0; i < game->agents.size(); ++i) {
-		Bullet * b = dynamic_cast<Bullet*>(game->agents[i]);
+	for (int i = 0; i < nearbyAgents.size(); ++i) {
+		Bullet * b = dynamic_cast<Bullet*>(nearbyAgents[i]);
 		if(b != NULL && (thisBulletDistance = V2f::distance(b->body.center, body.center)) 
 											< (body.radius*5+b->body.radius)) {
 			if(closestBullet == NULL || thisBulletDistance < closestBulletDistance) {
@@ -39,6 +41,7 @@ Agent * Agent::findClosestPlayerControlledAgent() {
 
 void Agent::update(int a_ms) {
 	if(fsm != NULL) {
+		//printf("%s ", fsm->getName());
 		fsm->execute(this, a_ms);
 	}
 	updateMovement(a_ms);

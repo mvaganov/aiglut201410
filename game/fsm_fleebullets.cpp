@@ -19,12 +19,10 @@ void FSM_Flee::execute(Agent * a, int a_ms) {
 	}
 	// for a close call, hide!
 	if (distance < a->body.radius * 2 + b->body.radius) {
-		Agent * player = NULL;
-		for (int i = 0; i < a->game->agents.size(); ++i) {
-			if (a->game->agents[i]->playerControlled) {
-				a->setFSM(new FSM_Hide(a->game->agents[i]));
-				return;
-			}
+		Agent * player = a->findClosestPlayerControlledAgent();
+		if (player != NULL) {
+			a->setFSM(new FSM_Hide(player));
+			return;
 		}
 	}
 	a->acceleration = flee(threat->body.center, a);

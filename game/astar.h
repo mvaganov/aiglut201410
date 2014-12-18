@@ -3,15 +3,15 @@
 #include "graph.h"
 #include "codegiraffe/templatehashmap.h" // TemplateHashMap<K,V> is a replacement for std::map<K,V>
 
-inline GraphNode * nodeInOpenSetWithLowestScore(
-	TemplateVector<GraphNode*> & openset, 
-	TemplateHashMap<GraphNode*, float> & f_score)
+inline AbstractGraphNode * nodeInOpenSetWithLowestScore(
+	TemplateVector<AbstractGraphNode*> & openset,
+	TemplateHashMap<AbstractGraphNode*, float> & f_score)
 {
 	int lowestIndex = 0;
-	GraphNode * best = openset[lowestIndex];
+	AbstractGraphNode * best = openset[lowestIndex];
 	float lowestF = f_score[best];
 	for(int i = 1; i < openset.size(); ++i) {
-		GraphNode * n = openset[i];
+		AbstractGraphNode * n = openset[i];
 		if(f_score[n] < lowestF) {
 			best = n;
 			lowestIndex = i;
@@ -21,34 +21,37 @@ inline GraphNode * nodeInOpenSetWithLowestScore(
 	return best;
 }
 
-inline TemplateVector<GraphNode*> * reconstruct_path(
-	TemplateHashMap<GraphNode*, GraphNode*> & came_from,
-	GraphNode* current);
+inline TemplateVector<AbstractGraphNode*> * reconstruct_path(
+	TemplateHashMap<AbstractGraphNode*, AbstractGraphNode*> & came_from,
+	AbstractGraphNode* current);
 
 // the larger this is, the more direct A* tries to be.
 static const float A_STAR_WEIGHT = 10; // 0 will cause a breadth-first search
 
-inline float heuristic_cost_estimate(GraphNode * start, GraphNode * goal) {
-	return V2f::distance(start->location, goal->location) * A_STAR_WEIGHT;
+inline float heuristic_cost_estimate(AbstractGraphNode * start, AbstractGraphNode * goal) {
+	GraphNode * s = dynamic_cast<GraphNode*>(start);
+	GraphNode * g = dynamic_cast<GraphNode*>(goal);
+	if (s && g) return V2f::distance(s->getLocation(), g->getLocation()) * A_STAR_WEIGHT;
+	return 0;
 }
 
 //function A*(start,goal)
-inline TemplateVector<GraphNode*> * Astar(GraphNode * start, GraphNode * goal) {
+inline TemplateVector<AbstractGraphNode*> * Astar(AbstractGraphNode * start, AbstractGraphNode * goal) {
     //closedset := the empty set    // The set of nodes already evaluated.
-	TemplateVector<GraphNode*> closedset;
+	TemplateVector<AbstractGraphNode*> closedset;
     //openset := {start}    // The set of tentative nodes to be evaluated, initially containing the start node
-	TemplateVector<GraphNode*> openset;
+	TemplateVector<AbstractGraphNode*> openset;
 	openset.add(start);
     //came_from := the empty map    // The map of navigated nodes.
-	TemplateHashMap<GraphNode*, GraphNode*>	came_from;
+	TemplateHashMap<AbstractGraphNode*, AbstractGraphNode*>	came_from;
 	came_from[start] = NULL;
  
     //g_score[start] := 0    // Cost from start along best known path.
-	TemplateHashMap<GraphNode*, float> g_score;
+	TemplateHashMap<AbstractGraphNode*, float> g_score;
 	g_score[start] = 0;
     // Estimated total cost from start to goal through y.
     //f_score[start] := g_score[start] + heuristic_cost_estimate(start, goal)
-	TemplateHashMap<GraphNode*, float> f_score;
+	TemplateHashMap<AbstractGraphNode*, float> f_score;
 	f_score[start] = g_score[start] + heuristic_cost_estimate(start, goal);
  
     //while openset is not empty
@@ -57,7 +60,7 @@ inline TemplateVector<GraphNode*> * Astar(GraphNode * start, GraphNode * goal) {
 		//for (int i = 0; i < openset.size(); ++i) { GraphNode * n = openset[i]; printf(" %03x<%03x", (((int)n >> 4) & 0xfff), (((int)came_from[n] >> 4) & 0xfff)); } printf("\n");
 
         //current := the node in openset having the lowest f_score[] value
-		GraphNode * current = nodeInOpenSetWithLowestScore(openset, f_score);
+		AbstractGraphNode * current = nodeInOpenSetWithLowestScore(openset, f_score);
         //if current = goal
 		if(current == goal) {
             //return reconstruct_path(came_from, goal)
@@ -68,15 +71,15 @@ inline TemplateVector<GraphNode*> * Astar(GraphNode * start, GraphNode * goal) {
         //add current to closedset
 		closedset.add(current);
         //for each neighbor in neighbor_nodes(current)
-		for(int i = 0; i < current->edges.size(); ++i) {
-			GraphNode * neighbor = current->edges[i].to;
+		for(int i = 0; i < current->getEdgeCount(); ++i) {
+			AbstractGraphNode * neighbor = current->getEdge(i)->otherNode(current);
             //if neighbor in closedset
 			if(closedset.indexOf(neighbor) >= 0) {
                 //continue
 				continue;
 			}
 			// ignore negative cost edges
-			float edgeCost = current->edges[i].cost;
+			float edgeCost = current->getEdge(i)->getCost();
 			if(edgeCost < 0) continue;
 
 			//tentative_g_score := g_score[current] + dist_between(current,neighbor)
@@ -103,12 +106,12 @@ inline TemplateVector<GraphNode*> * Astar(GraphNode * start, GraphNode * goal) {
 }
  
 //function reconstruct_path(came_from,current)
-inline TemplateVector<GraphNode*> * reconstruct_path(
-	TemplateHashMap<GraphNode*, GraphNode*> & came_from,
-	GraphNode* current)
+inline TemplateVector<AbstractGraphNode*> * reconstruct_path(
+	TemplateHashMap<AbstractGraphNode*, AbstractGraphNode*> & came_from,
+	AbstractGraphNode* current)
 {
     //total_path := [current]
-	TemplateVector<GraphNode*> * total_path = new TemplateVector<GraphNode*>();
+	TemplateVector<AbstractGraphNode*> * total_path = new TemplateVector<AbstractGraphNode*>();
 	total_path->add(current);
     //while current in came_from:
 	while(came_from[current] != 0) {

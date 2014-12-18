@@ -38,8 +38,31 @@ public:
 		ensureCapacity(a_size);
 		m_size = a_size;
 	}
+
+	/**
+	* @param a_index is overwritten by the next element, which is
+	* overwritten by the next element, and so on, till the last element
+	*/
+	void remove(int const a_index) {
+		moveDown(a_index, -1, m_size);
+		setSize(m_size - 1);
+	}
+	/** @param a_index is replaced by the last element, then size is reduced. */
+	void removeFast(int const a_index) {
+		swap(a_index, m_size - 1);
+		setSize(m_size - 1);
+	}
+	/** swaps to elements */
+	void swap(int const a_index0, int const a_index1) {
+		if (a_index0 < 0 || a_index0 >= m_size) { int i = 0; i = 1 / i; }
+		if (a_index1 < 0 || a_index1 >= m_size) { int i = 0; i = 1 / i; }
+		DATA_TYPE temp = get(a_index0);
+		set(a_index0, get(a_index1));
+		set(a_index1, temp);
+	}
 	void clear() { setSize(0); }
 	DATA_TYPE & get(int const & a_index) {
+		if (a_index < 0 || a_index >= m_size) { int i = 0; i = 1 / i; }
 		int arrIndex = a_index / m_allocationSize;
 		int subIndex = a_index % m_allocationSize;
 		return m_allocations.get(arrIndex)[subIndex];
@@ -71,6 +94,7 @@ public:
 	}
 	~TemplateVectorList(){release();}
 	void set(int const & a_index, DATA_TYPE const & a_value) {
+		if (a_index < 0 || a_index >= m_allocated) { int i = 0; i = 1 / i; }
 		// complex types must overload DATA_TYPE & operator=(const DATA_TYPE &)
 		get(a_index) = a_value;
 	}

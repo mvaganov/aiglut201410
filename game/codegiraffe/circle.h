@@ -26,10 +26,14 @@ struct Circle {
 		return AABB(center-d, center+d);
 	}
 
-	bool intersects(const Circle<TYPE> c) const {
+	bool intersectsCircle(const Circle<TYPE> c) const {
 		V2<TYPE> delta = center - c.center;
-		TYPE minDist = radius + c.radius;
-		return delta.magnitude() < minDist;
+		return delta.magnitude() < radius + c.radius;
+	}
+
+	bool intersectsCircle(V2<TYPE> const & a_center, const TYPE a_radius) const {
+		V2<TYPE> delta = center - a_center;
+		return delta.magnitude() < radius + a_radius;
 	}
 
 	bool contains(V2<TYPE> const & p) const {
@@ -60,8 +64,12 @@ struct Circle {
 		return false;
 	}
 
-	bool intersects(const AABB<TYPE> r) const {
+	bool intersectsAABB(const AABB<TYPE> r) const {
 		return intersects(center, radius, r.getMin(), r.getMax());
+	}
+
+	bool intersectsAABB(V2<TYPE> const & min, V2<TYPE> const & max) const {
+		return intersects(center, radius, min, max);
 	}
 
 	bool isEqual(const Circle<TYPE> & c) const {
@@ -96,7 +104,8 @@ struct Circle {
 	*/
 	V2<TYPE> getClosestPointOnEdge(const V2<TYPE> point, V2<TYPE> & out_normal) const {
 		out_normal = point - center;
-		out_normal.normalize();
+		if (out_normal.isZero()) out_normal = V2<TYPE>::ZERO_DEGREES();
+		else out_normal.normalize();
 		return center + (out_normal * radius);
 	}
 

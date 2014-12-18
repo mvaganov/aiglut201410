@@ -8,8 +8,8 @@
 #include "codegiraffe/glutrenderingcontext.h"
 #include "codegiraffe/templateset.h"
 #include "obstacles.h"
+#include "graph.h"
 
-// TODO allow voronoi polygons to be drawn filled in
 // TODO voronoi around obstacles to make a nav mesh
 // TODO profile and optimize
 
@@ -18,32 +18,39 @@
 #define NO_TEST
 
 /** a structure to manage delauny triangulation */
-class DelaunySet {
+class DelaunySet : public AbstractGraph {
 public:
 	// forward declarations
-	struct VoronoiNode;
-	struct Edge;
-	struct Triangulation;
+	class VoronoiNode;
+	class Edge;
+	class Triangulation;
 
-	/** the faces of a VoronoiNode, which lie on the edges between nodes */
-	struct VoronoiFace {
+	/** the faces of a VoronoiNode, which lie on the edges between nodes TODO make this a polygon... */
+	class VoronoiFace {
+	public:
 		/** the points that determine the ends of the separating edge. in a 3D shape these will be the coordinates of the polygon face between voronoi nodes */
 		TemplateVector<V2f> points;
 		/** where the separating face is, and it's normal */
 		V2f center, normal;
+		float radius;
 
 		VoronoiFace(){}
 
 		void refresh(Edge * e) {
-			normal = e->n0->getPoint() - e->n1->getPoint();
+			GraphNode * a = dynamic_cast<GraphNode*>(e->getNode(0));
+			GraphNode * b = dynamic_cast<GraphNode*>(e->getNode(1));
+			normal = a->getLocation() - b->getLocation();
 			normal.normalize();
 			center.setZero();
-			points.setSize(e->neighborTri.size());
-			for (int i = 0; i < e->neighborTri.size(); ++i) {
-				points[i] = e->neighborTri[i]->circum.center;
+			points.setSize(e->getNeighborTriangulationCount());
+			for (int i = 0; i < e->getNeighborTriangulationCount(); ++i) {
+				points[i] = e->getNeighborTriangulation(i)->circum.center;
 				center += points[i];
 			}
 			center /= (float)points.size();
+			V2f va, vb;
+			gatherOppositePoints(va, vb);
+			radius = (vb - va).magnitude();
 		}
 		void glDraw() const {
 			for (int i = 0; i < points.size(); ++i) {
@@ -53,16 +60,36 @@ public:
 		}
 		/** positive value on one side, negative on the other. not sure which is which. */
 		float sideValue(V2f const & p) { return V2f::dot(normal, p - center); }
+
+		void gatherOppositePoints(V2f & out_a, V2f & out_b) {
+			out_a = center;
+			out_b = center;
+			if (points.size() == 1) {
+				out_b = points[0];
+				return;
+			}
+			float dist, maxDist = -1;
+			for (int a = 0; a < points.size(); ++a) {
+				for (int b = a + 1; b < points.size(); ++b) {
+					dist = V2f::distance(points[a], points[b]);
+					if (maxDist < 0 || dist > maxDist) {
+						out_a = points[a];
+						out_b = points[b];
+						maxDist = dist;
+					}
+				}
+			}
+		}
 	};
 
 	/** the graph edge of the voronoi node, used to calculate the delauny triangulation */
-	struct Edge {
-		/** the nodes that make up this edge */
-		VoronoiNode *n0, *n1;
+	class Edge : public GraphEdge {
 		/** the triangulations that neighbor this edge */
 		TemplateSet<Triangulation*> neighborTri;
 		/** the face that was calculated for this edge */
 		VoronoiFace voronoiFace;
+	public:
+		VoronoiFace & getFace() { return voronoiFace; }
 
 		int getNeighborTriangulationCount() const { return neighborTri.size(); }
 
@@ -76,35 +103,36 @@ public:
 		}
 		bool removeNeighborTriangulation(Triangulation * nt) {
 			bool removed = neighborTri.removeData(nt);
-			if(removed) refreshVoronoiFace();
+			if (removed) refreshVoronoiFace();
 			return removed;
 		}
 
-		VoronoiNode * otherNode(VoronoiNode * n) { return (n != n0 && n != n1) ? NULL : ((n == n0) ? n1 : n0); }
 		void invalidateEdge() {
-			if (n0) {
-				if (!n0->removeEdge(this)) {
+			if (getNode(0)) {
+				VoronoiNode * vn = dynamic_cast<VoronoiNode*>(getNode(0));
+				if (!vn->removeEdge(this)) {
 					printf("could not remove edge from node?\n"); ABORT
 				}
 			}
-			if (n1) {
-				if (!n1->removeEdge(this)) {
+			if (getNode(1)) {
+				VoronoiNode * vn = dynamic_cast<VoronoiNode*>(getNode(1));
+				if (!vn->removeEdge(this)) {
 					printf("could not remove edge from node?\n"); ABORT
 				}
 			}
-			n0 = n1 = NULL;
+			nodes[0] = nodes[1] = NULL;
 		}
-		bool isValid() const { return n0 != NULL && n1 != NULL; }
-		bool has(const VoronoiNode * n) const { return n == n0 || n == n1; }
-		bool equals(const VoronoiNode * n, const VoronoiNode * nn) const { return (n == n0 && nn == n1) || (n == n1 && nn == n0); }
-		bool operator==(Edge const & e) const { return equals(e.n0, e.n1); }
-		Edge() :n0(NULL), n1(NULL){ invalidateEdge(); }
-		Edge(VoronoiNode *a, VoronoiNode *b):n0(a),n1(b) { }
-		void glDraw() const { n0->getPoint().glDrawTo(n1->getPoint()); }
+		bool isValid() const { return getNode(0) != NULL && getNode(1) != NULL; }
+		Edge() { nodes[0] = nodes[1] = NULL; invalidateEdge(); }
+		Edge(VoronoiNode *a, VoronoiNode *b) : GraphEdge(a, b){}// { nodes[0] = a; nodes[1] = b; }
+		void glDraw() const {
+			GraphNode * a = (GraphNode*)getNode(0), *b = (GraphNode*)getNode(1);
+			a->getLocation().glDrawTo(b->getLocation());
+		}
 		bool isNeighbor(Triangulation * const t) const { return neighborTri.indexOf(t) >= 0; }
 	};
 
-	struct Triangulation {
+	class Triangulation {
 	private:
 		/** not a set because the order matters. edges are stored in clockwise fashion. */
 		TemplateArray<Edge*> edges;
@@ -141,13 +169,13 @@ public:
 		}
 
 		/** create an invalid triangulation by default */
-		Triangulation() : startingNode(NULL), circum(0,0,-1) { }
+		Triangulation() : startingNode(NULL), circum(0, 0, -1) { }
 
 		int getEdgeCount() const { return edges.size(); }
 		Edge * getEdge(const int i) const { return edges[i]; }
 
 		/**
-		 * calculate center of mass, and order edges in clockwise fashion. 
+		 * calculate center of mass, and order edges in clockwise fashion.
 		 * @return true if this is a valid Triangulation
 		 */
 		bool calculate() {
@@ -195,8 +223,8 @@ public:
 		/** put all of the nodes from referenced edges into the given set */
 		void gatherNodesInto(TemplateSet<VoronoiNode*> & nodes) const {
 			for (int i = 0; i < edges.size(); ++i) {
-				nodes.add(edges[i]->n0);
-				nodes.add(edges[i]->n1);
+				nodes.add((VoronoiNode*)edges[i]->getNode(0));
+				nodes.add((VoronoiNode*)edges[i]->getNode(1));
 			}
 		}
 
@@ -206,11 +234,11 @@ public:
 		void gatherPointsClockwise(TemplateArray<V2f> & points) const {
 			points.allocateToSize(edges.size());
 			int index = 0;
-			points[index++] = startingNode->getPoint();
+			points[index++] = startingNode->getLocation();
 			VoronoiNode * cursor = startingNode;
 			while (index < edges.size()) {
-				cursor = edges[index]->otherNode(cursor);
-				points[index] = cursor->getPoint();
+				cursor = (VoronoiNode*)edges[index]->otherNode(cursor);
+				points[index] = cursor->getLocation();
 				index++;
 			}
 		}
@@ -242,7 +270,7 @@ public:
 		/** get the edge that connects the two given nodes. useful when the list of nodes is known but not the edges */
 		int findEdgeIndex(VoronoiNode * n0, VoronoiNode * n1) const {
 			for (int i = 0; i < edges.size(); ++i) {
-				if (edges[i]->equals(n0, n1)) return i;
+				if (edges[i]->hasBoth(n0, n1)) return i;
 			}
 			return -1;
 		}
@@ -282,19 +310,14 @@ public:
 
 		/** a triangulation is equal if it is brokering between the exact same nodes */
 		bool equals(const Triangulation & t) const {
-			if(&t == this) return true;
+			if (&t == this) return true;
 			return getNodeSet() == t.getNodeSet();
 		}
 		bool operator==(Triangulation const & t) const { return equals(t); }
 		bool operator!=(Triangulation const & t) const { return !equals(t); }
 	};
 
-	struct VoronoiNode {
-	private:
-		/** the edges that connect this node to other nodes */
-		TemplateSet<Edge*> delaunyEdges;
-		/** where this node is in space */
-		V2f point;
+	class VoronoiNode : public GraphNode {
 		Polygon2f polygon;
 		/** identifies if this is on the edge of the voronoi diagram (near the boundaries) */
 		Obstacle * atBoundaryOf;
@@ -307,7 +330,7 @@ public:
 		VoronoiNode() : atBoundaryOf(NULL), valid(false), needsModelRecalculated(true){}
 		VoronoiNode(V2f const & p) { set(p); }
 
-		const V2f & getPoint() const { return point; }
+		const V2f & getLocation() const { return location; }
 
 		/** @return whether the polygon needs to be recalculated */
 		bool isDirty() { return needsModelRecalculated; }
@@ -316,18 +339,18 @@ public:
 
 		bool isBorderPolygon() const { return atBoundaryOf != NULL; }
 
-		int getEdgeCount() const { return delaunyEdges.size(); }
-		Edge * getEdge(const int i) const { return delaunyEdges[i]; }
-		bool removeEdge(Edge * e) { setDirty(); return delaunyEdges.removeData(e); }
-		bool addEdge(Edge * e) { setDirty(); return delaunyEdges.add(e); }
+		int getEdgeCount() const { return edges.size(); }
+		//		Edge * getEdge(const int i) const { return edges[i]; }
+		bool removeEdge(Edge * e) { setDirty(); return edges.removeData(e); }
+		//		bool addEdge(Edge * e) { setDirty(); return edges.add(e); }
 
-		void set(V2f const & p) { point = p; valid = true; setDirty(); atBoundaryOf = NULL; }
+		void set(V2f const & p) { location = p; valid = true; setDirty(); atBoundaryOf = NULL; }
 
 		bool isValidNode() const { return valid; }
 
 		void invalidate(DelaunySet & D, TemplateSet<VoronoiNode*> & changedNodes) {
-			while (delaunyEdges.size() > 0) {
-				Edge * e = delaunyEdges.getLast();
+			while (edges.size() > 0) {
+				Edge * e = dynamic_cast<Edge*>(edges.getLast());
 				for (int i = e->getNeighborTriangulationCount() - 1; i >= 0; --i) {
 					Triangulation * t = e->getNeighborTriangulation(i);
 					t->gatherNodesInto(changedNodes);
@@ -382,19 +405,22 @@ public:
 							for (int i = 0; i < e->getNeighborTriangulationCount(); ++i) {
 								neighborTriangles.add(e->getNeighborTriangulation(i));
 							}
-						}					
+						}
 						// if this triangle borders the entire system (it doesn't have enough triangles to fully surround the edge)
 						if (e->getNeighborTriangulationCount() == 1 && e->has(this)) {
 							// find the dividing plane
-							V2f ray = e->voronoiFace.normal.perp(), end, otherPoint;//-(delta.perp().normal()), end;
-							V2f::closestPointOnLine(e->n0->getPoint(), e->n1->getPoint(), t->centerMass, otherPoint);
+							V2f ray = e->getFace().normal.perp(), end, otherPoint;//-(delta.perp().normal()), end;
+							GraphNode * a = (GraphNode*)e->getNode(0);
+							GraphNode * b = (GraphNode*)e->getNode(1);
+							V2f::closestPointOnLine(a->getLocation(), b->getLocation(), t->centerMass, otherPoint);
 							V2f correctDirection = otherPoint - t->centerMass;
 							float alignment = V2f::dot(ray, correctDirection);
 							if (alignment < 0) { ray *= -1.0f; }
 							// raycast the dividing plane to the border of the boundary
 							if (!boundary) {
 								end = t->circum.center + ray * 100;
-							} else if (boundary->contains(t->circum.center)) {
+							}
+							else if (boundary->contains(t->circum.center)) {
 								V2f hitNorm;
 								float dist;
 								if (boundary->raycast(t->circum.center, ray, dist, end, hitNorm)) {
@@ -405,7 +431,8 @@ public:
 									int index = points.size() - 1;
 									// add a line to that boundary point
 									pairs.add(Polygon2f::pair(triIndex, index));
-								} else {
+								}
+								else {
 									end = t->circum.center;
 									//printf("should have hit from %.1f %.1f\n");
 								}
@@ -435,12 +462,12 @@ public:
 				// to make the list of points relative to the node center (since polygon models are relative to a center)
 				//for (int i = 0; i < points.size(); ++i) { printf("(%.1f %.1f)", points[i].x, points[i].y); } printf("\n");
 				for (int i = 0; i < points.size(); ++i) {
-					points[i] -= this->point;
+					points[i] -= this->location;
 					//printf("(%.1f %.1f)", points[i].x, points[i].y);
 				}
 				//printf("\n");
 				// that should be all the data needed for a polygon
-				polygon.set(this->point, 0, points.getRawListConst(), points.size(), pairs.getRawListConst(), pairs.size(), true);
+				polygon.set(this->location, 0, points.getRawListConst(), points.size(), pairs.getRawListConst(), pairs.size(), true);
 				//for (int i = 0; i < polygon.points.size(); ++i) { printf("(%.1f %.1f)", polygon.points[i].x, polygon.points[i].y); } printf("\n");
 				needsModelRecalculated = false;
 			}
@@ -448,9 +475,10 @@ public:
 		}
 
 		bool polyhedronContains(V2f const & a_position) const {
-			for (int i = 0; i < delaunyEdges.size(); ++i) {
-				float sideOfCenter = delaunyEdges[i]->voronoiFace.sideValue(point);
-				float sideOfPosition = delaunyEdges[i]->voronoiFace.sideValue(a_position);
+			for (int i = 0; i < edges.size(); ++i) {
+				Edge * e = (Edge*)edges[i];
+				float sideOfCenter = e->getFace().sideValue(location);
+				float sideOfPosition = e->getFace().sideValue(a_position);
 				if ((sideOfCenter < 0) != (sideOfPosition < 0)) {
 					return false;
 				}
@@ -461,8 +489,8 @@ public:
 		/** @return the edge from this node to the given node */
 		Edge * getEdgeTo(VoronoiNode * node) const {
 			Edge * e;
-			for (int i = 0; i < delaunyEdges.size(); ++i) {
-				e = delaunyEdges[i];
+			for (int i = 0; i < edges.size(); ++i) {
+				e = (Edge*)edges[i];
 				if (e->has(node))
 				{
 #ifndef NO_TEST
@@ -478,16 +506,17 @@ public:
 
 		/** gather a list of every triangulation attached to this node */
 		void gatherTriangles(TemplateSet<Triangulation*> & triangles) const {
-			for (int i = 0; i < delaunyEdges.size(); ++i) {
-				for (int n = 0; n < delaunyEdges[i]->getNeighborTriangulationCount(); ++n) {
-					triangles.add(delaunyEdges[i]->getNeighborTriangulation(n));
+			for (int i = 0; i < edges.size(); ++i) {
+				Edge * e = (Edge*)edges[i];
+				for (int n = 0; n < e->getNeighborTriangulationCount(); ++n) {
+					triangles.add(e->getNeighborTriangulation(n));
 				}
 			}
 		}
 
 		void gatherEdges(TemplateSet<Edge*> & edges) const {
-			for (int i = 0; i < delaunyEdges.size(); ++i) {
-				edges.add(delaunyEdges[i]);
+			for (int i = 0; i < edges.size(); ++i) {
+				edges.add(edges[i]);
 			}
 		}
 	};
@@ -502,13 +531,13 @@ public:
 		TemplateArray<V2f > points;
 		points.allocateToSize(nodeCount);
 		for (int i = 0; i < points.size(); ++i){
-			points[i] = nodes[i]->getPoint();
+			points[i] = nodes[i]->getLocation();
 		}
 		Polygon2f::calculatePolygonCW(points.getRawList(), points.size(), out_centerMass);
 		for (int index = 0; index < nodeCount; ++index) {
 			out_inOrder[index] = 0;
 			for (int i = 0; i < points.size(); ++i) {
-				if (points[index] == nodes[i]->getPoint()) {
+				if (points[index] == nodes[i]->getLocation()) {
 					out_inOrder[index] = nodes[i];
 				}
 			}
@@ -516,6 +545,23 @@ public:
 			if (out_inOrder[index] == 0) { ABORT }
 #endif
 		}
+	}
+
+	int getNodeCount() const { return currentNodes.size(); }
+	AbstractGraphNode * getNode(const int index) { return &currentNodes[index]; }
+
+	void connectNodes(AbstractGraphNode * from, AbstractGraphNode * to) {
+		getEdge(from, to, true);
+	}
+	AbstractGraphEdge * getEdge(AbstractGraphNode * a, AbstractGraphNode * b, bool createIfNotThere) {
+		VoronoiNode* va = (VoronoiNode*)a, *vb = (VoronoiNode*)b;
+		Edge * e = findEdge(va, vb);
+		if (e == NULL && createIfNotThere) {
+			e = addEdge(Edge(va, vb));
+		}
+		a->addEdge(e);
+		b->addEdge(e);
+		return e;
 	}
 
 	TemplateVectorList<VoronoiNode> currentNodes;
@@ -536,7 +582,8 @@ public:
 		Triangulation * tri;
 		if (freeTriangles.size() > 0) {
 			tri = freeTriangles.pop();
-		} else {
+		}
+		else {
 			currentTriangles.add();
 			tri = &currentTriangles.getLast();
 		}
@@ -560,6 +607,10 @@ public:
 #endif
 	}
 
+	void destroyNode(AbstractGraphNode * n) {
+		removeNode((VoronoiNode*)n);
+	}
+
 	void removeNode(VoronoiNode * toRemove) {
 		TemplateSet<VoronoiNode*> changedNodes;
 		removeNode(toRemove, changedNodes);
@@ -581,7 +632,7 @@ public:
 
 	Edge * findEdge(VoronoiNode * a, VoronoiNode * b) {
 		for (int i = 0; i < currentEdges.size(); ++i) {
-			if (currentEdges[i].equals(a, b)) return &currentEdges[i];
+			if (currentEdges[i].hasBoth(a, b)) return &currentEdges[i];
 		}
 		return NULL;
 	}
@@ -615,7 +666,7 @@ public:
 			nod = nodeCluster[n];
 			// check all of it's edges' neighbor triangles
 			for (int e = 0; e < nod->getEdgeCount(); ++e) {
-				ed = nod->getEdge(e);
+				ed = (Edge*)nod->getEdge(e);
 				foundInHere = false;
 				for (int t = ed->getNeighborTriangulationCount()-1; t >= 0; --t) {
 					tri = ed->getNeighborTriangulation(t);
@@ -682,13 +733,13 @@ public:
 		switch (nodeCluster.size()) {
 		case 0: case 1: { return false; }
 		case 2: {
-			V2f radius = (nodeCluster[1]->getPoint() - nodeCluster[0]->getPoint()) / 2.0f;
+					V2f radius = (nodeCluster[1]->getLocation() - nodeCluster[0]->getLocation()) / 2.0f;
 			if (radius.isZero()) return false;
-			out_circ.set(nodeCluster[0]->getPoint() + radius, radius.magnitude());
+			out_circ.set(nodeCluster[0]->getLocation() + radius, radius.magnitude());
 			return true;
 		}
 		case 3: {
-			return V2f::circumcenter(nodeCluster[0]->getPoint(), nodeCluster[1]->getPoint(), nodeCluster[2]->getPoint(), out_circ.center, out_circ.radius);
+			return V2f::circumcenter(nodeCluster[0]->getLocation(), nodeCluster[1]->getLocation(), nodeCluster[2]->getLocation(), out_circ.center, out_circ.radius);
 		}
 		default:
 			bool circumscriptionWorks;
@@ -696,9 +747,9 @@ public:
 			TemplateArray<CircF> circs(nodeCluster.size());
 			float minRad = -1, maxRad = -1;
 			for (int i = 0; i < circs.size(); ++i) {
-				circumscriptionWorks = V2f::circumcenter(nodeCluster[i]->getPoint(),
-					nodeCluster[(i + 1) % nodeCluster.size()]->getPoint(),
-					nodeCluster[(i + 2) % nodeCluster.size()]->getPoint(),
+				circumscriptionWorks = V2f::circumcenter(nodeCluster[i]->getLocation(),
+					nodeCluster[(i + 1) % nodeCluster.size()]->getLocation(),
+					nodeCluster[(i + 2) % nodeCluster.size()]->getLocation(),
 					circs[i].center, circs[i].radius);
 				if (!circumscriptionWorks) return false;
 				// keep track of the min/max circles
@@ -714,7 +765,7 @@ public:
 				// with the maximum radius
 				out_circ.radius = 0;
 				for (int i = 0; i < nodeCluster.size(); ++i) {
-					float rad = V2f::distance(out_circ.center, nodeCluster[0]->getPoint());
+					float rad = V2f::distance(out_circ.center, nodeCluster[0]->getLocation());
 					if (rad < minRad || rad > maxRad) return false;
 					if (rad > out_circ.radius) { out_circ.radius = rad; }
 				}
@@ -731,7 +782,7 @@ public:
 	void createTriangulationsFor(VoronoiNode* node, TemplateSet<Triangulation*> * createdTriangles) {
 		TemplateSet<VoronoiNode*> nodeCluster;
 		nodeCluster.add(node);
-		createTriangulationInternal(nodeCluster, 0, createdTriangles, CircF(node->getPoint(), -1));
+		createTriangulationInternal(nodeCluster, 0, createdTriangles, CircF(node->getLocation(), -1));
 	}
 
 	bool createTriangulationInternal(TemplateSet<VoronoiNode*> & nodeCluster, int startIndex, TemplateSet<Triangulation*> * createdTriangles, CircF whereToLookForNodes) {
@@ -747,7 +798,7 @@ public:
 			// don't consider invalid nodes or duplicates in the node cluster
 			if (!n->isValidNode() || nodeCluster.indexOf(n) >= 0) continue;
 			// don't consider nodes that are too far away
-			if (whereToLookForNodes.radius > 0 && (dist = V2f::distance(whereToLookForNodes.center, n->getPoint())) > whereToLookForNodes.radius) continue;
+			if (whereToLookForNodes.radius > 0 && (dist = V2f::distance(whereToLookForNodes.center, n->getLocation())) > whereToLookForNodes.radius) continue;
 			// add the next non-duplicate node
 			nodeCluster.add(n);
 			bool is3orMorePonts = nodeCluster.size() >= 3;
@@ -951,6 +1002,17 @@ public:
 #endif
 	}
 
+	AbstractGraphNode * createNode() {
+		VoronoiNode * newNode;
+		if (freeNodes.size() > 0) {
+			newNode = freeNodes.pop();
+		} else {
+			currentNodes.add();
+			newNode = &currentNodes.getLast();
+		}
+		return newNode;
+	}
+
 	bool addNode(V2f point) {
 		TemplateSet<VoronoiNode*> changedNodes;
 		bool added = addNode(point, changedNodes);
@@ -971,20 +1033,13 @@ public:
 		if (boundary && !boundary->contains(point)) return false;
 		// if this node already exists, ignore it
 		for (int i = 0; i < currentNodes.size(); ++i) {
-			if (currentNodes[i].getPoint() == point){
+			if (currentNodes[i].getLocation() == point){
 				return false;
 			}
 		}
-		// get memory for the new node
-		VoronoiNode * newNode;
-		if (freeNodes.size() > 0) {
-			newNode = freeNodes.pop();
-			newNode->set(point);
-		}
-		else {
-			currentNodes.add(VoronoiNode(point));
-			newNode = &currentNodes.getLast();
-		}
+		VoronoiNode * newNode = (VoronoiNode*)createNode();
+		newNode->set(point);
+
 		// calculate the triangles that are going to be destroyed
 		TemplateSet<Triangulation*> brokenTrianglesSet;
 		gatherTrianglesContaining(point, brokenTrianglesSet);
@@ -1020,7 +1075,7 @@ public:
 		for (int i = 0; i < currentNodes.size(); ++i) {
 			n = &currentNodes[i];
 			if (ignoreList && TemplateArray<VoronoiNode*>::indexOf(n, ignoreList, 0, ignoreListCount) >= 0) continue;
-			if (n->isValidNode() && location.contains(n->getPoint())) {
+			if (n->isValidNode() && location.contains(n->getLocation())) {
 				foundOne = n;
 				if (!out_allNodesHere) break;
 				out_allNodesHere->add(n);
@@ -1062,24 +1117,31 @@ public:
 			glColor3f(1.0f, .0f, 1.0f);
 			g_screen.printf(currentTriangles[i].centerMass, "%d", i);
 		}
-		
+#endif
+
 		for (int i = 0; i < currentEdges.size(); ++i) {
 			const Edge * e = &currentEdges[i];
 			if (e->isValid()) {
-				glColor3f(0.5f, 1.0f, 0.5f);
-				e->glDraw();
-				// draw which triangles are neighboring the edges. useful for debugging, if you think triangles might be overlapping
-				glColor3f(0, 0.7f, 0);
-				V2f c = V2f::between(e->n0->getPoint(), e->n1->getPoint());
-				g_screen.printf(c, "%d", e->getNeighborTriangulationCount());
-				for (int n = 0; n < e->getNeighborTriangulationCount(); ++n) {
-					Triangulation * t = e->getNeighborTriangulation(n);
-					V2f delta = t->centerMass - c;
-					g_screen.drawLine(c, c + delta*0.9f);
+				if (e->getCost() > 0) {
+					glColor3f(0.5f, 1.0f, 0.5f);
+					e->glDraw();
+#ifndef NO_TEST
+					// draw which triangles are neighboring the edges. useful for debugging, if you think triangles might be overlapping
+					glColor3f(0, 0.7f, 0);
+					VoronoiNode * a = (VoronoiNode*)e->getNode(0);
+					VoronoiNode * b = (VoronoiNode*)e->getNode(1);
+					V2f c = V2f::between(a->getLocation(), b->getLocation());
+					g_screen.printf(c, "%d %.1f", e->getNeighborTriangulationCount(), e->getCost());
+					for (int n = 0; n < e->getNeighborTriangulationCount(); ++n) {
+						Triangulation * t = e->getNeighborTriangulation(n);
+						V2f delta = t->centerMass - c;
+						g_screen.drawLine(c, c + delta*0.9f);
+					}
+#endif
 				}
 			}
 		}
-#endif
+
 		if (selectedNode) {
 			const Triangulation * t;
 			TemplateSet<Triangulation*> trianglefaces;
@@ -1094,14 +1156,14 @@ public:
 					// TODO draw a triangle fan from the centerMass, along the edges in clock-wise order
 					glBegin(GL_TRIANGLE_FAN);
 					for (int p = 0; p < triangleNodes.size(); ++p) {
-						triangleNodes[p]->getPoint().glVertex();
+						triangleNodes[p]->getLocation().glVertex();
 					}
 					glEnd();
 				}
 			}
 			g_screen.setColor(0xff00ff);
 			for (int i = 0; i < selectedNode->getEdgeCount(); ++i) {
-				const Edge * e = selectedNode->getEdge(i);
+				const Edge * e = (Edge*)selectedNode->getEdge(i);
 #ifndef NO_TEST
 				if (!e->isValid()) {
 					ABORT
@@ -1122,8 +1184,8 @@ public:
 		for (int i = 0; i < currentNodes.size(); ++i) {
 			const VoronoiNode * n = &currentNodes[i];
 			if (n->isValidNode()) {
-				glDrawCircle(n->getPoint(), 0.2f, false);
-				g_screen.printf(n->getPoint(), "%d", i);
+				glDrawCircle(n->getLocation(), 0.2f, false);
+				g_screen.printf(n->getLocation(), "%d", i);
 			}
 		}
 
@@ -1146,7 +1208,9 @@ public:
 					edgeCenter += ent->circum.center;
 				}
 				edgeCenter /= (float)edgeBorder.size();
-				V2f delta = e->n0->getPoint() - e->n1->getPoint();
+				VoronoiNode * a = (VoronoiNode*)e->getNode(0);
+				VoronoiNode * b = (VoronoiNode*)e->getNode(1);
+				V2f delta = a->getLocation() - b->getLocation();
 				// TODO if this is 3D, order the points to be clockwise around the edge vector
 				// draw the separation
 				if (edgeBorder.size() > 1) {
@@ -1160,9 +1224,11 @@ public:
 					glColor3f(.9f, 0, 0);
 					g_screen.drawCircle(edgeCenter, .1f, false);
 					glColor3f(0, 0, .9f);
-					V2f ray = e->voronoiFace.normal.perp(), end;//-(delta.perp().normal()), end;
+					V2f ray = e->getFace().normal.perp(), end;//-(delta.perp().normal()), end;
 					V2f otherPoint;
-					V2f::closestPointOnLine(e->n0->getPoint(), e->n1->getPoint(), t->centerMass, otherPoint);
+					a = (VoronoiNode*)e->getNode(0);
+					b = (VoronoiNode*)e->getNode(1);
+					V2f::closestPointOnLine(a->getLocation(), b->getLocation(), t->centerMass, otherPoint);
 					V2f correctDirection = otherPoint - t->centerMass;
 					float alignment = V2f::dot(ray, correctDirection);
 					if (alignment < 0) { ray *= -1.0f; }

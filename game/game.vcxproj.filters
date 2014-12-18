@@ -105,6 +105,9 @@
     <ClInclude Include="fsm_separation.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="cellspacepartition.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

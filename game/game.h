@@ -6,6 +6,7 @@
 #include "codegiraffe/glutrenderingcontext.h"
 #include "agent.h"
 #include "codegiraffe/cone.h"
+#include "cellspacepartition.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,12 +25,15 @@ public:
 	TemplateVector<Obstacle*> obstacles;
 	TemplateVector<Agent*> agents;
 
+	CellSpacePartition<Obstacle> * staticObstacles;
+	CellSpacePartition<Obstacle> * movingObstacles;
+
 	Graph * mapGraph;
-	TemplateVector<GraphNode*> * mapPath;
+	TemplateVector<AbstractGraphNode*> * mapPath;
 
 	/** who does the user have selected */
 	Agent * selected;
-	GraphNode * selectedNode;
+	AbstractGraphNode * selectedNode;
 
 	DelaunySet * delauny;
 	DelaunySet * delaunyEdit;
@@ -39,20 +43,35 @@ public:
 	bool drawDebug;
 
 	Agent * getAgentAt(V2f const & click) {
-		for(int i = 0; i < agents.size(); ++i) {
-			if(agents[i]->body.contains(click))
-				return agents[i];
-		}
+		//for(int i = 0; i < agents.size(); ++i) {
+		//	if(agents[i]->body.contains(click))
+		//		return agents[i];
+		//}
+		TemplateSet<Obstacle*> result;
+		printf("%.1f, %.1f\n", click.x, click.y);
+		movingObstacles->gatherAt(click, result);
+		if (result.size() > 0)
+			return dynamic_cast<Agent*>(result[0]);
 		return 0;
+	}
+
+	void gatherStaticObstaclesAt(CircF const & area, TemplateSet<Obstacle*> & out_obstacles) {
+		staticObstacles->gatherAt(area, out_obstacles);
 	}
 
 	/** generate a list of agents in the given area */
 	void gatherListOfAgentsAt(CircF const & area, TemplateVector<Agent*> & out_agents) {
-		for(int i = 0; i < agents.size(); ++i) {
-			if(V2f::distance(agents[i]->body.center, area.center) 
-				< area.radius + agents[i]->body.radius) {
-					out_agents.add(agents[i]);
-			}
+		//for(int i = 0; i < agents.size(); ++i) {
+		//	if(V2f::distance(agents[i]->body.center, area.center) 
+		//		< area.radius + agents[i]->body.radius) {
+		//			out_agents.add(agents[i]);
+		//	}
+		//}
+		TemplateSet<Obstacle*> result;
+		movingObstacles->gatherAt(area, result);
+		for (int i = 0; i < result.size(); ++i) {
+			Agent * a = dynamic_cast<Agent*>(result[i]);
+			if (a) { out_agents.add(a); }
 		}
 	}
 	
@@ -60,22 +79,44 @@ public:
 #define TRACE_MEMORY(mem, debugmessage) \
 	printf("memID %d is %s\n", ((int*)mem)[-2], debugmessage)
 
-	void generateWallBoxesForGraph(Graph * g, float wallEdgeValue) {
-		GraphNode * n;
-		GraphEdge * e;
+	void generateWallBoxesForGraph(AbstractGraph * g, float wallEdgeValue) {
+		AbstractGraphNode * n;
+		AbstractGraphEdge * e;
 		const float wallWidth = 1.0f / 20.0f;
-		for(int node = 0; node < g->nodes.size(); ++node) {
-			n = g->nodes[node];
-			for(int i = 0; i < n->edges.size(); ++i) {
-				e = &n->edges[i];
-				if(e->cost == wallEdgeValue) {
-					V2f delta = e->to->location - e->from->location;
-					V2f inBetween = e->from->location + (delta * (.5f + wallWidth/2));
-					float dist = delta.magnitude();
-					V2f normal = delta / dist;
-					float width = dist * wallWidth;
-					BoxF wall(inBetween, V2f(width, dist), normal);
-					obstacles.add(new BoxObject(wall));
+		for(int node = 0; node < g->getNodeCount(); ++node) {
+			n = g->getNode(node);
+			for(int i = 0; i < n->getEdgeCount(); ++i) {
+				e = n->getEdge(i);
+				if(e->getCost() == wallEdgeValue) {
+					DelaunySet::VoronoiNode * vna = dynamic_cast<DelaunySet::VoronoiNode*>(e->getNode(0));
+					DelaunySet::VoronoiNode * vnb = dynamic_cast<DelaunySet::VoronoiNode*>(e->getNode(1));
+					if (vna && vnb) {
+						DelaunySet::Edge * ve = dynamic_cast<DelaunySet::Edge*>(e);
+						DelaunySet::VoronoiFace * vf = &ve->getFace();
+						V2f a, b;
+						vf->gatherOppositePoints(a, b);
+						V2f delta = b - a;
+						float dist = delta.magnitude();
+						V2f inBetween = a + (delta/2.0f);
+						BoxF wall(inBetween, V2f(wallWidth, dist), vf->normal);
+						printf("%.1f %.1f\n", wall.size.x, wall.size.y);
+						static int wallID = 0;
+//						if (wallID++ < 700)
+							obstacles.add(new BoxObject(wall));
+					} else {
+						GraphNode * a = dynamic_cast<GraphNode*>(e->getNode(0));
+						GraphNode * b = dynamic_cast<GraphNode*>(e->getNode(1));
+						if (a && b) {
+							V2f delta = b->getLocation() - a->getLocation();
+							V2f inBetween = a->getLocation() + (delta * (.5f + wallWidth / 2));
+							float dist = delta.magnitude();
+							V2f normal = delta / dist;
+							float width = dist * wallWidth;
+	//						BoxF wall(inBetween, V2f(width, dist), normal);
+							BoxF wall(inBetween, V2f(wallWidth, 1), normal);
+							obstacles.add(new BoxObject(wall));
+						}
+					}
 				}
 			}
 		}
@@ -90,7 +131,7 @@ public:
 	PolygonObject * testPoly2;
 #endif
 
-	Game() :mapGraph(NULL), mapPath(NULL), selected(NULL), selectedNode(NULL), delauny(NULL), drawDebug(true) {
+	Game() :mapGraph(NULL), mapPath(NULL), selected(NULL), selectedNode(NULL), delauny(NULL), drawDebug(true), staticObstacles(NULL), movingObstacles(NULL) {
 		delaunyEdit = NULL;
 		selectedNode = NULL;
 		selected = NULL;
@@ -138,11 +179,13 @@ public:
 			obstacles.add(a);
 		}
 		V2f min(-10, -10), max(10, 10);
-		mapGraph = Graph::createDenseGrid(5, 5, min, max);
-		randomMazeGen_prim(mapGraph, -1);
-		generateWallBoxesForGraph(mapGraph, -1);
 
-		mapPath = Astar(mapGraph->nodes[0], mapGraph->nodes.getLast());
+//		mapGraph = Graph::createDenseGrid(5, 5, min, max);
+//
+//		randomMazeGen_prim(mapGraph, -1);
+////		generateWallBoxesForGraph(mapGraph, -1);
+//
+//		mapPath = Astar(&mapGraph->nodes[0], &mapGraph->nodes.getLast());
 
 #ifdef DELAUNY_TESTING
 		V2f boxPoints[] = { V2f(-10, 10), V2f(10, 10), V2f(10, -10), V2f(-10, -10) };
@@ -158,7 +201,7 @@ public:
 			//new PolygonObject(Polygon2f(V2f::ZERO(), 0, boxPoints, boxPointCount, boxSides, boxSidesCount));
 			new CircleObject(CircF(V2f::ZERO(), 50));
 		delauny = new DelaunySet(po);
-		delauny->makeRandom(100);
+		delauny->makeRandom(20);
 		//delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(4, 4)));
 		//delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(5, 4)));
 		//delauny->currentNodes.add(DelaunySet::VoronoiNode(V2f(4, 5)));
@@ -169,14 +212,21 @@ public:
 		//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(2.0f) * 2));
 		//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(3.0f) * 2));
 		//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(4.0f) * 2));
-		//delaunyEdit = delauny;
+//		delaunyEdit = delauny;
 
 		delauny->calculateAllTriangles();
-
 		delauny->gatherVoronoi(voronoiNodes, true);
+		randomMazeGen_prim(delauny, -1);
 
-		// TODO make GraphNode and VoronoiNode extend the same graph interface so that either the grid graph or the voronoi graph can be used for maze generation
+		generateWallBoxesForGraph(delauny, -1);
 #endif
+		staticObstacles = new CellSpacePartition<Obstacle>(RectF(V2f(0, 0), 100), V2i(10, 10));
+		movingObstacles = new CellSpacePartition<Obstacle>(RectF(V2f(0, 0), 200), V2i(5, 5));
+		staticObstacles->clear();
+		for (int i = 0; i < obstacles.size(); ++i) {
+			if (obstacles[i] != NULL && dynamic_cast<Agent*>(obstacles[i]) == NULL)
+				staticObstacles->add(obstacles[i]);
+		}
 	}
 	~Game() {
 		//for(int i = 0; i < agents.size(); ++i) {
@@ -197,21 +247,23 @@ public:
 		if (mapPath) {
 			delete mapPath;
 		}
-		if (delauny){
+		if (delauny) {
 			if (delauny->boundary){
 				delete delauny->boundary;
 			}
 			delete delauny;
 		}
+		if (staticObstacles) delete staticObstacles;
+		if (movingObstacles) delete movingObstacles;
 	}
 
 	/** assumes that the graph will always have at least one node */
 	GraphNode * getGraphNodeClosestTo(V2f position) {
-		GraphNode * best = mapGraph->nodes[0];
-		float shortestDistance = V2f::distance(best->location, position);
+		GraphNode * best = &mapGraph->nodes[0];
+		float shortestDistance = V2f::distance(best->getLocation(), position);
 		for(int i = 1; i < mapGraph->nodes.size(); ++i) {
-			GraphNode * n = mapGraph->nodes[i];
-			float dist = V2f::distance(n->location, position);
+			GraphNode * n = &mapGraph->nodes[i];
+			float dist = V2f::distance(n->getLocation(), position);
 			if(dist < shortestDistance) {
 				shortestDistance = dist;
 				best = n;
@@ -234,62 +286,78 @@ public:
 	 * @return true if nothing was hit
 	 */
 	bool raycast(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Obstacle * & out_obstacle, float & out_dist, V2f & out_point, V2f & out_normal, Obstacle ** ignoreList, int ignoreCount) {
-		float closest = -1;
-		out_obstacle = NULL;
-		for(int i = 0; i < obstacles.size(); ++i) {
-			Obstacle * o = obstacles[i];
-			bool checkThisOne = true;
-			if(ignoreList != NULL) {
-				for(int ignore = 0; ignore < ignoreCount; ++ignore) {
-					if(ignoreList[ignore] == o) {
-						checkThisOne = false;
-						break;
-					}
-				}
-			}
-			if(checkThisOne) {
-				float dist;
-				V2f point, normal;
-				if(o->raycast(start, direction, dist, point, normal)
-				&& dist > 0 && dist < maxDistance && (closest < 0 || dist < closest)) {
-					out_dist = dist;
-					out_obstacle = o;
-					out_point = point;
-					out_normal = normal;
-					if (dontCareAboutObstacle) return true; // return ASAP if block/no-block is all that is required
-				}
-			}
-		}
-		return (out_obstacle != NULL);
+		bool hit = false;
+		hit = staticObstacles->raycastContainer(start, direction, maxDistance, dontCareAboutObstacle, out_obstacle, out_dist, out_point, out_normal, ignoreList, ignoreCount);
+		if (hit) return true;
+		hit = movingObstacles->raycastContainer(start, direction, maxDistance, dontCareAboutObstacle, out_obstacle, out_dist, out_point, out_normal, ignoreList, ignoreCount);
+		if (hit) return true;
+		return false;
 	}
 
 	void display(GLUTRenderingContext & g_screen) {
 		if (delauny != NULL) {
 			g_screen.setColor(0xdddddd);
-//			delauny->glDraw(g_screen);
-//			return;
-			Polygon2f * p2f;
-			for (int i = 0; i < voronoiNodes.size(); ++i) {
-				p2f = &voronoiNodes[i]->getPolygon2f(delauny->boundary);
-				bool filled = p2f->contains(mousePosition);// false;
-				p2f->glDraw(filled);
+			if (delaunyEdit != NULL) {
+				delaunyEdit->glDraw(g_screen);
+				return;
+			}
+			// draw the voronoi cells
+			//delauny->glDraw(g_screen);
+			//Polygon2f * p2f;
+			//for (int i = 0; i < voronoiNodes.size(); ++i) {
+			//	p2f = &voronoiNodes[i]->getPolygon2f(delauny->boundary);
+			//	bool filled = p2f->contains(mousePosition);// false;
+			//	p2f->glDraw(filled);
+			//}
+		}
+
+		if (staticObstacles) {
+			g_screen.setColor(0x88ff88);
+			staticObstacles->glDraw();
+			for (int i = 0; i < staticObstacles->cells.size(); ++i) {
+				g_screen.printf(staticObstacles->cells[i]->getCenter(), "%d", i);
+			}
+		}
+		if (movingObstacles) {
+			g_screen.setColor(0xff88ff);
+			movingObstacles->glDraw();
+			for (int i = 0; i < movingObstacles->cells.size(); ++i) {
+				g_screen.printf(movingObstacles->cells[i]->getCenter(), "%d", i);
 			}
 		}
 
 		g_screen.setColor(0x00aaff);
-		mapGraph->glDraw(&g_screen);
+		if (mapGraph) mapGraph->glDraw(&g_screen);
 		g_screen.printf(mousePosition, "%.2f, %.2f", mousePosition.x, mousePosition.y);
 		g_screen.drawCircle(mousePosition, .1f, false);
 
 
 		// testing cone stuff
-		g_screen.drawCircle(mouseClick, .05f, true);
-		g_screen.drawLine(mouseClick, mousePosition);
 		V2f hit, norm;
+		float dist = 0, maxDist = 0;
+		Obstacle * o;
+		g_screen.drawCircle(mouseClick, .05f, true);
+		// TEST <-- TODO
+		V2f delta = mousePosition - mouseClick;
+		if (!delta.isZero()) { dist = delta.magnitude(); delta /= dist; }
+		maxDist = dist;
+		TemplateSet<int> cellList;
+		staticObstacles->raycastCellList(mouseClick, delta, dist, cellList);
+		for (int i = 0; i < cellList.size(); ++i) {
+			staticObstacles->cells[cellList[i]]->glDraw(true);
+		}
+		if (raycast(mouseClick, delta, maxDist, false, o, dist, hit, norm, 0, 0))
+		{
+			g_screen.setColor(0);
+			g_screen.drawCircle(hit, 1, false);
+			g_screen.drawLine(hit, hit + norm*3);
+			g_screen.printf(hit, "%.2f, ", dist);
+//			o->glDraw(true);
+		}
+		g_screen.drawLine(mouseClick, mousePosition);
 
 #ifdef TESTING_SHAPES
 		// used for testing object types
-		float dist;
 		Obstacle * obs = testPoly;//testcone;//testBox;
 		if (obs->raycast(mouseClick, (mousePosition - mouseClick).normal(), dist, hit, norm)) {
 			g_screen.drawCircle(CircF(hit, .1f), false);
@@ -328,7 +396,8 @@ public:
 		if (mapPath != NULL) {
 			g_screen.setColor(0x0000ff);
 			for (int i = 0; i < mapPath->size(); ++i) {
-				g_screen.printf(mapPath->get(i)->location, "%d", i);
+				GraphNode * gn = dynamic_cast<GraphNode*>(mapPath->get(i));
+				g_screen.printf(gn->getLocation(), "%d", i);
 			}
 		}
 
@@ -353,7 +422,21 @@ public:
 			g_screen.drawCircle(selected->body.center, selected->body.radius+.1f, false);
 		}
 	}
+
+	void gatherCollisions(Obstacle * s, TemplateSet<Obstacle*> & out_possibleObstacles) {
+		staticObstacles->gatherCollisions(s, out_possibleObstacles);
+		movingObstacles->gatherCollisions(s, out_possibleObstacles);
+	}
+
 	void update(int a_ms) {
+		TemplateVector<int> cellIndexList;
+		movingObstacles->clear();
+		for (int i = 0; i < agents.size(); ++i) {
+			if (agents[i]->alive) {
+				movingObstacles->add(agents[i]);
+			}
+		}
+
 		// update agents by specified amount of time
 		for(int i = 0; i < agents.size(); ++i) {
 			agents[i]->update(a_ms);
@@ -366,24 +449,36 @@ public:
 			void * howAWillRespond;
 		};
 		TemplateVector<obstaclecollision> collisions;
-		for(int a = 0; a < agents.size(); a++) {
-			for(int b = 0; b < obstacles.size(); ++b) {
-				if(agents[a] != obstacles[b]
-				&& agents[a]->intersects(obstacles[b])) {
-					obstaclecollision collision = { 
-						agents[a], obstacles[b],
-						agents[a]->calculateCollisionResolution(obstacles[b]),
+		//int uselessIters = 0;
+		TemplateSet<Obstacle*> hitObstacles;
+		for (int a = 0; a < agents.size(); a++) {
+			Obstacle * agentObstacle = dynamic_cast<Obstacle*>(agents[a]);
+			gatherCollisions(agentObstacle, hitObstacles);
+			for (int i = 0; i < hitObstacles.size(); ++i) {
+				if (agentObstacle->intersects(hitObstacles[i]))
+				{
+					obstaclecollision collision = {
+						agentObstacle, hitObstacles[i],
+						agentObstacle->calculateCollisionResolution(hitObstacles[i]),
 					};
 					collisions.add(collision);
 				}
+				//else {
+				//	printf("non-collision in list...");
+				//	uselessIters++;
+				//}
 			}
 		}
+		//printf("%d ", uselessIters);
+
 		// resolve collision seperately, so that one resolved collision will not impact others mid-loop
 		for (int i = 0; i < collisions.size(); ++i) {
 			obstaclecollision collision = collisions[i];
-			if (collision.howAWillRespond)
+			if (collision.howAWillRespond) {
 				collision.a->resolveCollision(collision.b, collision.howAWillRespond);
+			}
 		}
+		collisions.clear();
 		// garbage collection
 		for(int i = agents.size()-1; i >= 0; --i) {
 			if (!agents[i]->alive) {

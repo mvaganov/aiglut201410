@@ -381,7 +381,7 @@ public:
 		//glEnd();
 	}
 
-	bool intersectCircle(const V2<TYPE> & circCenter, const TYPE circRadius) const {
+	bool intersectsCircle(const V2<TYPE> & circCenter, const TYPE circRadius) const {
 		V2<TYPE> relativeP = circCenter - origin;
 		relativeP.rotate(-rotation);
 		V2<TYPE> delta = center - relativeP, a, b;
@@ -434,6 +434,14 @@ public:
 		// treat the box like another polygon
 		Polygon2<TYPE> boxPoly(box);// .center, box.rotation.piRadians(), boxP, 4);
 		return intersectsPolygon(boxPoly);
+	}
+
+	bool intersectsAABB(AABB<TYPE> const & box) const {
+		return intersectsBox(Box<TYPE>(box));
+	}
+
+	bool intersectsAABB(V2<TYPE> const & min, V2<TYPE> const & max) const {
+		return intersectsAABB(AABB<TYPE>(min,max));
 	}
 
 	bool intersectsCone(Cone<TYPE> const & cone) const {

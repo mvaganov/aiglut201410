@@ -31,8 +31,10 @@ void keyboard(unsigned char key, int x, int y) {
 		{
 			Agent * a = g_game.selected;
 			if(a != NULL) {
-				Agent * bullet = new Bullet(CircF(a->body.center, 0.2f), &g_game,
-					a->direction, 2);
+				V2f gunLocation = a->body.center;
+				float bulletRadius = 0.2f;
+				gunLocation += a->direction * (a->body.radius + bulletRadius);
+				Agent * bullet = new Bullet(CircF(gunLocation, bulletRadius), &g_game, a->direction, 2);
 				bullet->parent = a;
 				g_game.agents.add(bullet);
 			}
@@ -107,12 +109,15 @@ void mouse(int button, int state, int x, int y) {
 					a->direction = delta; // normalized move vector
 					a->targetPosition = click;
 				}
-				if(g_game.selectedNode == NULL) {
-					g_game.selectedNode = g_game.getGraphNodeClosestTo(click);
-				} else {
-					delete g_game.mapPath;
-					g_game.mapPath = Astar(g_game.selectedNode, g_game.getGraphNodeClosestTo(click));
-					g_game.selectedNode = NULL;
+				if (g_game.mapGraph) {
+					if (g_game.selectedNode == NULL) {
+						g_game.selectedNode = g_game.getGraphNodeClosestTo(click);
+					}
+					else {
+						delete g_game.mapPath;
+						g_game.mapPath = Astar(g_game.selectedNode, g_game.getGraphNodeClosestTo(click));
+						g_game.selectedNode = NULL;
+					}
 				}
 			}
 		}
@@ -217,7 +222,7 @@ int main(int argc, char * argv[]) {
 		Sleep((wait > 0)?wait:0);	// wait (if it makes sense to), to throttle the game engine
 
 		// if something caused the game to take a LONG time, ignore that time duration.
-		if (wait <= 0) now = glutGet(GLUT_ELAPSED_TIME);
+		if (wait < -1000) now = glutGet(GLUT_ELAPSED_TIME);
 	}
 	return 0;
 }

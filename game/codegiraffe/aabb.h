@@ -70,6 +70,8 @@ struct AABB {
 		return min == b.min && max == b.max;
 	}
 
+	bool isValid() const { return min.x <= max.x && min.y <= max.y; }
+
 	bool operator==(const AABB<TYPE> & b){ return isEqual(b); }
 
 	/**
@@ -140,7 +142,7 @@ struct AABB {
 	/** re-constructor */
 	void set(const V2<TYPE> & a_center, const TYPE a_radius) {
 		V2<TYPE> corner(a_radius, a_radius);
-		set(a_center + corner, a_center - corner);
+		set(a_center - corner, a_center + corner);
 	}
 
 	/** default constructor, everything is zero */
@@ -152,7 +154,7 @@ struct AABB {
 	/** @param where to center the box, a square a_radius*2 tall and wide */
 	AABB(const V2<TYPE> & a_center, const TYPE a_radius) {
 		V2<TYPE> corner(a_radius, a_radius);
-		set(a_center + corner, a_center - corner);
+		set(a_center - corner, a_center + corner);
 	}
 
 	/** @return the radius of the circle that this rectangle is circumscribed by (circle outside) */
@@ -176,6 +178,25 @@ struct AABB {
 		diffRad *= ratio;
 		setMin(center - diffRad);
 		setMax(center + diffRad);
+	}
+
+	bool intersectsCircle(V2<TYPE> const & center, const TYPE radius) const {
+		V2<TYPE> rad(radius, radius);
+		V2<TYPE> outerMin = min - rad, outerMax = max + rad;
+		// check if collision is possible at the most extreme estimate
+		if (center.x >= outerMin.x && center.y >= outerMin.y && center.x < outerMax.x && center.y < outerMax.y) {
+			// if it's within range horizontally or vertically, that's enough for line intersection.
+			if ((center.y >= min.y && center.y < max.y) || (center.x >= min.x && center.x < max.x))
+				return true;
+			// otherwise, find the closest corner
+			V2<TYPE> closeCorner;
+			closeCorner.x = (center.x < min.x) ? min.x : max.x;
+			closeCorner.y = (center.y < min.y) ? min.y : max.y;
+			// and test distance against radius
+			TYPE dist = (center - closeCorner).magnitude();
+			return dist < radius;
+		}
+		return false;
 	}
 
 	/** resizes the rectangle so it could be inscribed (circle inside) with a circle with the given radius */
@@ -205,9 +226,14 @@ struct AABB {
 		return AABB<TYPE>(getMin() - a_bevel, getMax() + a_bevel);
 	}
 
-	bool intersects(const AABB<TYPE> & b) const {
-		return!(b.max.x < min.x || b.max.y < min.y
-			||	b.min.x > max.x || b.min.y > max.y);
+	bool intersectsAABB(const V2<TYPE> & a_min, const V2<TYPE> a_max) const {
+		return!(a_max.x < min.x || a_max.y < min.y || a_min.x > max.x || a_min.y > max.y);
+	}
+
+	void clampToInt() { min.clampToInt(); max.clampToInt(); }
+
+	bool intersectsAABB(const AABB<TYPE> & b) const {
+		return!(b.max.x < min.x || b.max.y < min.y || b.min.x > max.x || b.min.y > max.y);
 	}
 
 	/** @return true if the given AABB is totally contained in this AABB */

@@ -188,7 +188,7 @@ public:
 		glPopMatrix();
 	}
 
-	bool intersectCircle(const V2<TYPE> & circCenter, const TYPE circRadius) const {
+	bool intersectsCircle(V2<TYPE> const & circCenter, const TYPE circRadius) const {
 		V2<TYPE> delta = circCenter - origin;
 		// check the easy stuff: against the 3 corners
 		float dist = delta.magnitude();
@@ -239,6 +239,14 @@ public:
 			return intersectsPolygonLineList(points, numPoints);
 		}
 		return false;
+	}
+
+	bool intersectsAABB(AABB<TYPE> const & box) const {
+		return intersectsBox(Box<TYPE>(box));
+	}
+
+	bool intersectsAABB(V2<TYPE> const & min, V2<TYPE> const & max) const {
+		return intersectsAABB(AABB<TYPE>(min,max));
 	}
 
 	bool intersectsPolygonLineList(const V2<TYPE> * const & points, const int numPoints) const {

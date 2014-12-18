@@ -462,6 +462,9 @@ struct V2 {
 		while(y > a_max.y){	y -=height;	}
 	}
 
+	void clampToInt() { x = (TYPE)((int)x); y = (TYPE)((int)y); }
+	void roundToInt() { x = (TYPE)((int)(x + 0.5)); y = (TYPE)((int)(y + 0.5)); }
+
 	/** @return the position half-way between line a->b */
 	static V2<TYPE> between(V2<TYPE> const & a, V2<TYPE> const & b) { return (b + a) / 2; }
 
@@ -588,7 +591,7 @@ struct V2 {
 		for (int i = 0; i < polygonLoopCount; ++i) {
 			int j = (i + 1) % polygonLoopCount;
 			if (rayIntersection(rayStart, rayEnd, polygonLoop[i], polygonLoop[j], out_dist, surfacePercent)) {
-				if (out_dist > 0 && surfacePercent > 0 && surfacePercent < 1
+				if (out_dist >= 0 && surfacePercent >= 0 && surfacePercent <= 1
 				&& (closestEdge == -1 || out_dist < closestDistance)) {
 					closestEdge = i;
 					closestDistance = out_dist;

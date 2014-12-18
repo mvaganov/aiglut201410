@@ -13,6 +13,7 @@ class Bullet;
 
 class Agent : public Obstacle {
 public:
+	const char* getTypeName() const { return "Agent"; }
 	/** where is this? */
 	CircleObject body;
 	/** where is this going? */
@@ -33,7 +34,7 @@ public:
 	float mass;
 
 	/** where did  this agent come from? */
-	void * parent;
+	Obstacle * parent;
 	/** whether or not to keep this in the game (or delete from lists) */
 	bool alive;
 	/**
@@ -190,7 +191,9 @@ public:
 		}
 	}
 
-	bool intersects(const Obstacle * o) const { return body.intersects(o); }
+	bool intersects(const Shape * o) const { return body.intersects(o); }
+	bool intersectsAABB(V2f const & min, V2f const & max) const { return body.intersectsAABB(min,max); }
+	bool intersectsCircle(V2f const & center, const float radius) const { return body.intersectsCircle(center, radius); }
 	bool contains(V2f const & p) const { return body.contains(p); }
 	bool raycast(V2f const & rayStart, V2f const & rayDirection,
 		float & out_dist, V2f & out_point, V2f & out_normal) const {
@@ -200,23 +203,37 @@ public:
 		return body.getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { body.glDraw(filled); }
+
 	// TODO also calculate transfer of momentum, and reflection
-	void * calculateCollisionResolution(Obstacle * otherObject){ 
+	void * calculateCollisionResolution(Collidable * otherObject){
 		float myResponsibilityToMove = 1;
 		Agent * a = dynamic_cast<Agent*>(otherObject);
+		if (a == this)
+			return 0;
 		if (a != NULL) {
-			myResponsibilityToMove = mass / (a->mass + mass);
+			float massSum = a->mass + mass;
+			if (massSum == 0) myResponsibilityToMove = 0.5f;
+			else myResponsibilityToMove = (massSum-mass) / (massSum);
 		}
 		V2f normal;
-		V2f closestPoint = otherObject->getClosestPointOnEdge(body.center, normal);
+		Shape * s = dynamic_cast<Shape*>(otherObject);
+		V2f closestPoint = s->getClosestPointOnEdge(body.center, normal);
+		//printf("%f %f ", normal.x, normal.y);
 		V2f positionToClipTo = closestPoint + normal * body.radius;
 		V2f clipDelta = positionToClipTo - body.center;
-		return new V2f(clipDelta * myResponsibilityToMove);
+		V2f * output = (new V2f(clipDelta * myResponsibilityToMove));
+//#define TRACE_MEMORY1(mem, debugmessage) \
+//	printf("memID %d is %s\n", ((int*)mem)[-2], debugmessage)
+//		TRACE_MEMORY1(output, "v2f otput");
+//#undef TRACE_MEMORY1
+		return output;
 	}
-	void resolveCollision(Obstacle * o, void * collisionData) {
+	void resolveCollision(Collidable * o, void * & collisionData) {
+		if (!collisionData) return;
 		V2f * push = (V2f*)collisionData;
 		body.center += *push;
 		delete push;
+		collisionData = 0;
 	}
 
 	Bullet * findClosestBullet();

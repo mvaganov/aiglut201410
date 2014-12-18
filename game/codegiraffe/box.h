@@ -3,8 +3,6 @@
 #include "aabb.h"
 #include "circle.h"
 
-//#define SHOW_LOCALSPACE_COLLISION
-
 /**
 * A roated Bounding-Box, which includes methods to help with 2D math, including 2D collision
 * Intended to be used with OpenGL, and more specifically, freeglut http://freeglut.sourceforge.net/docs/api.php
@@ -18,11 +16,12 @@ struct Box {
 	V2<TYPE> size;
 	V2<TYPE> rotation;
 
-	Box(V2<TYPE> center, V2<TYPE> size, float rotationInRadians) : center(center), size(size), rotation(rotationInRadians){}
+	Box(V2<TYPE> center, V2<TYPE> size, TYPE rotationInRadians) : center(center), size(size), rotation(rotationInRadians){}
 	Box(V2<TYPE> center, V2<TYPE> size, V2<TYPE> rotationVector) : center(center), size(size), rotation(rotationVector){}
+	Box(AABB<TYPE> aabb) :center(aabb.getCenter()), size(aabb.diagonal()), rotation((TYPE)0){}
 	Box() :rotation(V2<TYPE>::ZERO_DEGREES()){}
 
-	void set(V2<TYPE> const center, V2<TYPE> const size, float const rotation) {
+	void set(V2<TYPE> const center, V2<TYPE> const size, TYPE const rotation) {
 		this->center = center;
 		this->size = size;
 		this->rotation = V2<TYPE>(rotation);
@@ -68,27 +67,21 @@ struct Box {
 		return true;
 	}
 
-#ifdef SHOW_LOCALSPACE_COLLISION
-	V2<TYPE> point;
-#endif
 	AABB<TYPE> getLocalSpaceAABB() const {
 		V2<TYPE> halfDiagonal = size / 2;
 		return AABB<TYPE>(-halfDiagonal, halfDiagonal);
 	}
 
-	bool intersects(Circle<TYPE> const c)
-#ifndef SHOW_LOCALSPACE_COLLISION
-		const
-#endif
-	{
+	bool intersectsCircle(Circle<TYPE> const c) const {
+		return intersectsCircle(c.center, c.radius);
+	}
+	bool intersectsCircle(V2<TYPE> const & a_center, const TYPE a_radius) const  {
 		AABB<TYPE> aabb = getLocalSpaceAABB();
 		V2<TYPE> yAxis, xAxis;
 		calculateAxis(xAxis, yAxis);
-#ifndef SHOW_LOCALSPACE_COLLISION
 		V2<TYPE> point;
-#endif
-		point = c.center.toLocalSpace(xAxis, yAxis, center);
-		return Circle<TYPE>::intersects(point, c.radius, aabb.min, aabb.max);
+		point = a_center.toLocalSpace(xAxis, yAxis, center);
+		return Circle<TYPE>::intersects(point, a_radius, aabb.min, aabb.max);
 	}
 
 
@@ -134,7 +127,7 @@ struct Box {
 	bool intersects(Box<TYPE> const b) const {
 		Circle<TYPE> c = getCollisionCircle(), bc = b.getCollisionCircle();
 		// if they are even close to the same region
-		if (c.intersects(bc)) {
+		if (c.intersectsCircle(bc)) {
 			const int NUM_POINTS = 4;
 			// check if any points are inside the other
 			V2<TYPE> ap[NUM_POINTS], bp[NUM_POINTS];
@@ -146,7 +139,7 @@ struct Box {
 				return true;
 			// check if any lines cross
 			V2<TYPE> point;
-			float dist;
+			TYPE dist;
 			for (int a = 0; a < NUM_POINTS; ++a) {
 				for (int b = 0; b < NUM_POINTS; ++b) {
 					if (V2<TYPE>::lineIntersection(
@@ -159,8 +152,14 @@ struct Box {
 		return false;
 	}
 
-	bool intersects(AABB<TYPE> aabb) const {
+	bool intersectsAABB(AABB<TYPE> aabb) const {
 		Box<TYPE> b(aabb.getCenter(), aabb.diagonal(), 0);
+		return intersects(b);
+	}
+
+	bool intersectsAABB(V2<TYPE> const & min, V2<TYPE> const & max) const {
+		V2f delta = max - min;
+		Box<TYPE> b(min + delta/2 , delta, 0);
 		return intersects(b);
 	}
 
@@ -175,7 +174,7 @@ struct Box {
 	 * @return true if raycast collision happened
 	 */
 	bool raycast(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
-		float & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
+		TYPE & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
 		V2<TYPE> points[4];
 		writePoints(points, 4);
 		return V2<TYPE>::raycastPolygon(rayStart, rayDirection, points, 4, out_dist, out_point, out_normal) != -1;
@@ -195,15 +194,6 @@ struct Box {
 		//for (int i = 0; i < 4; ++i)
 		//	points[i].glVertex();
 		//glEnd();
-#ifdef SHOW_LOCALSPACE_COLLISION
-		AABB<TYPE> aabb = getLocalSpaceAABB();
-		aabb.writePoints(points, 4);
-		glBegin(GL_LINE_LOOP);
-		for (int i = 0; i < 4; ++i)
-			points[i].glVertex();
-		glEnd();
-		glDrawCircle(point, .1f, false);
-#endif
 		return true;
 	}
 	bool glDraw() const { return glDraw(false); }
@@ -211,7 +201,3 @@ struct Box {
 };
 
 typedef Box<float> BoxF;
-
-#ifdef SHOW_LOCALSPACE_COLLISION
-#undef SHOW_LOCALSPACE_COLLISION
-#endif

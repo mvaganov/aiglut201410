@@ -19,11 +19,13 @@ void FSM_Idle::execute(Agent * a, int a_ms) {
 	if(b != NULL) {
 		a->setFSM(new FSM_Flee(b));
 	}
+
 	Agent * other = a->findClosestPlayerControlledAgent();
 	if(other != NULL) {
 		a->setFSM(new FSM_FollowAgent(other));
 		return;
 	}
+
 	// count other agents nearby, and if there are 3 or more, go to alignment
 	TemplateVector<Agent*> nearby;
 	a->game->gatherListOfAgentsAt(CircF(a->body.center, alignmentRange+a->body.radius), nearby);

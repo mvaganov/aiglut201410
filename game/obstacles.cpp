@@ -1,40 +1,18 @@
 #include "obstacles.h"
 #include "agent.h"
 
-// defines the intersects function after all the component classes have been defined
-bool CircleObject::intersects(const Obstacle * o) const {
+bool BoxObject::intersects(const Shape * o) const {
+	const AABBObject * aabb = dynamic_cast<const AABBObject*>(o);
+	if (aabb != NULL) {
+		return BoxF::intersectsAABB(aabb->min, aabb->max);
+	}
 	const CircleObject * co = dynamic_cast<const CircleObject*>(o);
 	if(co != NULL) {
-		return CircF::intersects(*co);
+		return BoxF::intersectsCircle(*co);
 	}
 	const Agent * a = dynamic_cast<const Agent*>(o);
 	if (a != NULL) {
-		return CircF::intersects(a->body);
-	}
-	const BoxObject * bo = dynamic_cast<const BoxObject*>(o);
-	if(bo != NULL) {
-		BoxF * bf = (BoxF*)bo;
-		return bf->intersects(*this);
-	}
-	const PolygonObject * po = dynamic_cast<const PolygonObject*>(o);
-	if (po != NULL) {
-		return po->intersectCircle(this->center, this->radius);
-	}
-	const ConeObject * con = dynamic_cast<const ConeObject *>(o);
-	if (con != NULL) {
-		return con->intersectCircle(center, radius);
-	}
-	return false;
-}
-
-bool BoxObject::intersects(const Obstacle * o) const {
-	const CircleObject * co = dynamic_cast<const CircleObject*>(o);
-	if(co != NULL) {
-		return BoxF::intersects(*co);
-	}
-	const Agent * a = dynamic_cast<const Agent*>(o);
-	if (a != NULL) {
-		return BoxF::intersects(a->body);
+		return BoxF::intersectsCircle(a->body);
 	}
 	const BoxObject * bo = dynamic_cast<const BoxObject*>(o);
 	if(bo != NULL) {
@@ -52,14 +30,18 @@ bool BoxObject::intersects(const Obstacle * o) const {
 	return false;
 }
 
-bool ConeObject::intersects(const Obstacle * o) const {
+bool ConeObject::intersects(const Shape * o) const {
+	const AABBObject * aabb = dynamic_cast<const AABBObject*>(o);
+	if (aabb != NULL) {
+		return ConeF::intersectsAABB(aabb->min, aabb->max);
+	}
 	const CircleObject * co = dynamic_cast<const CircleObject*>(o);
 	if (co != NULL) {
-		return ConeF::intersectCircle(co->center, co->radius);
+		return ConeF::intersectsCircle(co->center, co->radius);
 	}
 	const Agent * a = dynamic_cast<const Agent*>(o);
 	if (a != NULL) {
-		return ConeF::intersectCircle(a->body.center, a->body.radius);
+		return ConeF::intersectsCircle(a->body.center, a->body.radius);
 	}
 	const BoxObject * bo = dynamic_cast<const BoxObject*>(o);
 	if (bo != NULL) {
@@ -76,14 +58,18 @@ bool ConeObject::intersects(const Obstacle * o) const {
 	return false;
 }
 
-bool PolygonObject::intersects(const Obstacle * o) const {
+bool PolygonObject::intersects(const Shape * o) const {
+	const AABBObject * aabb = dynamic_cast<const AABBObject*>(o);
+	if (aabb != NULL) {
+		return Polygon2f::intersectsAABB(aabb->min, aabb->max);
+	}
 	const CircleObject * co = dynamic_cast<const CircleObject*>(o);
 	if (co != NULL) {
-		return Polygon2f::intersectCircle(co->center, co->radius);
+		return Polygon2f::intersectsCircle(co->center, co->radius);
 	}
 	const Agent * a = dynamic_cast<const Agent*>(o);
 	if (a != NULL) {
-		return Polygon2f::intersectCircle(a->body.center, a->body.radius);
+		return Polygon2f::intersectsCircle(a->body.center, a->body.radius);
 	}
 	const BoxObject * bo = dynamic_cast<const BoxObject*>(o);
 	if (bo != NULL) {

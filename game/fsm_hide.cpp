@@ -14,15 +14,10 @@ void FSM_Hide::execute(Agent * a, int a_ms) {
 		a->setFSM(new FSM_Idle());
 		return;
 	}
-	for(int i = 0; i < a->game->obstacles.size(); ++i) {
-		// ignore agents as valid obstacles
-		if(dynamic_cast<Agent*>(a->game->obstacles[i]) == 0) {
-			float dist = V2f::distance(a->body.center, a->game->obstacles[i]->getCenter());
-			if(dist < 5) {
-				validObstacles.add(a->game->obstacles[i]);
-			}
-		}
-	}
+	TemplateSet<Obstacle*> possibleObstacles;
+	a->game->gatherStaticObstaclesAt(CircF(a->body.center, a->body.radius + 5), possibleObstacles);
+	for (int i = 0; i < possibleObstacles.size(); ++i)
+		validObstacles.add(possibleObstacles[i]);
 	V2f predLoc = predator->body.center, obsLoc, delta;
 	float closestDist = -1;
 	V2f closestLoc;
