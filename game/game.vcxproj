@@ -120,6 +120,7 @@
     <ClCompile Include="codegiraffe\circle.cpp" />
     <ClCompile Include="codegiraffe\glutrenderingcontext.cpp" />
     <ClCompile Include="codegiraffe\random.cpp" />
+    <ClCompile Include="delauny.cpp" />
     <ClCompile Include="fsm_alignment.cpp" />
     <ClCompile Include="fsm_cohesion.cpp" />
     <ClCompile Include="fsm_fleebullets.cpp" />
@@ -128,6 +129,7 @@
     <ClCompile Include="fsm_idle.cpp" />
     <ClCompile Include="fsm_separation.cpp" />
     <ClCompile Include="fsm_wander.cpp" />
+    <ClCompile Include="game.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="obstacles.cpp" />
     <ClCompile Include="steering.cpp" />
