@@ -4,11 +4,11 @@
 #include "codegiraffe/templatevector.h"
 #include "codegiraffe/v2.h"
 class Agent;
-class Obstacle;
+class Shaped;
 
 class FSM_Hide : public FiniteStateMachine {
 	Agent * predator;
-	TemplateVector<Obstacle *> validObstacles;
+	TemplateVector<Shaped *> validObstacles;
 	TemplateVector<V2f> hideLocations;
 	TemplateVector<float> distance;
 public:

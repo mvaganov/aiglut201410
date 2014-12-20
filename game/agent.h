@@ -246,5 +246,5 @@ public:
 	 * @param subject what this Agent is trying to see
 	 * @return true if no Obstacles interrupt this Agent's view of the given subject.
 	 */
-	bool hasLineOfSight(Obstacle * subject);
+	bool hasLineOfSight(Shaped * subject);
 };

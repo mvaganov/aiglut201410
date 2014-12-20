@@ -22,6 +22,7 @@ public:
 		startPoint = V2<TYPE>(startAngle) * radius;
 		endPoint = V2<TYPE>(endAngle) * radius;
 	}
+	Cone():startAngle(0),endAngle(0){}
 
 	V2<TYPE> getCenter() const { 
 		TYPE totalAngle = endAngle - startAngle;

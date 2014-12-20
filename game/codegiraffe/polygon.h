@@ -10,9 +10,11 @@
 template <typename TYPE>
 class Polygon2 {
 	/** if there was a circle that this polygon were instribed in, what would it's radius be */
-	TYPE radius;
+	TYPE radius, rotation;
 	/** where is the center of the circle that this polygon is inscribed in */
 	V2<TYPE> center;
+	/** where the center of this polygon is TODO how is this different from center? can the two variables be merged? */
+	V2<TYPE> origin;
 public:
 
 	/** offsets relative to the origin, expected in CW order */
@@ -38,9 +40,6 @@ public:
 	};
 	/** how the points connect. If this is size 0 then the points are considered a line loop */
 	TemplateSet<pair> connectionPairs;
-	/** where the center of this polygon is */
-	V2<TYPE> origin;
-	TYPE rotation;
 
 	Polygon2() : radius(0) {}
 	Polygon2(V2<TYPE> const & origin, V2<TYPE> const & rotation) : origin(origin), rotation(rotation) : radius(0) {}

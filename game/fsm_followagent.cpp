@@ -34,7 +34,7 @@ void FSM_FollowAgent::execute(Agent * a, int a_ms) {
 }
 void FSM_FollowAgent::draw(Agent * a, GLUTRenderingContext * g_screen) {
 	for(int i = 0; i < calc.actualHits.size(); ++i) {
-		calc.actualHits[i]->glDraw(true);
+		calc.actualHits[i]->getShape()->glDraw(true);
 	}
 	if (!a->playerControlled && followed) {
 		g_screen->drawLine(followed->body.center, a->body.center);

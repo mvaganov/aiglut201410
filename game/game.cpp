@@ -8,7 +8,7 @@ Agent * Game::getAgentAt(V2f const & click) {
 	//	if(agents[i]->body.contains(click))
 	//		return agents[i];
 	//}
-	TemplateSet<Obstacle*> result;
+	TemplateSet<Shaped*> result;
 	printf("%.1f, %.1f\n", click.x, click.y);
 	movingObstacles->gatherAt(click, result);
 	if (result.size() > 0)
@@ -16,7 +16,7 @@ Agent * Game::getAgentAt(V2f const & click) {
 	return 0;
 }
 
-void Game::gatherStaticObstaclesAt(CircF const & area, TemplateSet<Obstacle*> & out_obstacles) {
+void Game::gatherStaticObstaclesAt(CircF const & area, TemplateSet<Shaped*> & out_obstacles) {
 	staticObstacles->gatherAt(area, out_obstacles);
 }
 
@@ -28,7 +28,7 @@ void Game::gatherListOfAgentsAt(CircF const & area, TemplateVector<Agent*> & out
 	//			out_agents.add(agents[i]);
 	//	}
 	//}
-	TemplateSet<Obstacle*> result;
+	TemplateSet<Shaped*> result;
 	movingObstacles->gatherAt(area, result);
 	for (int i = 0; i < result.size(); ++i) {
 		Agent * a = dynamic_cast<Agent*>(result[i]);
@@ -161,7 +161,7 @@ Game::Game() :mapGraph(NULL), mapPath(NULL), selected(NULL), selectedNode(NULL),
 	//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(2.0f) * 2));
 	//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(3.0f) * 2));
 	//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(4.0f) * 2));
-//			delaunyEdit = delauny;
+			delaunyEdit = delauny;
 
 	delauny->calculateAllTriangles();
 	delauny->gatherVoronoi(voronoiNodes, true);
@@ -169,8 +169,8 @@ Game::Game() :mapGraph(NULL), mapPath(NULL), selected(NULL), selectedNode(NULL),
 
 	generateWallBoxesForGraph(delauny, -1);
 #endif
-	staticObstacles = new CellSpacePartition<Obstacle>(RectF(V2f(0, 0), 100), V2i(10, 10));
-	movingObstacles = new CellSpacePartition<Obstacle>(RectF(V2f(0, 0), 200), V2i(5, 5));
+	staticObstacles = new CellSpacePartition(RectF(V2f(0, 0), 100), V2i(10, 10));
+	movingObstacles = new CellSpacePartition(RectF(V2f(0, 0), 200), V2i(5, 5));
 	staticObstacles->clear();
 	for (int i = 0; i < obstacles.size(); ++i) {
 		if (obstacles[i] != NULL && dynamic_cast<Agent*>(obstacles[i]) == NULL)
@@ -186,7 +186,7 @@ Game::~Game() {
 		delete a;
 	}
 	for (int i = obstacles.size() - 1; i >= 0; --i) {
-		Obstacle * o = obstacles[i];
+		Shaped * o = obstacles[i];
 		obstacles.removeData(o);
 		delete o;
 	}
@@ -234,7 +234,7 @@ GraphNode * Game::getGraphNodeClosestTo(V2f position) {
 * @param ignoreCount how many objects to ignore
 * @return true if nothing was hit
 */
-bool Game::raycast(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Obstacle * & out_obstacle, float & out_dist, V2f & out_point, V2f & out_normal, Obstacle ** ignoreList, int ignoreCount) {
+bool Game::raycast(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Shaped * & out_obstacle, float & out_dist, V2f & out_point, V2f & out_normal, Shaped ** ignoreList, int ignoreCount) {
 	bool hit = false;
 	hit = staticObstacles->raycastContainer(start, direction, maxDistance, dontCareAboutObstacle, out_obstacle, out_dist, out_point, out_normal, ignoreList, ignoreCount);
 	if (hit) return true;
@@ -284,7 +284,7 @@ void Game::display(GLUTRenderingContext & g_screen) {
 	// testing cone stuff
 	V2f hit, norm;
 	float dist = 0, maxDist = 0;
-	Obstacle * o;
+	Shaped * o;
 	g_screen.drawCircle(mouseClick, .05f, true);
 	// TEST <-- TODO
 	V2f delta = mousePosition - mouseClick;
@@ -353,8 +353,8 @@ void Game::display(GLUTRenderingContext & g_screen) {
 	g_screen.setColor(0x008800);
 	V2f point, normal;
 	for (int i = 0; i < obstacles.size(); ++i) {
-		Obstacle * THINGY = obstacles[i];
-		THINGY->glDraw(false);
+		Shaped * THINGY = obstacles[i];
+		THINGY->getShape()->glDraw(false);
 	}
 	for (int i = 0; i < agents.size(); ++i) {
 		agents[i]->draw(g_screen);
@@ -372,7 +372,7 @@ void Game::display(GLUTRenderingContext & g_screen) {
 	}
 }
 
-void Game::gatherCollisions(Obstacle * s, TemplateSet<Obstacle*> & out_possibleObstacles) {
+void Game::gatherCollisions(Shaped * s, TemplateSet<Shaped*> & out_possibleObstacles) {
 	staticObstacles->gatherCollisions(s, out_possibleObstacles);
 	movingObstacles->gatherCollisions(s, out_possibleObstacles);
 }
@@ -399,16 +399,17 @@ void Game::update(int a_ms) {
 	};
 	TemplateVector<obstaclecollision> collisions;
 	//int uselessIters = 0;
-	TemplateSet<Obstacle*> hitObstacles;
+	TemplateSet<Shaped*> hitObstacles;
 	for (int a = 0; a < agents.size(); a++) {
 		Obstacle * agentObstacle = dynamic_cast<Obstacle*>(agents[a]);
 		gatherCollisions(agentObstacle, hitObstacles);
 		for (int i = 0; i < hitObstacles.size(); ++i) {
-			if (agentObstacle->intersects(hitObstacles[i]))
+			Obstacle * whatWasHit = dynamic_cast<Obstacle*>(hitObstacles[i]);
+			if (whatWasHit != NULL && agentObstacle->intersects(hitObstacles[i]))
 			{
 				obstaclecollision collision = {
-					agentObstacle, hitObstacles[i],
-					agentObstacle->calculateCollisionResolution(hitObstacles[i]),
+					agentObstacle, whatWasHit,
+					agentObstacle->calculateCollisionResolution(whatWasHit),
 				};
 				collisions.add(collision);
 			}

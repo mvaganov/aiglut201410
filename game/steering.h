@@ -15,7 +15,7 @@ V2f flee(V2f target, Agent * agent);
 
 class CalculationsFor_ObstacleAvoidance {
 public:
-	TemplateVector<Obstacle *> actualHits;
+	TemplateVector<Shaped *> actualHits;
 	TemplateVector<V2f> hitLocations;
 	TemplateVector<V2f> hitNormals;
 	TemplateVector<float> hitForce;
@@ -27,8 +27,8 @@ public:
 	}
 };
 
-V2f obstacleAvoidance(TemplateVector<Obstacle*> * obstacles,
-	Obstacle * sensorArea, Agent * agent,
+V2f obstacleAvoidance(TemplateVector<Shaped*> * obstacles,
+	Shaped * sensorArea, Agent * agent,
 	CalculationsFor_ObstacleAvoidance * calc);
 
 V2f alignment(Agent * agent, TemplateVector<Agent*> & neighbors);

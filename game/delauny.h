@@ -71,13 +71,16 @@ public:
 		bool isNeighbor(Triangulation * const t) const;
 	};
 
-	class Triangulation {
+	class Triangulation : public Shaped {
 	private:
+		ShapePolygon shape;
 		/** not a set because the order matters. edges are stored in clockwise fashion. */
 		TemplateArray<Edge*> edges;
 		/** cached calculation of nodes in this Triangulation */
 		TemplateSet<VoronoiNode*> nodeSet;
 	public:
+		Shape * getShape() { return &shape; }
+		const Shape * getShape() const { return &shape; }
 		/** circumscription of all edges */
 		CircF circum;
 		/** the average point of all of the node locations */
@@ -149,8 +152,8 @@ public:
 		bool operator!=(Triangulation const & t) const;
 	};
 
-	class VoronoiNode : public GraphNode {
-		Polygon2f polygon;
+	class VoronoiNode : public GraphNode, public Shaped {
+		ShapePolygon polygon;
 		/** identifies if this is on the edge of the voronoi diagram (near the boundaries) */
 		Obstacle * atBoundaryOf;
 		/** */
@@ -159,6 +162,8 @@ public:
 		bool needsModelRecalculated;
 
 	public:
+		Shape * getShape() { return &polygon; }
+		const Shape * getShape() const { return &polygon; }
 		VoronoiNode();
 		VoronoiNode(V2f const & p);
 

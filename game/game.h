@@ -21,11 +21,11 @@
 class Game {
 public:
 	V2f mousePosition, mouseClick, mouseDragged;
-	TemplateVector<Obstacle*> obstacles;
+	TemplateVector<Shaped*> obstacles;
 	TemplateVector<Agent*> agents;
 
-	CellSpacePartition<Obstacle> * staticObstacles;
-	CellSpacePartition<Obstacle> * movingObstacles;
+	CellSpacePartition * staticObstacles;
+	CellSpacePartition * movingObstacles;
 
 	Graph * mapGraph;
 	TemplateVector<AbstractGraphNode*> * mapPath;
@@ -43,7 +43,7 @@ public:
 
 	Agent * getAgentAt(V2f const & click);
 
-	void gatherStaticObstaclesAt(CircF const & area, TemplateSet<Obstacle*> & out_obstacles);
+	void gatherStaticObstaclesAt(CircF const & area, TemplateSet<Shaped*> & out_obstacles);
 
 	/** generate a list of agents in the given area */
 	void gatherListOfAgentsAt(CircF const & area, TemplateVector<Agent*> & out_agents);
@@ -83,11 +83,11 @@ public:
 	 * @return true if nothing was hit
 	 */
 	bool raycast(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, 
-		Obstacle * & out_obstacle, float & out_dist, V2f & out_point, V2f & out_normal, Obstacle ** ignoreList, int ignoreCount);
+		Shaped * & out_obstacle, float & out_dist, V2f & out_point, V2f & out_normal, Shaped ** ignoreList, int ignoreCount);
 
 	void display(GLUTRenderingContext & g_screen);
 
-	void gatherCollisions(Obstacle * s, TemplateSet<Obstacle*> & out_possibleObstacles);
+	void gatherCollisions(Shaped * s, TemplateSet<Shaped*> & out_possibleObstacles);
 
 	void update(int a_ms);
 };

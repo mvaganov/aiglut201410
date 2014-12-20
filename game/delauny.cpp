@@ -296,10 +296,8 @@ void DelaunySet::VoronoiNode::invalidate(DelaunySet & D, TemplateSet<VoronoiNode
 			D.freeTriangles.add(t);
 		}
 		int sizeAtEnd = edges.size();
-		if (sizeAtStart == sizeAtEnd) {
-			printf("... shouldn't edges be removed?");
+		if (sizeAtStart == sizeAtEnd)
 			edges.pop();
-		}
 	}
 	valid = false;
 	setDirty();

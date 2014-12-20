@@ -14,7 +14,7 @@ void FSM_Hide::execute(Agent * a, int a_ms) {
 		a->setFSM(new FSM_Idle());
 		return;
 	}
-	TemplateSet<Obstacle*> possibleObstacles;
+	TemplateSet<Shaped*> possibleObstacles;
 	a->game->gatherStaticObstaclesAt(CircF(a->body.center, a->body.radius + 5), possibleObstacles);
 	for (int i = 0; i < possibleObstacles.size(); ++i)
 		validObstacles.add(possibleObstacles[i]);
@@ -49,7 +49,7 @@ void FSM_Hide::execute(Agent * a, int a_ms) {
 }
 void FSM_Hide::draw(Agent * a, GLUTRenderingContext * g_screen) {
 	for(int i = 0; i < validObstacles.size(); ++i) {
-		validObstacles[i]->glDraw(true);
+		validObstacles[i]->getShape()->glDraw(true);
 	}
 	g_screen->setColor(0x0088ff);
 	for(int i = 0; i < hideLocations.size(); ++i) {

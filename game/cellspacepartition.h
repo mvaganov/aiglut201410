@@ -3,51 +3,51 @@
 #include "codegiraffe/templatevectorlist.h"
 #include "obstacles.h"
 
-// TYPE should implement Shape
-template<typename TYPE>
-class Cell_I : public AABBObject {
+class Cell_I : public Shaped {
 public:
-	Cell_I(RectF const & r) : AABBObject(r) {}
-	virtual void gatherAt(const RectF location, TemplateSet<TYPE*> & result) const = 0;
-	virtual void gatherAt(const CircF location, TemplateSet<TYPE*> & result) const = 0;
-	virtual void gatherAt(const V2f position, TemplateSet<TYPE*> & result) const = 0;
-	virtual void gatherCollisions(TYPE * subject, TemplateSet<TYPE*> & out_list) const = 0;
-	virtual void add(TYPE* s) = 0;
+	virtual void gatherAt(const RectF location, TemplateSet<Shaped*> & result) const = 0;
+	virtual void gatherAt(const CircF location, TemplateSet<Shaped*> & result) const = 0;
+	virtual void gatherAt(const V2f position, TemplateSet<Shaped*> & result) const = 0;
+	virtual void gatherCollisions(Shaped * subject, TemplateSet<Shaped*> & out_list) const = 0;
+	virtual void add(Shaped* s) = 0;
 	virtual void clear() = 0;
-	virtual TemplateVectorList<TYPE*> * getList() = 0;
+	virtual TemplateVectorList<Shaped*> * getList() = 0;
 	virtual ~Cell_I(){}
-	virtual bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, TYPE * & out_obstacle,
-		float & out_dist, V2f & out_point, V2f & out_normal, TYPE ** ignoreList, int ignoreCount) const = 0;
+	virtual bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Shaped * & out_hit,
+		float & out_dist, V2f & out_point, V2f & out_normal, Shaped ** ignoreList, int ignoreCount) const = 0;
 };
 
-template<typename TYPE>
-class PartitionCell : public Cell_I<TYPE> {
+/** the end of a cellspace partition. only holds a list of elements. */
+class PartitionCell : public Cell_I {
 protected:
-	TemplateVectorList<TYPE*> list;
+	ShapeAABB aabb;
+	TemplateVectorList<Shaped*> list;
 public:
-	TemplateVectorList<TYPE*> * getList() { return &list; }
-	PartitionCell() : Cell_I(RectF()) {}
-	PartitionCell(RectF area) : Cell_I(area){ }
+	Shape * getShape(){ return &aabb; }
+	const Shape * getShape() const { return &aabb; }
+	TemplateVectorList<Shaped*> * getList() { return &list; }
+	PartitionCell() {}
+	PartitionCell(RectF area) : aabb(area){ }
 
-	void add(TYPE * entity) { list.add(entity); }
+	void add(Shaped * s) { list.add(s); }
 	void clear() { list.clear(); }
 
 	void glDraw(bool filled) const {
-		AABBObject::glDraw(filled);
+		aabb.glDraw(filled);
 		if (filled) return;
-		V2f center = getCenter();
+		V2f center = aabb.getCenter();
 		for (int i = 0; i < list.size(); ++i){
-			center.glDrawTo(list[i]->getCenter());
+			center.glDrawTo(list[i]->getShape()->getCenter());
 		}
 	}
 
-	bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, TYPE * & out_obstacle,
-		float & out_dist, V2f & out_point, V2f & out_normal, TYPE ** ignoreList, int ignoreCount) const {
+	bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Shaped * & out_obstacle,
+		float & out_dist, V2f & out_point, V2f & out_normal, Shaped ** ignoreList, int ignoreCount) const {
 		float bestDist = -1;
 		V2f bestPoint, bestNormal;
 		out_obstacle = NULL;
 		for (int i = 0; i < list.size(); ++i) {
-			if (TemplateArray<TYPE*>::indexOf(list[i], ignoreList, 0, ignoreCount) < 0) {
+			if (TemplateArray<Shaped*>::indexOf(list[i], ignoreList, 0, ignoreCount) < 0) {
 				bool hit = list[i]->getShape()->raycast(start, direction, out_dist, out_point, out_normal);
 				if (hit && out_dist < maxDistance) {
 					if (dontCareAboutObstacle) return true;
@@ -68,28 +68,28 @@ public:
 		return out_obstacle != NULL;
 	}
 
-	void gatherAt(const RectF location, TemplateSet<TYPE*> & result) const {
-		TYPE* obj;
+	void gatherAt(const RectF location, TemplateSet<Shaped*> & result) const {
+		Shaped* obj;
 		for (int i = 0; i < list.size(); ++i){
 			obj = list[i];
 			if (obj->getShape()->intersectsAABB(location.min, location.max)) { result.add(obj); }
 		}
 	}
-	void gatherAt(const CircF location, TemplateSet<TYPE*> & result) const {
-		TYPE* obj;
+	void gatherAt(const CircF location, TemplateSet<Shaped*> & result) const {
+		Shaped* obj;
 		for (int i = 0; i < list.size(); ++i){
 			obj = list[i];
 			if (obj->getShape()->intersectsCircle(location.center, location.radius)) { result.add(obj); }
 		}
 	}
-	void gatherAt(const V2f position, TemplateSet<TYPE*> & result) const {
-		TYPE* obj;
+	void gatherAt(const V2f position, TemplateSet<Shaped*> & result) const {
+		Shaped* obj;
 		for (int i = 0; i < list.size(); ++i){
 			obj = list[i];
 			if (obj->getShape()->contains(position)) { result.add(obj); }
 		}
 	}
-	void gatherCollisions(TYPE * subject, TemplateSet<TYPE*> & out_list) const {
+	void gatherCollisions(Shaped * subject, TemplateSet<Shaped*> & out_list) const {
 		for (int i = 0; i < list.size(); ++i) {
 			if (subject != list[i] && subject->getShape()->intersects(list[i]->getShape())) {
 				out_list.add(list[i]);
@@ -98,17 +98,25 @@ public:
 	}
 };
 
-template<typename TYPE>
-class CellSpacePartition : public Cell_I<TYPE> {
+/** manages a grid-arranged array of cells (which are either PartitionCell or CellSparePartition objects) */
+class CellSpacePartition : public Cell_I {
+protected:
+	ShapeAABB aabb;
 public:
-	TemplateVectorList<TYPE*> * getList() { return NULL; }
-	TemplateArray<Cell_I<TYPE>*> cells;
+	Shape * getShape(){ return &aabb; }
+	const Shape * getShape() const { return &aabb; }
+	TemplateVectorList<Shaped*> * getList() { return NULL; }
+	/** the sub-cells of this partition */
+	TemplateArray<Cell_I*> cells;
+	/** how to divide up this cell into sub-cells */
 	V2i gridSize;
+	/** how big each sub-cell is */
 	V2f cellDimensions;
-	CellSpacePartition(RectF totalArea, V2i gridSize) :Cell_I(totalArea) {
+
+	CellSpacePartition(RectF totalArea, V2i gridSize) : aabb(totalArea) {
 		this->gridSize.set(gridSize);
-		cellDimensions.set(getAABB()->getWidth() / gridSize.x, getAABB()->getHeight() / gridSize.y);
-		V2f cursor = this->getAABB()->min;
+		cellDimensions.set(aabb.getWidth() / gridSize.x, aabb.getHeight() / gridSize.y);
+		V2f cursor = aabb.min;
 		RectF cursorR;
 		int index = 0;
 		cells.allocateToSize(gridSize.x*gridSize.y);
@@ -117,11 +125,11 @@ public:
 			for (int c = 0; c < gridSize.x; ++c)
 			{
 				cursorR.set(cursor, cursor + cellDimensions);
-				cells[index] = new PartitionCell<TYPE>(cursorR);
+				cells[index] = new PartitionCell(cursorR);
 				index++;
 				cursor.x += cellDimensions.x;
 			}
-			cursor.x = this->getAABB()->min.x;
+			cursor.x = aabb.min.x;
 			cursor.y += cellDimensions.y;
 		}
 	}
@@ -129,8 +137,8 @@ public:
 private:
 	int getIndex(int row, int col) const { return row*gridSize.x + col; }
 public:
-	void gatherCellListFor(TYPE * s, TemplateVector<int> & list) const {
-		RectF location(s->getCenter(), s->getRadius());
+	void gatherCellListFor(Shaped * s, TemplateVector<int> & list) const {
+		RectF location(s->getShape()->getCenter(), s->getShape()->getRadius());
 		RectF rect = getGridIndexeRange(location);
 		int index;
 		for (int r = (int)rect.min.y; r <= rect.max.y; ++r) {
@@ -140,7 +148,7 @@ public:
 					int i = 0; i = 1 / i;
 					continue;
 				}
-				if (s->intersects(cells[index])) {
+				if (s->getShape()->intersects(cells[index]->getShape())) {
 					list.add(index);
 				}
 			}
@@ -157,7 +165,7 @@ public:
 		}
 	}
 
-	void gatherCollisions(TYPE * subject, TemplateSet<TYPE*> & out_list) const {
+	void gatherCollisions(Shaped * subject, TemplateSet<Shaped*> & out_list) const {
 //		printf("\n%s %f,%f:%f", subject->getTypeName(), subject->getCenter().x, subject->getCenter().y, subject->getRadius());
 		RectF location(subject->getShape()->getCenter(), subject->getShape()->getRadius());
 		RectF rect = getGridIndexeRange(location);
@@ -166,7 +174,7 @@ public:
 			for (int c = (int)rect.min.x; c <= rect.max.x; ++c) {
 				index = getIndex(r, c);
 //				printf("%d.%d:%d ",r,c,index);
-				if (subject->getShape()->intersectsAABB(cells[index]->getAABB()->min, cells[index]->getAABB()->max)) {
+				if (subject->getShape()->intersects(cells[index]->getShape())) {
 					cells[index]->gatherCollisions(subject, out_list);
 				}
 			}
@@ -178,8 +186,8 @@ public:
 		V2f out_point, out_normal;
 		float out_dist;
 		V2f point = start;
-		if (!contains(point)) {
-			if (!raycast(start, direction, out_dist, point, out_normal)){
+		if (!aabb.contains(point)) {
+			if (!aabb.raycast(start, direction, out_dist, point, out_normal)){
 				return;
 			}
 		}
@@ -208,7 +216,8 @@ public:
 		{
 			bool isOutOfBounds = rowcol.x < 0 || rowcol.y < 0 || rowcol.x >= gridSize.x || rowcol.y >= gridSize.y;
 			int index = getIndex((int)rowcol.y, (int)rowcol.x);
-			if (!isOutOfBounds && (cells[index]->contains(start) || (cells[index]->raycast(start, direction, out_dist, out_point, out_normal) && out_dist < maxDistance))) {
+			if (!isOutOfBounds && (cells[index]->getShape()->contains(start) 
+			|| (cells[index]->getShape()->raycast(start, direction, out_dist, out_point, out_normal) && out_dist < maxDistance))) {
 				cellIDs.add(index);
 				if (step.isZero()) break;
 				// next step
@@ -228,11 +237,11 @@ public:
 		}
 	}
 
-	bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, TYPE * & out_obstacle,
-		float & out_dist, V2f & out_point, V2f & out_normal, TYPE ** ignoreList, int ignoreCount) const {
+	bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Shaped * & out_obstacle,
+		float & out_dist, V2f & out_point, V2f & out_normal, Shaped ** ignoreList, int ignoreCount) const {
 		V2f point = start;
-		if (!getAABB()->contains(point)) {
-			if (!getAABB()->raycast(start, direction, out_dist, point, out_normal)){
+		if (!aabb.contains(point)) {
+			if (!aabb.raycast(start, direction, out_dist, point, out_normal)){
 				return false;
 			}
 		}
@@ -261,7 +270,8 @@ public:
 		{
 			bool isOutOfBounds = rowcol.x < 0 || rowcol.y < 0 || rowcol.x >= gridSize.x || rowcol.y >= gridSize.y;
 			int index = getIndex((int)rowcol.y, (int)rowcol.x);
-			if (!isOutOfBounds && (cells[index]->getAABB()->contains(start) || (cells[index]->getAABB()->raycast(start, direction, out_dist, out_point, out_normal) && out_dist < maxDistance))) {
+			if (!isOutOfBounds && (cells[index]->getShape()->contains(start)
+				|| (cells[index]->getShape()->raycast(start, direction, out_dist, out_point, out_normal) && out_dist < maxDistance))) {
 				hitInCell = cells[index]->raycastContainer(start, direction, maxDistance, dontCareAboutObstacle, out_obstacle,
 					out_dist, out_point, out_normal, ignoreList, ignoreCount);
 				if (hitInCell || step.isZero()) break;
@@ -285,7 +295,7 @@ public:
 
 	V2f getGridIndex(V2f position) const {
 		V2f rowcol(position);
-		rowcol -= this->getAABB()->min;
+		rowcol -= aabb.min;
 		rowcol /= cellDimensions;
 		if (rowcol.x < 0) { rowcol.x = 0; }
 		if (rowcol.y < 0) { rowcol.y = 0; }
@@ -297,7 +307,7 @@ public:
 
 	RectF getGridIndexeRange(RectF location) const {
 		//return RectF(getGridIndex(location.min), getGridIndex(location.max));
-		const ShapeAABB * s = getAABB();
+		const ShapeAABB * const s = &aabb;
 		RectF rowcol(location);
 		V2f totalSize = s->max - s->min;
 		rowcol.min -= s->min;
@@ -322,33 +332,31 @@ public:
 		}\
 	}
 
-	void gatherAt(const RectF location, TemplateSet<TYPE*> & result) const {
+	void gatherAt(const RectF location, TemplateSet<Shaped*> & result) const {
 		VALID_cells_index(location, {
-			if (cells[index]->getAABB()->intersectsAABB(location.min, location.max)) {
+			if (cells[index]->getShape()->intersectsAABB(location.min, location.max)) {
 				cells[index]->gatherAt(location, result);
 			}
 		})
 	}
-	void gatherAt(const V2f position, TemplateSet<TYPE*> & result) const {
-		//return gatherAt(RectF(position, 0), result);
+	void gatherAt(const V2f position, TemplateSet<Shaped*> & result) const {
 		VALID_cells_index(RectF(position, 0), {
-			if (cells[index]->getAABB()->contains(position)) {
+			if (cells[index]->getShape()->contains(position)) {
 				cells[index]->gatherAt(position, result);
 			}
 		})
 	}
-	void gatherAt(const CircF circle, TemplateSet<TYPE*> & result) const {
-		//return gatherAt(RectF(position, 0), result);
+	void gatherAt(const CircF circle, TemplateSet<Shaped*> & result) const {
 		VALID_cells_index(RectF(circle.center, circle.radius), {
-			if (cells[index]->getAABB()->intersectsCircle(circle.center, circle.radius)) {
+			if (cells[index]->getShape()->intersectsCircle(circle.center, circle.radius)) {
 				cells[index]->gatherAt(circle, result);
 			}
 		})
 	}
 #undef VALID_cells_index
 
-	void add(TYPE* entity) {
-		RectF location(entity->getShape()->getCenter(), entity->getShape()->getRadius());
+	void add(Shaped* s) {
+		RectF location(s->getShape()->getCenter(), s->getShape()->getRadius());
 		RectF rect = getGridIndexeRange(location);
 		int index;
 		for (int r = (int)rect.min.y; r <= rect.max.y; ++r) {
@@ -358,8 +366,8 @@ public:
 					printf("B@D TH!NG T#4T H4PP3ND ");
 					continue;
 				}
-				if (entity->intersects(cells[index])) {
-					cells[index]->add(entity);
+				if (s->getShape()->intersects(cells[index]->getShape())) {
+					cells[index]->add(s);
 				}
 			}
 		}
@@ -373,8 +381,17 @@ public:
 	}
 
 	void glDraw() {
-		for (int i = 0; i < cells.size(); ++i) {
-			cells[i]->glDraw(false);
+		V2f cursor = aabb.min;
+		V2f line(aabb.getWidth(), 0);
+		for (int row = 0; row < gridSize.y-1; ++row) {
+			cursor.y += cellDimensions.y;
+			cursor.glDrawTo(cursor + line);
 		}
+		line.set(0, aabb.getHeight());
+		for (int col = 0; col < gridSize.x-1; ++col) {
+			cursor.x += cellDimensions.x;
+			cursor.glDrawTo(cursor + line);
+		}
+		aabb.glDraw(false);
 	}
 };
