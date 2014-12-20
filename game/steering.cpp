@@ -45,7 +45,7 @@ V2f obstacleAvoidance(TemplateVector<Obstacle*> * obstacles, Obstacle * sensorAr
 		if (actuallyHit != a && actuallyHit->intersects(sensorArea)) {
 			float totalDistance = a->velocity.magnitude();
 			V2f normal;
-			V2f point = actuallyHit->getClosestPointOnEdge(a->body.center, normal);
+			V2f point = actuallyHit->getShape()->getClosestPointOnEdge(a->body.center, normal);
 			V2f closestOnVelocity;
 			V2f::closestPointOnLine(
 				a->body.center, a->body.center + a->velocity,

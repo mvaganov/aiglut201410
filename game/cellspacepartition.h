@@ -1,3 +1,5 @@
+#pragma once
+
 #include "codegiraffe/templatevectorlist.h"
 #include "obstacles.h"
 
@@ -46,7 +48,7 @@ public:
 		out_obstacle = NULL;
 		for (int i = 0; i < list.size(); ++i) {
 			if (TemplateArray<TYPE*>::indexOf(list[i], ignoreList, 0, ignoreCount) < 0) {
-				bool hit = list[i]->raycast(start, direction, out_dist, out_point, out_normal);
+				bool hit = list[i]->getShape()->raycast(start, direction, out_dist, out_point, out_normal);
 				if (hit && out_dist < maxDistance) {
 					if (dontCareAboutObstacle) return true;
 					if (bestDist < 0 || out_dist < bestDist) {
@@ -70,26 +72,26 @@ public:
 		TYPE* obj;
 		for (int i = 0; i < list.size(); ++i){
 			obj = list[i];
-			if (obj->intersectsAABB(location.min, location.max)) { result.add(obj); }
+			if (obj->getShape()->intersectsAABB(location.min, location.max)) { result.add(obj); }
 		}
 	}
 	void gatherAt(const CircF location, TemplateSet<TYPE*> & result) const {
 		TYPE* obj;
 		for (int i = 0; i < list.size(); ++i){
 			obj = list[i];
-			if (obj->intersectsCircle(location.center, location.radius)) { result.add(obj); }
+			if (obj->getShape()->intersectsCircle(location.center, location.radius)) { result.add(obj); }
 		}
 	}
 	void gatherAt(const V2f position, TemplateSet<TYPE*> & result) const {
 		TYPE* obj;
 		for (int i = 0; i < list.size(); ++i){
 			obj = list[i];
-			if (obj->contains(position)) { result.add(obj); }
+			if (obj->getShape()->contains(position)) { result.add(obj); }
 		}
 	}
 	void gatherCollisions(TYPE * subject, TemplateSet<TYPE*> & out_list) const {
 		for (int i = 0; i < list.size(); ++i) {
-			if (subject != list[i] && subject->intersects(list[i])) {
+			if (subject != list[i] && subject->getShape()->intersects(list[i]->getShape())) {
 				out_list.add(list[i]);
 			}
 		}
@@ -105,8 +107,8 @@ public:
 	V2f cellDimensions;
 	CellSpacePartition(RectF totalArea, V2i gridSize) :Cell_I(totalArea) {
 		this->gridSize.set(gridSize);
-		cellDimensions.set(getWidth() / gridSize.x, getHeight() / gridSize.y);
-		V2f cursor = this->min;
+		cellDimensions.set(getAABB()->getWidth() / gridSize.x, getAABB()->getHeight() / gridSize.y);
+		V2f cursor = this->getAABB()->min;
 		RectF cursorR;
 		int index = 0;
 		cells.allocateToSize(gridSize.x*gridSize.y);
@@ -119,7 +121,7 @@ public:
 				index++;
 				cursor.x += cellDimensions.x;
 			}
-			cursor.x = this->min.x;
+			cursor.x = this->getAABB()->min.x;
 			cursor.y += cellDimensions.y;
 		}
 	}
@@ -157,14 +159,14 @@ public:
 
 	void gatherCollisions(TYPE * subject, TemplateSet<TYPE*> & out_list) const {
 //		printf("\n%s %f,%f:%f", subject->getTypeName(), subject->getCenter().x, subject->getCenter().y, subject->getRadius());
-		RectF location(subject->getCenter(), subject->getRadius());
+		RectF location(subject->getShape()->getCenter(), subject->getShape()->getRadius());
 		RectF rect = getGridIndexeRange(location);
 		int index;
 		for (int r = (int)rect.min.y; r <= rect.max.y; ++r) {
 			for (int c = (int)rect.min.x; c <= rect.max.x; ++c) {
 				index = getIndex(r, c);
 //				printf("%d.%d:%d ",r,c,index);
-				if (subject->intersectsAABB(cells[index]->min, cells[index]->max)) {
+				if (subject->getShape()->intersectsAABB(cells[index]->getAABB()->min, cells[index]->getAABB()->max)) {
 					cells[index]->gatherCollisions(subject, out_list);
 				}
 			}
@@ -229,8 +231,8 @@ public:
 	bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, TYPE * & out_obstacle,
 		float & out_dist, V2f & out_point, V2f & out_normal, TYPE ** ignoreList, int ignoreCount) const {
 		V2f point = start;
-		if (!contains(point)) {
-			if (!raycast(start, direction, out_dist, point, out_normal)){
+		if (!getAABB()->contains(point)) {
+			if (!getAABB()->raycast(start, direction, out_dist, point, out_normal)){
 				return false;
 			}
 		}
@@ -259,7 +261,7 @@ public:
 		{
 			bool isOutOfBounds = rowcol.x < 0 || rowcol.y < 0 || rowcol.x >= gridSize.x || rowcol.y >= gridSize.y;
 			int index = getIndex((int)rowcol.y, (int)rowcol.x);
-			if (!isOutOfBounds && (cells[index]->contains(start) || (cells[index]->raycast(start, direction, out_dist, out_point, out_normal) && out_dist < maxDistance))) {
+			if (!isOutOfBounds && (cells[index]->getAABB()->contains(start) || (cells[index]->getAABB()->raycast(start, direction, out_dist, out_point, out_normal) && out_dist < maxDistance))) {
 				hitInCell = cells[index]->raycastContainer(start, direction, maxDistance, dontCareAboutObstacle, out_obstacle,
 					out_dist, out_point, out_normal, ignoreList, ignoreCount);
 				if (hitInCell || step.isZero()) break;
@@ -283,7 +285,7 @@ public:
 
 	V2f getGridIndex(V2f position) const {
 		V2f rowcol(position);
-		rowcol -= this->min;
+		rowcol -= this->getAABB()->min;
 		rowcol /= cellDimensions;
 		if (rowcol.x < 0) { rowcol.x = 0; }
 		if (rowcol.y < 0) { rowcol.y = 0; }
@@ -295,10 +297,11 @@ public:
 
 	RectF getGridIndexeRange(RectF location) const {
 		//return RectF(getGridIndex(location.min), getGridIndex(location.max));
+		const ShapeAABB * s = getAABB();
 		RectF rowcol(location);
-		V2f totalSize = max - min;
-		rowcol.min -= this->min;
-		rowcol.max -= this->min;
+		V2f totalSize = s->max - s->min;
+		rowcol.min -= s->min;
+		rowcol.max -= s->min;
 		rowcol.min /= cellDimensions;
 		rowcol.max /= cellDimensions;
 		if (rowcol.min.x < 0)	{ rowcol.min.x = 0; if (rowcol.max.x < rowcol.min.x) { rowcol.max.x = rowcol.min.x; } }
@@ -321,7 +324,7 @@ public:
 
 	void gatherAt(const RectF location, TemplateSet<TYPE*> & result) const {
 		VALID_cells_index(location, {
-			if (cells[index]->intersectsAABB(location.min, location.max)) {
+			if (cells[index]->getAABB()->intersectsAABB(location.min, location.max)) {
 				cells[index]->gatherAt(location, result);
 			}
 		})
@@ -329,7 +332,7 @@ public:
 	void gatherAt(const V2f position, TemplateSet<TYPE*> & result) const {
 		//return gatherAt(RectF(position, 0), result);
 		VALID_cells_index(RectF(position, 0), {
-			if (cells[index]->contains(position)) {
+			if (cells[index]->getAABB()->contains(position)) {
 				cells[index]->gatherAt(position, result);
 			}
 		})
@@ -337,7 +340,7 @@ public:
 	void gatherAt(const CircF circle, TemplateSet<TYPE*> & result) const {
 		//return gatherAt(RectF(position, 0), result);
 		VALID_cells_index(RectF(circle.center, circle.radius), {
-			if (cells[index]->intersectsCircle(circle.center, circle.radius)) {
+			if (cells[index]->getAABB()->intersectsCircle(circle.center, circle.radius)) {
 				cells[index]->gatherAt(circle, result);
 			}
 		})
@@ -345,7 +348,7 @@ public:
 #undef VALID_cells_index
 
 	void add(TYPE* entity) {
-		RectF location(entity->getCenter(), entity->getRadius());
+		RectF location(entity->getShape()->getCenter(), entity->getShape()->getRadius());
 		RectF rect = getGridIndexeRange(location);
 		int index;
 		for (int r = (int)rect.min.y; r <= rect.max.y; ++r) {
@@ -366,7 +369,7 @@ public:
 			cells[i]->clear();
 	}
 	bool has(RectF area) const {
-		return this->intersectsAABB(area.min, area.max);
+		return this->getShape()->intersectsAABB(area.min, area.max);
 	}
 
 	void glDraw() {

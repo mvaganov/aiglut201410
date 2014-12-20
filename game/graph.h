@@ -5,6 +5,7 @@
 #include "codegiraffe/templatevectorlist.h"
 #include "codegiraffe/box.h"
 #include "codegiraffe/glutrenderingcontext.h"
+#include <stdio.h>
 
 class AbstractGraphNode;
 

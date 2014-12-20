@@ -7,10 +7,10 @@
 #include "codegiraffe/cone.h"
 #include "codegiraffe/polygon.h"
 
-// pure virtual class -- an Interface. TODO rename this class to be something that equates to a general-boundary, which may belong to a solid object or not, which may be in 2 or 3 dimensions. Shape?
+/** pure virtual class -- an Interface. if it is a shape, then all of this is also knowable. */
 class Shape {
 public:
-	virtual const char* getTypeName() const = 0;
+	virtual const char* getShapeName() const = 0;
 	virtual bool intersects(const Shape * o) const = 0;
 	virtual bool intersectsAABB(V2f const & min, V2f const & max) const = 0;
 	virtual bool intersectsCircle(V2f const & center, const float radius) const = 0;
@@ -25,7 +25,16 @@ public:
 	virtual ~Shape(){};
 };
 
-class Collidable {
+/** if something has a shape, but should not be considered a shape (composition vs inheritance relationship), then it should inherit this class */
+class Shaped {
+public:
+	virtual Shape * getShape() = 0;
+	virtual const Shape * getShape() const = 0;
+	virtual ~Shaped(){}
+};
+
+/** anything that can be collided with has a shape, but is not neccessarily a shape. */
+class Collidable : public Shaped {
 public:
 	/** @return a data structure that identifies how this object should resolve collision with the given otherObject. NULL for no collision. */
 	virtual void * calculateCollisionResolution(Collidable * otherObject) = 0;
@@ -33,13 +42,19 @@ public:
 	virtual void resolveCollision(Collidable * otherObject, void * & collisionData) = 0;
 	virtual ~Collidable(){}
 };
-
-class Obstacle : public Shape, public Collidable { };
-
-class AABBObject : public RectF, public Obstacle {
+/** an obstacle is Collidable, though a basic obstacle doesn't move or change based on collision */
+class Obstacle : public Collidable {
 public:
-	const char* getTypeName() const { return "AABB"; }
-	AABBObject(RectF r) :RectF(r){}
+	void * calculateCollisionResolution(Collidable * otherObject){ return 0; }
+	void resolveCollision(Collidable * o, void * & colledisionData){}
+	void glDraw(bool filled) const { getShape()->glDraw(filled); }
+	bool intersects(const Shaped * o) const { return getShape()->intersects(o->getShape()); }
+};
+
+class ShapeAABB : public RectF, public Shape {
+public:
+	const char* getShapeName() const { return "AABB"; }
+	ShapeAABB(RectF r) :RectF(r){}
 	V2f getCenter() const { return RectF::getCenter(); }
 	float getRadius() const { return RectF::getCircumscribedRadius(); }
 	bool intersects(const Shape * o) const { return o->intersectsAABB(min, max); }
@@ -57,13 +72,13 @@ public:
 	void glDraw(bool filled) const { RectF::glDraw(filled); }
 	void * calculateCollisionResolution(Collidable * otherObject){ return 0; }
 	void resolveCollision(Collidable * o, void * & collisionData){}
-	~AABBObject(){}
+	~ShapeAABB(){}
 };
 
-class CircleObject : public CircF, public Obstacle {
+class ShapeCircle : public CircF, public Shape {
 public:
-	const char* getTypeName() const { return "Circle"; }
-	CircleObject(CircF c) :CircF(c){}
+	const char* getShapeName() const { return "Circle"; }
+	ShapeCircle(CircF c) :CircF(c){}
 	V2f getCenter() const {return center;}
 	float getRadius() const { return radius; }
 	bool intersects(const Shape * o) const { return o->intersectsCircle(center, radius); }
@@ -79,15 +94,14 @@ public:
 		return CircF::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { CircF::glDraw(filled); }
-	void * calculateCollisionResolution(Collidable * otherObject){ return 0; }
-	void resolveCollision(Collidable * o, void * & collisionData){}
-	~CircleObject(){}
+	~ShapeCircle(){}
 };
-class BoxObject : public BoxF, public Obstacle {
+
+class ShapeBox : public BoxF, public Shape {
 public:
-	const char* getTypeName() const { return "Box"; }
-	BoxObject(BoxF b) :BoxF(b){}
-	BoxObject(RectF r):BoxF(r.getCenter(), r.getDimension(), 0){}
+	const char* getShapeName() const { return "Box"; }
+	ShapeBox(BoxF b) :BoxF(b){}
+	ShapeBox(RectF r) :BoxF(r.getCenter(), r.getDimension(), 0){}
 	V2f getCenter() const {return center;}
 	float getRadius() const { return size.magnitude()/2; }
 	bool intersects(const Shape * o) const;
@@ -102,14 +116,12 @@ public:
 		return BoxF::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { BoxF::glDraw(filled); }
-	void * calculateCollisionResolution(Collidable * otherObject){ return 0; }
-	void resolveCollision(Collidable * o, void * & collisionData){}
-	~BoxObject(){}
+	~ShapeBox(){}
 };
-class ConeObject : public ConeF, public Obstacle {
+class ShapeCone : public ConeF, public Shape {
 public:
-	const char* getTypeName() const { return "Cone"; }
-	ConeObject(ConeF c) :ConeF(c){}
+	const char* getShapeName() const { return "Cone"; }
+	ShapeCone(ConeF c) :ConeF(c){}
 	V2f getCenter() const { return ConeF::getCenter(); }
 	float getRadius() const { return radius; }
 	bool intersects(const Shape * o) const;
@@ -124,14 +136,12 @@ public:
 		return ConeF::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { ConeF::glDraw(filled); }
-	void * calculateCollisionResolution(Collidable * otherObject){ return 0; }
-	void resolveCollision(Collidable * o, void * & collisionData){}
-	~ConeObject(){}
+	~ShapeCone(){}
 };
-class PolygonObject : public Polygon2f, public Obstacle{
+class ShapePolygon : public Polygon2f, public Shape {
 public:
-	const char* getTypeName() const { return "Poly"; }
-	PolygonObject(Polygon2f c) :Polygon2f(c){}
+	const char* getShapeName() const { return "Poly"; }
+	ShapePolygon(Polygon2f c) :Polygon2f(c){}
 	V2f getCenter() const { return Polygon2f::getCenter(); }
 	float getRadius() const { return Polygon2f::getRadius(); }
 	bool intersects(const Shape * o) const;
@@ -146,7 +156,42 @@ public:
 		return Polygon2f::getClosestPointOnEdge(point, out_normal);
 	}
 	void glDraw(bool filled) const { Polygon2f::glDraw(filled); }
-	void * calculateCollisionResolution(Collidable * otherObject){ return 0; }
-	void resolveCollision(Collidable * o, void * & collisionData){}
+	~ShapePolygon(){}
+};
+
+class AABBObject : public Obstacle {
+	ShapeAABB shape; public: Shape * getShape() { return &shape; } const Shape * getShape() const { return &shape; }
+	AABBObject(RectF r) : shape(r){}
+	~AABBObject(){}
+	ShapeAABB * getAABB() { return &shape; }
+	const ShapeAABB * getAABB() const { return &shape; }
+};
+class CircleObject : public Obstacle {
+	ShapeCircle shape; public: Shape * getShape() { return &shape; } const Shape * getShape() const { return &shape; }
+	CircleObject(CircF c) : shape(c){}
+	~CircleObject(){}
+	ShapeCircle * getCircle() { return &shape; }
+	const ShapeCircle * getCircle() const { return &shape; }
+};
+class BoxObject : public Obstacle {
+	ShapeBox shape;	 public: Shape * getShape() { return &shape; } const Shape * getShape() const { return &shape; }
+	BoxObject(BoxF b) :shape(b){}
+	BoxObject(RectF r) :shape(r){}
+	~BoxObject(){}
+	ShapeBox * getBox() { return &shape; }
+	const ShapeBox * getBox() const { return &shape; }
+};
+class ConeObject : public Obstacle {
+	ShapeCone shape; public: Shape * getShape() { return &shape; } const Shape * getShape() const { return &shape; }
+	ConeObject(ConeF c) : shape(c){}
+	~ConeObject(){}
+	ShapeCone * getCone() { return &shape; }
+	const ShapeCone * getCone() const { return &shape; }
+};
+class PolygonObject : public Obstacle {
+	ShapePolygon shape; public: Shape * getShape() { return &shape; } const Shape * getShape() const { return &shape; }
+	PolygonObject(Polygon2f c) : shape(c){}
 	~PolygonObject(){}
+	ShapePolygon * getPolygon() { return &shape; }
+	const ShapePolygon * getPolygon() const { return &shape; }
 };

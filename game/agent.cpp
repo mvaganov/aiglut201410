@@ -54,7 +54,7 @@ void Agent::update(int a_ms) {
 bool Agent::hasLineOfSight(Obstacle * subject) {
 	Obstacle * agents[] = { this, subject };
 	const int numAgents = sizeof(agents) / sizeof(agents[0]);
-	V2f delta = subject->getCenter() - body.center;
+	V2f delta = subject->getShape()->getCenter() - body.center;
 	float distance = delta.magnitude();
 	V2f normal = delta / distance;
 	Obstacle * obs;

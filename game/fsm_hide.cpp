@@ -22,12 +22,12 @@ void FSM_Hide::execute(Agent * a, int a_ms) {
 	float closestDist = -1;
 	V2f closestLoc;
 	for(int i = 0; i < validObstacles.size(); ++i) {
-		obsLoc = validObstacles[i]->getCenter();
+		obsLoc = validObstacles[i]->getShape()->getCenter();
 		delta = obsLoc - predLoc;
 		float dist = delta.magnitude();
 		float rayDist;
 		V2f outEdge, outNormal;
-		validObstacles[i]->raycast(obsLoc, delta.normal(), rayDist, outEdge, outNormal);
+		validObstacles[i]->getShape()->raycast(obsLoc, delta.normal(), rayDist, outEdge, outNormal);
 		V2f hideLoc = outEdge + delta.normal() * a->body.radius;
 		hideLocations.add(hideLoc);
 		float thisDist = V2f::distance(a->body.center, hideLoc);

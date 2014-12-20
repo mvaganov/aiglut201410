@@ -13,9 +13,9 @@ class Bullet;
 
 class Agent : public Obstacle {
 public:
-	const char* getTypeName() const { return "Agent"; }
+	const char* getShapeName() const { return "Agent"; }
 	/** where is this? */
-	CircleObject body;
+	ShapeCircle body;
 	/** where is this going? */
 	V2f velocity;
 	/** where is this facing? (cos, sin) of the angle this is facing */
@@ -53,6 +53,9 @@ public:
 	FiniteStateMachine * fsm;
 
 	BoxObject sensorArea;
+
+	Shape * getShape() { return &body; }
+	const Shape * getShape() const { return &body; }
 
 	void setFSM(FiniteStateMachine * a_fsm) {
 		if(fsm) {
@@ -104,7 +107,7 @@ public:
 			}
 			velocity += acceleration * (float)a_ms / 1000.0f;
 			body.center += velocity * (float)a_ms / 1000.0f;
-			sensorArea.set(velocity / 2 + body.center,
+			sensorArea.getBox()->set(velocity / 2 + body.center,
 				V2f(velocity.magnitude(), body.radius*2), velocity.normal());
 		}
 	}
@@ -216,7 +219,7 @@ public:
 			else myResponsibilityToMove = (massSum-mass) / (massSum);
 		}
 		V2f normal;
-		Shape * s = dynamic_cast<Shape*>(otherObject);
+		Shape * s = otherObject->getShape();
 		V2f closestPoint = s->getClosestPointOnEdge(body.center, normal);
 		//printf("%f %f ", normal.x, normal.y);
 		V2f positionToClipTo = closestPoint + normal * body.radius;
