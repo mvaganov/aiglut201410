@@ -14,8 +14,8 @@ public:
 	virtual void clear() = 0;
 	virtual TemplateVectorList<TYPE*> * getList() = 0;
 	virtual ~Cell_I(){}
-	virtual bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Obstacle * & out_obstacle,
-		float & out_dist, V2f & out_point, V2f & out_normal, Obstacle ** ignoreList, int ignoreCount) const = 0;
+	virtual bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, TYPE * & out_obstacle,
+		float & out_dist, V2f & out_point, V2f & out_normal, TYPE ** ignoreList, int ignoreCount) const = 0;
 };
 
 template<typename TYPE>
@@ -39,31 +39,31 @@ public:
 		}
 	}
 
-	bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Obstacle * & out_obstacle,
-		float & out_dist, V2f & out_point, V2f & out_normal, Obstacle ** ignoreList, int ignoreCount) const {
-		bool rayHit = false;
+	bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, TYPE * & out_obstacle,
+		float & out_dist, V2f & out_point, V2f & out_normal, TYPE ** ignoreList, int ignoreCount) const {
 		float bestDist = -1;
 		V2f bestPoint, bestNormal;
+		out_obstacle = NULL;
 		for (int i = 0; i < list.size(); ++i) {
-			if (TemplateArray<Obstacle*>::indexOf(list[i], ignoreList, 0, ignoreCount) < 0) {
+			if (TemplateArray<TYPE*>::indexOf(list[i], ignoreList, 0, ignoreCount) < 0) {
 				bool hit = list[i]->raycast(start, direction, out_dist, out_point, out_normal);
 				if (hit && out_dist < maxDistance) {
-					rayHit = true;
 					if (dontCareAboutObstacle) return true;
 					if (bestDist < 0 || out_dist < bestDist) {
 						bestDist = out_dist;
 						bestPoint = out_point;
 						bestNormal = out_normal;
+						out_obstacle = list[i];
 					}
 				}
 			}
 		}
-		if (rayHit) {
+		if (out_obstacle != NULL) {
 			out_dist = bestDist;
 			out_point = bestPoint;
 			out_normal = bestNormal;
 		}
-		return rayHit;
+		return out_obstacle != NULL;
 	}
 
 	void gatherAt(const RectF location, TemplateSet<TYPE*> & result) const {
@@ -115,7 +115,7 @@ public:
 			for (int c = 0; c < gridSize.x; ++c)
 			{
 				cursorR.set(cursor, cursor + cellDimensions);
-				cells[index] = new PartitionCell<Obstacle>(cursorR);
+				cells[index] = new PartitionCell<TYPE>(cursorR);
 				index++;
 				cursor.x += cellDimensions.x;
 			}
@@ -175,7 +175,13 @@ public:
 	void raycastCellList(V2f start, V2f direction, float maxDistance, TemplateSet<int> & cellIDs) const {
 		V2f out_point, out_normal;
 		float out_dist;
-		V2f rowcol = getGridIndex(start);
+		V2f point = start;
+		if (!contains(point)) {
+			if (!raycast(start, direction, out_dist, point, out_normal)){
+				return;
+			}
+		}
+		V2f rowcol = getGridIndex(point);
 		// when this line steps on the grid, how does it step?
 		V2i step(
 			((direction.x > 0) ? 1 : ((direction.x < 0) ? -1 : 0)),
@@ -220,9 +226,15 @@ public:
 		}
 	}
 
-	bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Obstacle * & out_obstacle,
-		float & out_dist, V2f & out_point, V2f & out_normal, Obstacle ** ignoreList, int ignoreCount) const {
-		V2f rowcol = getGridIndex(start);
+	bool raycastContainer(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, TYPE * & out_obstacle,
+		float & out_dist, V2f & out_point, V2f & out_normal, TYPE ** ignoreList, int ignoreCount) const {
+		V2f point = start;
+		if (!contains(point)) {
+			if (!raycast(start, direction, out_dist, point, out_normal)){
+				return false;
+			}
+		}
+		V2f rowcol = getGridIndex(point);
 		// when this line steps on the grid, how does it step?
 		V2i step(
 			((direction.x > 0) ? 1 : ((direction.x < 0) ? -1 : 0)),
