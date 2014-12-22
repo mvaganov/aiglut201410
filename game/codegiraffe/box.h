@@ -103,6 +103,24 @@ struct Box {
 		return close;
 	}
 
+	/**
+	* @param point
+	* @param out_rh will be assigned to details about the closest raycast hit to that point
+	* @return true if on linearedge, false if on corner
+	*/
+	bool getClosestRaycastHit(const V2<TYPE> point, RaycastHit_<TYPE> & out_rh) {
+		AABB<TYPE> aabb = getLocalSpaceAABB();
+		V2<TYPE> yAxis, xAxis;
+		calculateAxis(xAxis, yAxis);
+		// do math in local space
+		V2f rotatedPoint = point.toLocalSpace(xAxis, yAxis, center);
+		bool onLine = aabb.getClosestRaycastHit(rotatedPoint, out_rh);
+		// bring results to world space
+		out_rh.normal = out_rh.normal.toWorldSpace(xAxis, yAxis);
+		out_rh.point = out_rh.point.toWorldSpace(xAxis, yAxis, center);
+		return onLine;
+	}
+
 	bool contains(V2<TYPE> point) const {
 		AABB<TYPE> aabb = getLocalSpaceAABB();
 		V2<TYPE> yAxis, xAxis;
@@ -168,16 +186,13 @@ struct Box {
 	 *
 	 * @param rayStart
 	 * @param rayDirection must be a unit vector
-	 * @param out_dist how far along the ray the collision happened
-	 * @param out_point where the collision happened
-	 * @param out_normal the normal of the collision line
+	 * @param out_rh information about the eventual hit (if any)
 	 * @return true if raycast collision happened
 	 */
-	bool raycast(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
-		TYPE & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
+	bool raycast(Ray_<TYPE> const & ray, RaycastHit & out_rh) const {
 		V2<TYPE> points[4];
 		writePoints(points, 4);
-		return V2<TYPE>::raycastPolygon(rayStart, rayDirection, points, 4, out_dist, out_point, out_normal) != -1;
+		return V2<TYPE>::raycastPolygon(ray.start, ray.direction, points, 4, out_rh.distance, out_rh.point, out_rh.normal) != -1;
 	}
 
 #ifdef __GL_H__

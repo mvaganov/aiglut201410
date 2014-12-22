@@ -252,16 +252,13 @@ struct AABB {
 	 *
 	 * @param rayStart
 	 * @param rayDirection must be a unit vector
-	 * @param out_dist how far along the ray the collision happened
-	 * @param out_point where the collision happened
-	 * @param out_normal the normal of the collision line
+	 * @param out_rh information about the eventual hit (if any)
 	 * @return true if raycast collision happened
 	 */
-	bool raycast(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
-		float & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
+	bool raycast(Ray_<TYPE> const & ray, RaycastHit_<TYPE> & out_rh) const {
 		V2<TYPE> points[4];
 		writePoints(points, 4);
-		return V2<TYPE>::raycastPolygon(rayStart, rayDirection, points, 4, out_dist, out_point, out_normal) != -1;
+		return V2<TYPE>::raycastPolygon(ray.start, ray.direction, points, 4, out_rh.distance, out_rh.point, out_rh.normal) != -1;
 	}
 
 	static const int BAD_VALUE = -1;
@@ -327,6 +324,58 @@ struct AABB {
 		out_normal = normalOfEdge(closestSide);
 		p.setField(closestSide % V2<TYPE>::NUM_DIMENSIONS, getField(closestSide));
 		return p;
+	}
+
+	/**
+	* @param point
+	* @param out_rh will be assigned to details about the closest raycast hit to that point
+	* @return true if on linearedge, false if on corner
+	*/
+	bool getClosestRaycastHit(const V2<TYPE> point, RaycastHit_<TYPE> & out_rh) {
+		V2<TYPE> p = point;
+		out_rh.normal.setZero();
+		// check if the point is far out of range
+		bool insideXrange = false, insideYrange = false;
+		int justOutsideOfEdge = BAD_VALUE;
+		if (p.x < min.x) { p.x = min.x; justOutsideOfEdge = MINX; }
+		else if (p.x > max.x) { p.x = max.x; justOutsideOfEdge = MAXX; }
+		else insideXrange = true;
+		if (p.y < min.y) { p.y = min.y; justOutsideOfEdge = MINY; }
+		else if (p.y > max.y) { p.y = max.y; justOutsideOfEdge = MAXY; }
+		else insideYrange = true;
+		// if is in neither the x or y range (it's closest to a corner)
+		if (!insideXrange && !insideYrange) {
+			out_rh.point = p;
+			out_rh.normal = (point - p);
+			out_rh.distance = out_rh.normal.magnitude();
+			out_rh.normal /= out_rh.distance;
+			return false;
+		}
+		// if point is only one of the ranges, and outside another, no problem
+		if (insideXrange ^ insideYrange) {
+			out_rh.point = p;
+			out_rh.normal = normalOfEdge(justOutsideOfEdge);
+			out_rh.distance = (insideXrange ? abs(p.y - point.y) : abs(p.x - point.x));
+			return true;
+		}
+		// otherwise, it's inside the aabb. find out which range should be popped to the edge
+		const int sides = V2<TYPE>::NUM_DIMENSIONS * 2;
+		float distance, smallestDistance;
+		justOutsideOfEdge = BAD_VALUE;
+		// check each side
+		for (int i = 0; i < sides; ++i) {
+			distance = abs(getField(i) - point.getField(i % V2<TYPE>::NUM_DIMENSIONS));
+			// if the distance to this side is the smallest yet, that is the correct side to snap to
+			if (justOutsideOfEdge == BAD_VALUE || distance < smallestDistance) {
+				justOutsideOfEdge = i;
+				smallestDistance = distance;
+			}
+		}
+		p.setField(justOutsideOfEdge % V2<TYPE>::NUM_DIMENSIONS, getField(justOutsideOfEdge));
+		out_rh.point = p;
+		out_rh.distance = smallestDistance;
+		out_rh.normal = normalOfEdge(justOutsideOfEdge);
+		return true;
 	}
 
 	static V2<TYPE> normalOfEdge(const int edgeIndex) {

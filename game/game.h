@@ -16,12 +16,12 @@
 #include "codegiraffe/polygon.h"
 #include "delauny.h"
 #define DELAUNY_TESTING
-//#define TESTING_SHAPES
+#define TESTING_SHAPES
 
 class Game {
 public:
 	V2f mousePosition, mouseClick, mouseDragged;
-	TemplateVector<Shaped*> obstacles;
+	TemplateVector<Obstacle*> obstacles;
 	TemplateVector<Agent*> agents;
 
 	CellSpacePartition * staticObstacles;
@@ -43,7 +43,7 @@ public:
 
 	Agent * getAgentAt(V2f const & click);
 
-	void gatherStaticObstaclesAt(CircF const & area, TemplateSet<Shaped*> & out_obstacles);
+	void gatherStaticObstaclesAt(CircF const & area, TemplateSet<Obstacle*> & out_obstacles);
 
 	/** generate a list of agents in the given area */
 	void gatherListOfAgentsAt(CircF const & area, TemplateVector<Agent*> & out_agents);
@@ -82,12 +82,12 @@ public:
 	 * @param ignoreCount how many objects to ignore
 	 * @return true if nothing was hit
 	 */
-	bool raycast(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, 
-		Shaped * & out_obstacle, float & out_dist, V2f & out_point, V2f & out_normal, Shaped ** ignoreList, int ignoreCount);
+	bool raycast(Ray ray, RaycastHit & out_rh, float maxDistance, bool dontCareAboutObstacle, 
+		Obstacle * & out_obstacle, Obstacle ** ignoreList, int ignoreCount);
 
 	void display(GLUTRenderingContext & g_screen);
 
-	void gatherCollisions(Shaped * s, TemplateSet<Shaped*> & out_possibleObstacles);
+	void gatherCollisions(Obstacle * s, TemplateSet<Obstacle*> & out_possibleObstacles);
 
 	void update(int a_ms);
 };

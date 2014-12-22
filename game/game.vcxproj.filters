@@ -108,6 +108,9 @@
     <ClInclude Include="cellspacepartition.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="codegiraffe\line.h">
+      <Filter>codegiraffe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

@@ -350,21 +350,23 @@ Polygon2f & DelaunySet::VoronoiNode::getPolygon2f(Obstacle * boundary) {
 				// if this triangle borders the entire system (it doesn't have enough triangles to fully surround the edge)
 				if (e->getNeighborTriangulationCount() == 1 && e->has(this)) {
 					// find the dividing plane
-					V2f ray = e->getFace().normal.perp(), end, otherPoint;//-(delta.perp().normal()), end;
+					V2f rayDir = e->getFace().normal.perp(), end, otherPoint;//-(delta.perp().normal()), end;
 					GraphNode * a = (GraphNode*)e->getNode(0);
 					GraphNode * b = (GraphNode*)e->getNode(1);
 					V2f::closestPointOnLine(a->getLocation(), b->getLocation(), t->centerMass, otherPoint);
 					V2f correctDirection = otherPoint - t->centerMass;
-					float alignment = V2f::dot(ray, correctDirection);
-					if (alignment < 0) { ray *= -1.0f; }
+					float alignment = V2f::dot(rayDir, correctDirection);
+					if (alignment < 0) { rayDir *= -1.0f; }
 					// raycast the dividing plane to the border of the boundary
 					if (!boundary) {
-						end = t->circum.center + ray * 100;
+						end = t->circum.center + rayDir * 100;
 					}
 					else if (boundary->getShape()->contains(t->circum.center)) {
-						V2f hitNorm;
-						float dist;
-						if (boundary->getShape()->raycast(t->circum.center, ray, dist, end, hitNorm)) {
+						RaycastHit rh;
+//						V2f hitNorm;
+//						float dist;
+						if (boundary->getShape()->raycast(Ray(t->circum.center, rayDir), rh)) {//dist, end, hitNorm)) {
+							end = rh.point;
 							//printf("should have hit from %.1f %.1f\n");
 							// add that location to the list of points (noting it's index)
 							points.add(end);
@@ -1151,23 +1153,24 @@ void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
 				g_screen.setColor(0x0000aa);
 				g_screen.drawCircle(edgeCenter, .1f, false);
 				g_screen.setColor(0xaa0000);
-				V2f ray = e->getFace().normal.perp(), end;//-(delta.perp().normal()), end;
+				V2f rayDir = e->getFace().normal.perp(), end;//-(delta.perp().normal()), end;
 				V2f otherPoint;
 				a = (VoronoiNode*)e->getNode(0);
 				b = (VoronoiNode*)e->getNode(1);
 				V2f::closestPointOnLine(a->getLocation(), b->getLocation(), t->centerMass, otherPoint);
 				V2f correctDirection = otherPoint - t->centerMass;
-				float alignment = V2f::dot(ray, correctDirection);
-				if (alignment < 0) { ray *= -1.0f; }
+				float alignment = V2f::dot(rayDir, correctDirection);
+				if (alignment < 0) { rayDir *= -1.0f; }
 				if (!boundary) {
-					end = edgeCenter + ray * 100;
+					end = edgeCenter + rayDir * 100;
 					edgeCenter.glDrawTo(end);
 				}
 				else if (boundary->getShape()->contains(edgeCenter)) {
 
-					V2f end, hitNorm;
-					float dist;
-					if (!boundary->getShape()->raycast(edgeCenter, ray, dist, end, hitNorm)) {
+					V2f end;// , hitNorm;
+//					float dist;
+					RaycastHit rh;
+					if (!boundary->getShape()->raycast(Ray(edgeCenter, rayDir), rh)){// dist, end, hitNorm)) {
 						end = edgeCenter;
 					}
 					edgeCenter.glDrawTo(end);

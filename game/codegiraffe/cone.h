@@ -2,6 +2,7 @@
 #include <GL/freeglut.h>
 #include "codegiraffe/v2.h"
 #include "codegiraffe/circle.h"
+#include "line.h"
 
 template <typename TYPE>
 class Cone {
@@ -78,90 +79,74 @@ public:
 		return -1;
 	}
 
-	static int indexOfSmallestPositive(const TYPE * list, const int listSize) {
+	static int indexOfClosest(const RaycastHit_<TYPE> * list, const int listSize) {
 		int closest = -1;
 		for (int i = 0; i < listSize; ++i) {
-			if (list[i] >= 0 && ((closest == -1) || (list[i] < list[closest])))
+			if (list[i].distance >= 0 && (closest < 0 || list[i].distance < list[closest].distance))
 				closest = i;
 		}
 		return closest;
 	}
 
-	bool raycast(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
-		TYPE & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
+	bool raycast(Ray_<TYPE> const & ray, RaycastHit & out_rh) const {
 		CircF circ(origin, radius);
-		V2<TYPE> arcPoint, arcNormal;
-		TYPE distances[3] = { -1, -1, -1 };
-		const int numDistances = sizeof(distances) / sizeof(distances[0]);
-		bool hit = circ.raycast(rayStart, rayDirection, distances[0], arcPoint, arcNormal);
-		V2<TYPE> relativeP = arcPoint - origin;
-		if(!hit || !isInAngle(relativeP, startPoint, endPoint)){
-			distances[0] = -1;
+		V2<TYPE> startRadCorner = origin + startPoint, endRadCorner = origin + endPoint;
+		Line<TYPE> startLine(&startRadCorner, &origin);
+		Line<TYPE> endLine(&origin, &endRadCorner);
+		RaycastHit_<TYPE> hits[3]; const int ARC = 0, START = 1, END = 2; const int numHits = sizeof(hits) / sizeof(hits[0]);
+		if (!circ.raycast(ray, hits[ARC]) || !isInAngle(hits[ARC].point - origin, startPoint, endPoint)) {
+			hits[ARC].distance = -1;
 		}
-		TYPE ray, line;
-		hit = V2<TYPE>::rayIntersection(rayStart, rayStart+rayDirection, origin, origin + startPoint, ray, line);
-		V2<TYPE> startRad_point, startRad_normal;
-		if(hit && ray > 0 && line > 0 && line < 1) {
-			startRad_point = startPoint * line + origin;
-			startRad_normal = -V2<TYPE>(startAngle).perp();
-			distances[1] = (rayDirection * ray).magnitude();
-		} else distances[1] = -1;
-		hit = V2<TYPE>::rayIntersection(rayStart, rayStart+rayDirection, origin, origin + endPoint, ray, line);
-		V2<TYPE> endRad_point, endRad_normal;
-		if (hit && ray > 0 && line > 0 && line < 1) {
-			endRad_point = endPoint * line + origin;
-			endRad_normal = V2<TYPE>(endAngle).perp();
-			distances[2] = (rayDirection * ray).magnitude();
-		} else distances[2] = -1;
-		int closest = indexOfSmallestPositive(distances, numDistances);
+		if (!startLine.raycast(ray, hits[START])) {
+			hits[START].distance = -1;
+		}
+		if (!endLine.raycast(ray, hits[END])) {
+			hits[END].distance = -1;
+		}
+		int closest = indexOfClosest(hits, numHits);
 		if (closest != -1) {
-			out_dist = distances[closest];
-			switch (closest) {
-			case 0:	out_point = arcPoint;	out_normal = arcNormal;	break;
-			case 1:	out_point = startRad_point;	out_normal = startRad_normal;	break;
-			case 2:	out_point = endRad_point;	out_normal = endRad_normal;	break;
-			}
+			out_rh = hits[closest];
 		}
 		return closest != -1;
 	}
 
 	V2<TYPE> getClosestPointOnEdge(const V2<TYPE> point, V2<TYPE> & out_normal) const {
 		CircF circ(origin, radius);
-		V2<TYPE> arcPoint = circ.getClosestPointOnEdge(point, out_normal);
-		V2<TYPE> relativeP = arcPoint - origin;
-		V2<TYPE> startRadCorner = origin + startPoint;
-		V2<TYPE> endRadCorner = origin + endPoint;
-		V2<TYPE> onStart, onEnd, p;
-		bool arcPointValid = isInAngle(relativeP, startPoint, endPoint);
-		TYPE line, ray;
-		bool startLineHit = V2<TYPE>::rayIntersection(origin, startRadCorner, point, point + startPoint.perp(), line, ray);
-		if (startLineHit && line <= 0 || line >= 1) {
-			startLineHit = false;
-		} else { onStart = origin + startPoint * line; }
-		bool endLineHit = V2<TYPE>::rayIntersection(origin, endRadCorner, point, point + endPoint.perp(), line, ray);
-		if (endLineHit && line <= 0 || line >= 1) {
-			endLineHit = false;
-		} else { onEnd = origin + endPoint * line; }
-		TYPE distances[] = {
-			(point - origin).magnitude(), // origin corner
-			(point - startRadCorner).magnitude(), // start corner
-			(point - endRadCorner).magnitude(), // end corner
-			arcPointValid ? (point - arcPoint).magnitude() : distances[0], // arc line
-			startLineHit ? (point - onStart).magnitude() : distances[1], // start line
-			endLineHit ? (point - onEnd).magnitude() : distances[2], // end line
-		};
-		const int numDistances = sizeof(distances) / sizeof(distances[0]);
-		int smallest = indexOfSmallestPositive(distances, numDistances);
-		switch (smallest) {
-		case 0:	out_normal = (point - origin).normal();	p = origin;	break;
-		case 1:	out_normal = (point - startRadCorner).normal();	p = startRadCorner;	break;
-		case 2:	out_normal = (point - endRadCorner).normal();	p = endRadCorner;	break;
-		case 3: p = arcPoint; break;
-		case 4: out_normal = -V2<TYPE>(startAngle).perp();	p = onStart;	break;
-		case 5: out_normal = V2<TYPE>(endAngle).perp();	p = onEnd;	break;
+		V2<TYPE> startRadCorner = origin + startPoint, endRadCorner = origin + endPoint;
+		Line<TYPE> startLine(&startRadCorner, &origin);
+		Line<TYPE> endLine(&origin, &endRadCorner);
+		RaycastHit_<TYPE> hits[3]; const int ARC = 0, START = 1, END = 2; const int numHits = sizeof(hits) / sizeof(hits[0]);
+		circ.getClosestRaycastHit(point, hits[ARC]);
+		if (!isInAngle(hits[ARC].point - origin, startPoint, endPoint)) {
+			hits[ARC].distance = -1;
 		}
-		return p;
+		startLine.getClosestRaycastHit(point, hits[START]);
+		endLine.getClosestRaycastHit(point, hits[END]);
+		int closest = indexOfClosest(hits, numHits);
+		out_normal = hits[closest].normal;
+		return hits[closest].point;
 	}
+
+	/**
+	* @param point
+	* @param out_rh will be assigned to details about the closest raycast hit to that point
+	*/
+	void getClosestRaycastHit(const V2<TYPE> point, RaycastHit_<TYPE> & out_rh) {
+		CircF circ(origin, radius);
+		V2<TYPE> startRadCorner = origin + startPoint, endRadCorner = origin + endPoint;
+		Line<TYPE> startLine(&startRadCorner, &origin);
+		Line<TYPE> endLine(&origin, &endRadCorner);
+		RaycastHit_<TYPE> hits[3]; const int ARC = 0, START = 1, END = 2; const int numHits = sizeof(hits) / sizeof(hits[0]);
+		circ.getClosestRaycastHit(point, hits[ARC]);
+		if (!isInAngle(hits[ARC].point - origin, startPoint, endPoint)) {
+			hits[ARC].distance = -1;
+		}
+		startLine.getClosestRaycastHit(point, hits[START]);
+		endLine.getClosestRaycastHit(point, hits[END]);
+		int closest = indexOfClosest(hits, numHits);
+		out_rh = hits[closest];
+	}
+
 	void glDraw(bool filled) const {
 		glDrawCircle(origin, radius, false);
 		V2<TYPE> start(startAngle);

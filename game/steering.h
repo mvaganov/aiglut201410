@@ -27,8 +27,8 @@ public:
 	}
 };
 
-V2f obstacleAvoidance(TemplateVector<Shaped*> * obstacles,
-	Shaped * sensorArea, Agent * agent,
+V2f obstacleAvoidance(TemplateVector<Obstacle*> * obstacles,
+	Obstacle * sensorArea, Agent * agent,
 	CalculationsFor_ObstacleAvoidance * calc);
 
 V2f alignment(Agent * agent, TemplateVector<Agent*> & neighbors);

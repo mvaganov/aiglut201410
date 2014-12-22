@@ -38,7 +38,7 @@ public:
 	/** if the shape were generalized into a sphere, centered on getCenter, what is the minimum radius required to make sure all of the points of this shape are within the sphere */
 	virtual float getRadius() const = 0;
 	/** general-case collision detection */
-	virtual bool raycast(V2f const & rayStart, V2f const & rayDirection, float & out_dist, V2f & out_point, V2f & out_normal) const = 0;
+	virtual bool raycast(Ray const & ray, RaycastHit & out_rh) const = 0;
 	/** used for general-case collision, and spatially aware logic */
 	virtual V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const = 0;
 	/** TODO rename to be more general, use a rendering context rather than expecting the context is globally accessible */
@@ -56,15 +56,41 @@ public:
 	/** @param collisionData the result of calculateCollisionResolution. If memory is allocated, this method should de-allocate it */
 	virtual void resolveCollision(Collidable * otherObject, void * & collisionData) = 0;
 	virtual ~Collidable(){}
+
+	/** allows a shape to ignore shapes that do not share bits in the mask */
+	virtual long getMask() const = 0;
+	/** allows a shape to ignore shapes that do not share bits in the mask */
+	virtual void setMask(const long a_mask) = 0;
+	/** should be called before collision checks, to make sure collision is even possible between the given shapes */
+	bool masksCollide(const Collidable * s) const { return (getMask() & s->getMask()) != 0; }
+	bool masksCollide(const long otherMask) const { return (getMask() & otherMask) != 0; }
 };
 
 /** an obstacle is Collidable, though a basic obstacle doesn't move or change based on collision */
 class Obstacle : public Collidable {
+	long mask;
 public:
+	static const int EVERYTHING = -1;
+	static const int VORONOI_NODE = 1 << 0;
+	static const int DELAUNY_TRIANGULATION = 1 << 1;
+	static const int VORONOI_EDGE = 1 << 2;
+	static const int VORONOI_POLYHEDRON = 1 << 3;
+
+	/** collide with everything by default (all the bits are set) */
+	Obstacle() : mask(-1){}
 	void * calculateCollisionResolution(Collidable * otherObject){ return 0; }
 	void resolveCollision(Collidable * o, void * & colledisionData){}
 	void glDraw(bool filled) const { getShape()->glDraw(filled); }
-	bool intersects(const Shaped * o) const { return getShape()->intersects(o->getShape()); }
+	bool intersects(const Shaped * o) const {
+		const Collidable * c = dynamic_cast<const Collidable*>(o);
+		if (c == NULL || masksCollide(c))
+			return getShape()->intersects(o->getShape());
+		return false;
+	}
+	/** allows a shape to ignore shapes that do not share bits in the mask */
+	long getMask() const { return mask; }
+	/** allows a shape to ignore shapes that do not share bits in the mask */
+	void setMask(const long a_mask) { mask = a_mask; }
 };
 
 class ShapeAABB : public RectF, public Shape {
@@ -79,9 +105,7 @@ public:
 	bool intersectsCircle(V2f const & center, const float radius) const { return RectF::intersectsCircle(center, radius); }
 	// this method needs BoxObject to be defined before the method can be defined
 	bool contains(V2f const & p) const { return RectF::contains(p); }
-	bool raycast(V2f const & rayStart, V2f const & rayDirection, float & out_dist, V2f & out_point, V2f & out_normal) const {
-		return RectF::raycast(rayStart, rayDirection, out_dist, out_point, out_normal);
-	}
+	bool raycast(Ray const & ray, RaycastHit & out_rh) const { return RectF::raycast(ray, out_rh); }
 	V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const {
 		return RectF::getClosestPointOnEdge(point, out_normal);
 	}
@@ -103,9 +127,7 @@ public:
 	bool intersectsCircle(V2f const & center, const float radius) const { return CircF::intersectsCircle(center, radius); }
 	// this method needs BoxObject to be defined before the method can be defined
 	bool contains(V2f const & p) const { return CircF::contains(p); }
-	bool raycast(V2f const & rayStart, V2f const & rayDirection, float & out_dist, V2f & out_point, V2f & out_normal) const {
-			return CircF::raycast(rayStart, rayDirection, out_dist, out_point, out_normal);
-	}
+	bool raycast(Ray const & ray, RaycastHit & out_rh) const { return CircF::raycast(ray, out_rh); }
 	V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const {
 		return CircF::getClosestPointOnEdge(point, out_normal);
 	}
@@ -125,9 +147,7 @@ public:
 	bool intersectsAABB(V2f const & min, V2f const & max) const { return BoxF::intersectsAABB(min, max); }
 	bool intersectsCircle(V2f const & center, const float radius) const { return BoxF::intersectsCircle(center, radius); }
 	bool contains(V2f const & p) const { return BoxF::contains(p); }
-	bool raycast(V2f const & rayStart, V2f const & rayDirection, float & out_dist, V2f & out_point, V2f & out_normal) const {
-			return BoxF::raycast(rayStart, rayDirection, out_dist, out_point, out_normal);
-	}
+	bool raycast(Ray const & ray, RaycastHit & out_rh) const { return BoxF::raycast(ray, out_rh); }
 	V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const {
 		return BoxF::getClosestPointOnEdge(point, out_normal);
 	}
@@ -145,9 +165,7 @@ public:
 	bool intersectsAABB(V2f const & min, V2f const & max) const { return ConeF::intersectsAABB(min, max); }
 	bool intersectsCircle(V2f const & center, const float radius) const { return ConeF::intersectsCircle(center, radius); }
 	bool contains(V2f const & p) const { return ConeF::contains(p); }
-	bool raycast(V2f const & rayStart, V2f const & rayDirection, float & out_dist, V2f & out_point, V2f & out_normal) const {
-		return ConeF::raycast(rayStart, rayDirection, out_dist, out_point, out_normal);
-	}
+	bool raycast(Ray const & ray, RaycastHit & out_rh) const { return ConeF::raycast(ray, out_rh); }
 	V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const {
 		return ConeF::getClosestPointOnEdge(point, out_normal);
 	}
@@ -165,9 +183,7 @@ public:
 	bool intersectsAABB(V2f const & min, V2f const & max) const { return Polygon2f::intersectsAABB(min, max); }
 	bool intersectsCircle(V2f const & center, const float radius) const { return Polygon2f::intersectsCircle(center, radius); }
 	bool contains(V2f const & p) const { return Polygon2f::contains(p); }
-	bool raycast(V2f const & rayStart, V2f const & rayDirection, float & out_dist, V2f & out_point, V2f & out_normal) const {
-		return Polygon2f::raycast(rayStart, rayDirection, out_dist, out_point, out_normal);
-	}
+	bool raycast(Ray const & ray, RaycastHit & out_rh) const { return Polygon2f::raycast(ray, out_rh); }
 	V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const {
 		return Polygon2f::getClosestPointOnEdge(point, out_normal);
 	}

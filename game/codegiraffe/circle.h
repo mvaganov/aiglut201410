@@ -86,15 +86,68 @@ struct Circle {
 	 *
 	 * @param rayStart
 	 * @param rayDirection must be a unit vector
-	 * @param out_dist how far along the ray the collision happened
-	 * @param out_point where the collision happened
-	 * @param out_normal the normal of the collision line
+	 * @param out_rh information about the eventual hit (if any)
 	 * @return true if raycast collision happened
 	 */
-	bool raycast(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
-		float & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
-		return V2<TYPE>::raycastCircle(
-			rayStart, rayDirection, center, radius, out_dist, out_point, out_normal);
+	bool raycast(Ray_<TYPE> const & ray, RaycastHit_<TYPE> & out_rh) const {
+		V2f p1, p2;
+		if (raycast(ray, p1, p2)) {
+			V2<TYPE> dp1 = (p1 - ray.start), dp2 = (p2 - ray.start);
+			// check if the points are in the correct direction
+			bool p1good = V2<TYPE>::dot(ray.direction, dp1) > 0;
+			bool p2good = V2<TYPE>::dot(ray.direction, dp2) > 0;
+			float dist1 = p1good ? dp1.magnitude() : -1, dist2 = p2good ? dp2.magnitude() : -1;
+			// if both are good, invalidate the further one
+			if (p1good && p2good) {
+				if (dist1 < dist2) {
+					p2good = false;
+				} else {
+					p1good = false;
+				}
+			}
+			// if at least one is good...
+			if (p1good || p2good) {
+				// give the one that is good
+				if (p1good) {
+					out_rh.distance = dist1;
+					out_rh.point = p1;
+				} else {
+					out_rh.distance = dist2;
+					out_rh.point = p2;
+				}
+				out_rh.normal = (out_rh.point - center).normal();
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param ray
+	 * @param out_p1 a point on the circle that the given ray interects
+	 * @param out_p2 a point on the circle that the given ray interects, may not be different than out_p1
+	 */
+	bool raycast(Ray_<TYPE> const & ray, V2<TYPE> & out_p1, V2<TYPE> & out_p2) const {
+		V2f rayNorm = ray.direction.normal();
+		if (ray.start == center) {
+			out_p1 = out_p2 = center + rayNorm * radius;
+			return true;
+		}
+		TYPE radHit;
+		Ray_<TYPE> radiusLine(center, rayNorm.perp());
+		if (radiusLine.intersection(ray, radHit)) {
+			if (abs(radHit) <= radius) {
+				V2<TYPE> intersection = center + radiusLine.direction * radHit;
+				// pythagorean theorum to get missing triangle side, where radius is the hypontinuse
+				float side = sqrt(radius*radius - radHit*radHit);
+				V2<TYPE> hitDelta = radiusLine.direction * side;
+				// find which of the two solutions is closer to the ray start later
+				out_p1 = intersection + hitDelta;
+				out_p2 = intersection - hitDelta;
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -107,6 +160,22 @@ struct Circle {
 		if (out_normal.isZero()) out_normal = V2<TYPE>::ZERO_DEGREES();
 		else out_normal.normalize();
 		return center + (out_normal * radius);
+	}
+
+	/**
+	 * @param point
+	 * @param out_rh will be assigned to details about the closest raycast hit to that point
+	 */
+	void getClosestRaycastHit(const V2<TYPE> point, RaycastHit_<TYPE> & out_rh) {
+		out_rh.normal = point - center;
+		if (out_rh.normal.isZero()) {
+			out_rh.set(point, V2<TYPE>::ZERO_DEGREES(), 0);
+		} else {
+			out_rh.distance = out_rh.normal.magnitude();
+			out_rh.normal /= out_rh.distance;
+			out_rh.point = center + (out_rh.normal * radius);
+			out_rh.distance -= radius;
+		}
 	}
 
 	bool operator==(const Circle<TYPE> & c) const { return isEqual(c); }

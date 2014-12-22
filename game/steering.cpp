@@ -38,11 +38,11 @@ V2f flee(V2f target, Agent * agent) {
 }
 
 // TODO replace the obstacles list with the cellspace partition...
-V2f obstacleAvoidance(TemplateVector<Shaped*> * obstacles, Shaped * sensorArea, Agent * a, CalculationsFor_ObstacleAvoidance * calc) {
+V2f obstacleAvoidance(TemplateVector<Obstacle*> * obstacles, Obstacle * sensorArea, Agent * a, CalculationsFor_ObstacleAvoidance * calc) {
 	if (calc) calc->clear();
 	V2f totalForce;
 	for (int i = 0; i < obstacles->size(); ++i) {
-		Shaped * actuallyHit = obstacles->get(i);
+		Obstacle * actuallyHit = obstacles->get(i);
 		if (actuallyHit != a && actuallyHit->getShape()->intersects(sensorArea->getShape())) {
 			float totalDistance = a->velocity.magnitude();
 			V2f normal;

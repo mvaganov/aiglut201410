@@ -379,7 +379,7 @@ struct V2 {
 	}
 
 	/**
-	 * Used to undo toLocalSpace transformations (angle only, for unit vectors)
+	 * Used to undo toLocalSpace transformations (angle only, for unit vectors most likely)
 	 *
 	 * @param a_xAxis rotate this point's x axis to match this vector
 	 * @param a_yAxis rotate this point's y axis to match this vector
@@ -551,11 +551,11 @@ struct V2 {
 	static bool rayIntersection(const V2<TYPE> & A, const V2<TYPE> & B, const V2<TYPE> & C, const V2<TYPE> & D, 
 		TYPE & out_alongAB, TYPE & out_alongCD)
 	{
-		V2<TYPE> deltaAB = B - A, deltaCD = D - C, a_c = A - C;
+		V2<TYPE> deltaAB = B - A, deltaCD = D - C, deltaOrigins = A - C;
 		TYPE alignmentDifference = deltaAB.sign(deltaCD); // checks the dot product of perpendicular angles
 		if (alignmentDifference == 0) { return false; } // fail if the lines are parallel
-		out_alongAB = deltaCD.sign(a_c) / alignmentDifference; // how far along AB the collision happened
-		out_alongCD = deltaAB.sign(a_c) / alignmentDifference; // how far along CD the collision happened
+		out_alongAB = deltaCD.sign(deltaOrigins) / alignmentDifference; // how far along AB the collision happened
+		out_alongCD = deltaAB.sign(deltaOrigins) / alignmentDifference; // how far along CD the collision happened
 		return true;
 		//TYPE abTop = (A.y - C.y)*(D.x - C.x) - (A.x - C.x)*(D.y - C.y);
 		//TYPE abBot = (B.x - A.x)*(D.y - C.y) - (B.y - A.y)*(D.x - C.x);
@@ -570,7 +570,7 @@ struct V2 {
 	}
 
 	/**
-	 * Does ray-casting against one polygon by detecting line collision
+	 * Does ray-casting against one polygon by detecting line collision TODO move this into Polygon, so that Ray and RaycastHit can be used
 	 *
 	 * @param rayStart
 	 * @param rayDirection must be a unit vector
@@ -719,7 +719,7 @@ struct V2 {
 	}
 
 	/**
-	* Does ray-casting against one circle by detecting line collision
+	* Does ray-casting against one circle by detecting line collision TODO move to circle, so that Ray and RaycastHit can be used
 	*
 	* @param rayStart
 	* @param rayDirection must be a unit vector
@@ -848,3 +848,48 @@ inline void V2d::glVertex() const { glVertex2dv((double*)this); }
 inline void V2i::glVertex() const { glVertex2iv((int*)this); }
 inline void V2s::glVertex() const { glVertex2sv((short*)this); }
 #endif
+
+template<typename TYPE>
+struct RaycastHit_ {
+	V2<TYPE> point, normal;
+	TYPE distance;
+	RaycastHit_() {}
+	RaycastHit_(TYPE const distance):distance(distance) {}
+	RaycastHit_(V2<TYPE> const & point, V2<TYPE> const & normal, const TYPE distance) :point(point), normal(normal), distance(distance) {}
+	void set(V2<TYPE> const & point, V2<TYPE> const & normal, TYPE const & distance) {
+		this->point = point;
+		this->normal = normal;
+		this->distance = distance;
+	}
+
+	void setFromLine(V2<TYPE> const & from, V2<TYPE> const & to) {
+		point = to;
+		// done backwards here because normal is a surface normal that ends the ray from->to.
+		normal = from - to;
+		distance = normal.magnitude();
+		normal /= distance;
+	}
+};
+
+typedef RaycastHit_<float> RaycastHit;
+
+template<typename TYPE>
+struct Ray_ {
+	V2<TYPE> start, direction;
+	Ray_(V2<TYPE> const & start, V2<TYPE> const & direction) :start(start), direction(direction){}
+
+	/**
+	 * @param ray another ray for this ray to intersect with
+	 * @param out_distance how far this ray needs to travel to reach the given ray
+	 * @return false if there is no collision possible (the rays are parallel
+	 */
+	bool intersection(Ray_<TYPE> const & ray, TYPE & out_distance) {
+		V2<TYPE> deltaOrigins = start - ray.start;
+		TYPE alignmentDifference = this->direction.sign(ray.direction); // checks the dot product of perpendicular angles
+		if (alignmentDifference == 0) { return false; } // fail if the lines are parallel
+		out_distance = ray.direction.sign(deltaOrigins) / alignmentDifference; // how far along AB the collision happened
+		return true;
+	}
+};
+
+typedef Ray_<float> Ray;

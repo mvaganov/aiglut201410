@@ -14,7 +14,7 @@ void FSM_Hide::execute(Agent * a, int a_ms) {
 		a->setFSM(new FSM_Idle());
 		return;
 	}
-	TemplateSet<Shaped*> possibleObstacles;
+	TemplateSet<Obstacle*> possibleObstacles;
 	a->game->gatherStaticObstaclesAt(CircF(a->body.center, a->body.radius + 5), possibleObstacles);
 	for (int i = 0; i < possibleObstacles.size(); ++i)
 		validObstacles.add(possibleObstacles[i]);
@@ -25,10 +25,11 @@ void FSM_Hide::execute(Agent * a, int a_ms) {
 		obsLoc = validObstacles[i]->getShape()->getCenter();
 		delta = obsLoc - predLoc;
 		float dist = delta.magnitude();
-		float rayDist;
-		V2f outEdge, outNormal;
-		validObstacles[i]->getShape()->raycast(obsLoc, delta.normal(), rayDist, outEdge, outNormal);
-		V2f hideLoc = outEdge + delta.normal() * a->body.radius;
+//		float rayDist;
+//		V2f outEdge, outNormal;
+		RaycastHit rh;
+		validObstacles[i]->getShape()->raycast(Ray(obsLoc, delta.normal()), rh);// rayDist, outEdge, outNormal);
+		V2f hideLoc = rh.point + delta.normal() * a->body.radius;
 		hideLocations.add(hideLoc);
 		float thisDist = V2f::distance(a->body.center, hideLoc);
 		distance.add(thisDist);

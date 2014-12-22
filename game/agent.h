@@ -194,17 +194,6 @@ public:
 		}
 	}
 
-	bool intersects(const Shape * o) const { return body.intersects(o); }
-	bool intersectsAABB(V2f const & min, V2f const & max) const { return body.intersectsAABB(min,max); }
-	bool intersectsCircle(V2f const & center, const float radius) const { return body.intersectsCircle(center, radius); }
-	bool contains(V2f const & p) const { return body.contains(p); }
-	bool raycast(V2f const & rayStart, V2f const & rayDirection,
-		float & out_dist, V2f & out_point, V2f & out_normal) const {
-			return body.raycast(rayStart, rayDirection, out_dist, out_point, out_normal);
-	}
-	V2f getClosestPointOnEdge(const V2f point, V2f & out_normal) const {
-		return body.getClosestPointOnEdge(point, out_normal);
-	}
 	void glDraw(bool filled) const { body.glDraw(filled); }
 
 	// TODO also calculate transfer of momentum, and reflection
@@ -246,5 +235,5 @@ public:
 	 * @param subject what this Agent is trying to see
 	 * @return true if no Obstacles interrupt this Agent's view of the given subject.
 	 */
-	bool hasLineOfSight(Shaped * subject);
+	bool hasLineOfSight(Obstacle * subject);
 };

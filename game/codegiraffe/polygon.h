@@ -16,6 +16,8 @@ class Polygon2 {
 	/** where the center of this polygon is TODO how is this different from center? can the two variables be merged? */
 	V2<TYPE> origin;
 public:
+	TYPE getRotation() const { return rotation; }
+	void setRotation(const TYPE rotation) { this->rotation = rotation; }
 
 	/** offsets relative to the origin, expected in CW order */
 	TemplateVector< V2<TYPE> > points;
@@ -246,32 +248,31 @@ public:
 		return true;
 	}
 
-	bool raycast(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
-		TYPE & out_dist, V2<TYPE> & out_point, V2<TYPE> & out_normal) const {
-		V2<TYPE> relativeRayStart = rayStart - origin;
+	bool raycast(Ray_<TYPE> const & ray, RaycastHit_<TYPE> & out_rh) const {
+		V2<TYPE> relativeRayStart = ray.start - origin;
 		relativeRayStart.rotate(-rotation);
-		V2<TYPE> relativeRayDirection = rayDirection.rotated(-rotation);
+		V2<TYPE> relativeRayDirection = ray.direction.rotated(-rotation);
 		bool hitSomething = false;
 		// test if the ray would hit a sphere that contains this polygon
 		if (V2<TYPE>::rayCrossesCircle(relativeRayStart, relativeRayDirection, center, radius)) {
 			V2<TYPE> a, b, delta, point, centerDelta;
-			TYPE line, ray, dist, bestDist = -1;
+			TYPE line, rayHit, dist, bestDist = -1;
 			for (int i = 0; i < this->getLineCount(); ++i) {
 				gatherLineRelative(i, a, b);
-				bool hitPossible = V2<TYPE>::rayIntersection(a, b, relativeRayStart, relativeRayStart + relativeRayDirection, line, ray);
-				if (hitPossible && ray >= 0 && line >= 0 && line < 1) {
+				bool hitPossible = V2<TYPE>::rayIntersection(a, b, relativeRayStart, relativeRayStart + relativeRayDirection, line, rayHit);
+				if (hitPossible && rayHit >= 0 && line >= 0 && line < 1) {
 					delta = b - a;
 					point = a + (delta * line);
 					dist = (relativeRayStart - point).magnitude();
 					if (bestDist < 0 || dist < bestDist) {
 						bestDist = dist;
-						out_point = point;
-						out_normal = delta.perp().normal();
-						out_dist = (relativeRayDirection * ray).magnitude();
+						out_rh.point = point;
+						out_rh.normal = delta.perp().normal();
+						out_rh.distance = (relativeRayDirection * rayHit).magnitude();
 						// make the normal face away from the center
-						centerDelta = out_point - center;
-						if (V2<TYPE>::dot(out_normal, centerDelta) < 0) {
-							out_normal *= -1;
+						centerDelta = out_rh.point - center;
+						if (V2<TYPE>::dot(out_rh.normal, centerDelta) < 0) {
+							out_rh.normal *= -1;
 						}
 						hitSomething = true;
 					}
@@ -279,9 +280,9 @@ public:
 			}
 		}
 		if (hitSomething) {
-			out_point.rotate(rotation);
-			out_point += origin;
-			out_normal.rotate(rotation);
+			out_rh.point.rotate(rotation);
+			out_rh.point += origin;
+			out_rh.normal.rotate(rotation);
 		}
 		return hitSomething;
 	}
@@ -316,12 +317,56 @@ public:
 		}
 		// if there are no solutions, give the closest point in the list
 		if (closestLineIndex >= 0) {
-			delta = points.get((closestLineIndex + 1) % points.size()) - points.get(closestLineIndex);
+			gatherLineRelative((closestLineIndex + 1) % points.size(), a, b);
+			delta = b - a;
 			out_normal = delta.normal().perp();
 		}
 		closestPoint.rotate(rotation);
 		out_normal.rotate(rotation);
 		return closestPoint + origin;
+	}
+
+	/**
+	* @param point
+	* @param out_rh will be assigned to details about the closest raycast hit to that point
+	* @return true if on linearedge, false if on corner
+	*/
+	bool getClosestRaycastHit(const V2<TYPE> point, RaycastHit_<TYPE> & out_rh) {
+		TYPE closestDist = -1, d;
+		V2<TYPE> relativeP = point - origin, a, b;
+		relativeP.rotate(-rotation);
+		V2<TYPE> closestPoint, p, delta;
+		int closestLineIndex = -1;
+		bool isOnLine;
+		// get the closest point in the list
+		out_rh.point = points.get(V2<TYPE>::indexOfClosest(relativeP, points.getRawListConst(), points.size()));
+		delta = relativeP - out_rh.point;
+		out_rh.normal = delta.normal();
+		out_rh.distance = delta.magnitude();
+		// check the closest point on each line
+		int linesToCheck = getLineCount();
+		for (int i = 0; i < linesToCheck; ++i) {
+			gatherLineRelative(i, a, b);
+			isOnLine = V2<TYPE>::closestPointOnLine(a, b, relativeP, p);
+			if (isOnLine) {
+				delta = p - relativeP;
+				d = delta.magnitude();
+				// keep the closest solution
+				if (d < out_rh.distance) {
+					out_rh.distance = d;
+					out_rh.point = p;
+					closestLineIndex = i;
+				}
+			}
+		}
+		// if there are no solutions, give the closest point in the list
+		if (closestLineIndex >= 0) {
+			gatherLineRelative((closestLineIndex + 1) % points.size(), a, b);
+			delta = b - a;
+			out_rh.normal = delta.normal().perp();
+		}
+		out_rh.point.rotate(rotation);
+		out_rh.normal.rotate(rotation);
 	}
 
 	void glDraw(bool filled) const {

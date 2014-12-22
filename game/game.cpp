@@ -8,7 +8,7 @@ Agent * Game::getAgentAt(V2f const & click) {
 	//	if(agents[i]->body.contains(click))
 	//		return agents[i];
 	//}
-	TemplateSet<Shaped*> result;
+	TemplateSet<Obstacle*> result;
 	printf("%.1f, %.1f\n", click.x, click.y);
 	movingObstacles->gatherAt(click, result);
 	if (result.size() > 0)
@@ -16,7 +16,7 @@ Agent * Game::getAgentAt(V2f const & click) {
 	return 0;
 }
 
-void Game::gatherStaticObstaclesAt(CircF const & area, TemplateSet<Shaped*> & out_obstacles) {
+void Game::gatherStaticObstaclesAt(CircF const & area, TemplateSet<Obstacle*> & out_obstacles) {
 	staticObstacles->gatherAt(area, out_obstacles);
 }
 
@@ -28,7 +28,7 @@ void Game::gatherListOfAgentsAt(CircF const & area, TemplateVector<Agent*> & out
 	//			out_agents.add(agents[i]);
 	//	}
 	//}
-	TemplateSet<Shaped*> result;
+	TemplateSet<Obstacle*> result;
 	movingObstacles->gatherAt(area, result);
 	for (int i = 0; i < result.size(); ++i) {
 		Agent * a = dynamic_cast<Agent*>(result[i]);
@@ -161,7 +161,7 @@ Game::Game() :mapGraph(NULL), mapPath(NULL), selected(NULL), selectedNode(NULL),
 	//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(2.0f) * 2));
 	//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(3.0f) * 2));
 	//delauny->currentNodes.add(DelaunySet::VoronoiNode(p + V2f(4.0f) * 2));
-			delaunyEdit = delauny;
+//			delaunyEdit = delauny;
 
 	delauny->calculateAllTriangles();
 	delauny->gatherVoronoi(voronoiNodes, true);
@@ -186,7 +186,7 @@ Game::~Game() {
 		delete a;
 	}
 	for (int i = obstacles.size() - 1; i >= 0; --i) {
-		Shaped * o = obstacles[i];
+		Obstacle * o = obstacles[i];
 		obstacles.removeData(o);
 		delete o;
 	}
@@ -234,11 +234,11 @@ GraphNode * Game::getGraphNodeClosestTo(V2f position) {
 * @param ignoreCount how many objects to ignore
 * @return true if nothing was hit
 */
-bool Game::raycast(V2f start, V2f direction, float maxDistance, bool dontCareAboutObstacle, Shaped * & out_obstacle, float & out_dist, V2f & out_point, V2f & out_normal, Shaped ** ignoreList, int ignoreCount) {
+bool Game::raycast(Ray ray, RaycastHit & out_rh, float maxDistance, bool dontCareAboutObstacle, Obstacle * & out_obstacle, Obstacle ** ignoreList, int ignoreCount) {
 	bool hit = false;
-	hit = staticObstacles->raycastContainer(start, direction, maxDistance, dontCareAboutObstacle, out_obstacle, out_dist, out_point, out_normal, ignoreList, ignoreCount);
+	hit = staticObstacles->raycastContainer(ray, out_rh, maxDistance, dontCareAboutObstacle, out_obstacle, ignoreList, ignoreCount);
 	if (hit) return true;
-	hit = movingObstacles->raycastContainer(start, direction, maxDistance, dontCareAboutObstacle, out_obstacle, out_dist, out_point, out_normal, ignoreList, ignoreCount);
+	hit = movingObstacles->raycastContainer(ray, out_rh, maxDistance, dontCareAboutObstacle, out_obstacle, ignoreList, ignoreCount);
 	if (hit) return true;
 	return false;
 }
@@ -282,9 +282,10 @@ void Game::display(GLUTRenderingContext & g_screen) {
 
 
 	// testing cone stuff
+	RaycastHit rh;
 	V2f hit, norm;
 	float dist = 0, maxDist = 0;
-	Shaped * o;
+	Obstacle * o;
 	g_screen.drawCircle(mouseClick, .05f, true);
 	// TEST <-- TODO
 	V2f delta = mousePosition - mouseClick;
@@ -295,41 +296,41 @@ void Game::display(GLUTRenderingContext & g_screen) {
 	//staticObstacles->raycastCellList(mouseClick, delta, dist, cellList);
 	//for (int i = 0; i < cellList.size(); ++i) { staticObstacles->cells[cellList[i]]->glDraw(true); }
 
-	if (raycast(mouseClick, delta, maxDist, false, o, dist, hit, norm, 0, 0))
+	if (raycast(Ray(mouseClick, delta), rh, maxDist, false, o, 0, 0))
 	{
 		g_screen.setColor(0);
-		g_screen.drawCircle(hit, 1, false);
-		g_screen.drawLine(hit, hit + norm * 3);
-		g_screen.printf(hit, "%.2f, ", dist);
+		g_screen.drawCircle(rh.point, 1, false);
+		g_screen.drawLine(rh.point, rh.point + rh.normal * 3);
+		g_screen.printf(rh.point, "%.2f, ", rh.distance);
 		//			o->glDraw(true);
 	}
 	g_screen.drawLine(mouseClick, mousePosition);
 
 #ifdef TESTING_SHAPES
 	// used for testing object types
-	Obstacle * obs = testPoly;//testcone;//testBox;
-	if (obs->raycast(mouseClick, (mousePosition - mouseClick).normal(), dist, hit, norm)) {
-		g_screen.drawCircle(CircF(hit, .1f), false);
-		g_screen.drawLine(hit, hit + norm);
+	Obstacle * obs = testcone;//testBox;//testPoly;//
+	if (obs->getShape()->raycast(Ray(mouseClick, (mousePosition - mouseClick).normal()), rh)) {
+		g_screen.drawCircle(CircF(rh.point, .1f), false);
+		g_screen.drawLine(rh.point, rh.point + rh.normal);
 		g_screen.setColor(0);
-		g_screen.printf(hit + V2f(0, .2f), "%f", dist);
+		g_screen.printf(rh.point + V2f(0, .2f), "%f", rh.distance);
 	}
-	hit = obs->getClosestPointOnEdge(mousePosition, norm);
+	hit = obs->getShape()->getClosestPointOnEdge(mousePosition, norm);
 	g_screen.drawCircle(CircF(hit, .05f), false);
 	g_screen.drawLine(hit, hit + norm * 0.5);
 
 
 	g_screen.setColor(0x00ff00);
-	V2f delta = mousePosition - mouseClick; // whereYouAre - whereYouWere
+	delta = mousePosition - mouseClick; // whereYouAre - whereYouWere
 	if (delta.isZero()) delta = V2f::ZERO_DEGREES();
 	float len = delta.magnitude();
 	float dragLen = 1;// (mouseClick - mouseDragged).magnitude();
 	norm = delta.normal();
-	testPoly->rotation = norm.piRadians();
+	testPoly->getPolygon()->setRotation(norm.piRadians());
 	float piRad = norm.piRadians();
 	ConeF cursorCone = ConeF(mouseClick, len, piRad, piRad + dragLen);
 	bool intersect;
-	intersect = cursorCone.intersectCircle(testCircle->center, testCircle->radius);
+	intersect = cursorCone.intersectsCircle(testCircle->getCircle()->center, testCircle->getCircle()->radius);
 	cursorCone.glDraw(intersect);
 
 	//		testPoly->origin = mousePosition;
@@ -353,7 +354,7 @@ void Game::display(GLUTRenderingContext & g_screen) {
 	g_screen.setColor(0x008800);
 	V2f point, normal;
 	for (int i = 0; i < obstacles.size(); ++i) {
-		Shaped * THINGY = obstacles[i];
+		Obstacle * THINGY = obstacles[i];
 		THINGY->getShape()->glDraw(false);
 	}
 	for (int i = 0; i < agents.size(); ++i) {
@@ -372,7 +373,7 @@ void Game::display(GLUTRenderingContext & g_screen) {
 	}
 }
 
-void Game::gatherCollisions(Shaped * s, TemplateSet<Shaped*> & out_possibleObstacles) {
+void Game::gatherCollisions(Obstacle * s, TemplateSet<Obstacle*> & out_possibleObstacles) {
 	staticObstacles->gatherCollisions(s, out_possibleObstacles);
 	movingObstacles->gatherCollisions(s, out_possibleObstacles);
 }
@@ -399,7 +400,7 @@ void Game::update(int a_ms) {
 	};
 	TemplateVector<obstaclecollision> collisions;
 	//int uselessIters = 0;
-	TemplateSet<Shaped*> hitObstacles;
+	TemplateSet<Obstacle*> hitObstacles;
 	for (int a = 0; a < agents.size(); a++) {
 		Obstacle * agentObstacle = dynamic_cast<Obstacle*>(agents[a]);
 		gatherCollisions(agentObstacle, hitObstacles);

@@ -51,14 +51,14 @@ void Agent::update(int a_ms) {
 * @param subject what this Agent is trying to see
 * @return true if no Obstacles interrupt this Agent's view of the given subject.
 */
-bool Agent::hasLineOfSight(Shaped * subject) {
-	Shaped * agents[] = { this, subject };
+bool Agent::hasLineOfSight(Obstacle * subject) {
+	Obstacle * agents[] = { this, subject };
 	const int numAgents = sizeof(agents) / sizeof(agents[0]);
 	V2f delta = subject->getShape()->getCenter() - body.center;
 	float distance = delta.magnitude();
 	V2f normal = delta / distance;
-	Shaped * obs;
-	float dist;
+	Obstacle * obs;
+	RaycastHit rh;
 	V2f hit, norm;
-	return !game->raycast(body.center, normal, distance, true, obs, dist, hit, norm, agents, numAgents);
+	return !game->raycast(Ray(body.center, normal), rh, distance, true, obs, agents, numAgents);
 }

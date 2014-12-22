@@ -198,6 +198,17 @@ void init(const char * windowName) {
 int main(int argc, char * argv[]) {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
+	int num = 28;
+	for (int i = 0; i < 100; ++i) {
+		if ((i % num) == 0)
+			putchar('\n');
+		int translated = (i % num) * (100 / num) + (i / num);
+		if (i <= (100 % num)) translated = i + (100-num) + num-(100%num);
+		printf("%d ", translated);
+	}
+
+
+
 	// initialize GLUT
 	glutInit(&argc, argv);
 	// initialize the application
