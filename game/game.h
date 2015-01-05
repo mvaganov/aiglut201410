@@ -20,33 +20,62 @@
 
 class Game {
 public:
-	V2f mousePosition, mouseClick, mouseDragged;
+	GLUTRenderingContext * g_screen;
+	V2f mousePosition, mouseDragged;
+	Ray userRay;
+	float userRayDistance;
+
+	float rotationLast, rotationCurrent, rotationDelta;
+	V2f operationPoint;
+
+	AABBf selectedArea;
+	TemplateSet<Obstacle*> selectedObstacles;
+	TemplateSet<Obstacle*> selectedObstacleSingle;
+	V2f selectedOrigin;
+
+	void refreshSelection();
+
+	Obstacle* getSelectedAtPosition(V2f position, long mask);
+
+	void addObstacle(Obstacle * obstacle);
+
 	TemplateVector<Obstacle*> obstacles;
-	TemplateVector<Agent*> agents;
+//	TemplateVector<Agent*> agents;
 
-	CellSpacePartition * staticObstacles;
-	CellSpacePartition * movingObstacles;
+//	CellSpacePartition * staticObstaclesMap;
+//	CellSpacePartition * movingObstaclesMap;
+	LayeredPartitions objectMap;
 
-	Graph * mapGraph;
-	TemplateVector<AbstractGraphNode*> * mapPath;
+	//Graph * mapGraph;
+	//TemplateVector<AbstractGraphNode*> * mapPath;
 
-	/** who does the user have selected */
-	Agent * selected;
-	AbstractGraphNode * selectedNode;
+	///** who does the user have selected */
+	//Agent * selected;
+	//AbstractGraphNode * selectedNode;
+	//Agent * getAgentAt(V2f const & click);
+	///** generate a list of agents in the given area */
+	//void gatherListOfAgentsAt(Circf const & area, TemplateVector<Agent*> & out_agents);
 
-	DelaunySet * delauny;
-	DelaunySet * delaunyEdit;
-	TemplateVector<DelaunySet::VoronoiNode*> voronoiNodes;
+
+	//DelaunySet * delauny;
+	//DelaunySet * delaunyEdit;
+	//TemplateVector<DelaunySet::VoronoiNode*> voronoiNodes;
 
 	/** whether or not to draw debug lines for FSM steering behaviors */
 	bool drawDebug;
 
-	Agent * getAgentAt(V2f const & click);
+	bool gameLoopRunning;
+	bool paused;
+	bool drawingSelectionBox;
+	bool draggingSelected;
 
-	void gatherStaticObstaclesAt(CircF const & area, TemplateSet<Obstacle*> & out_obstacles);
+	bool doingOperation;
+	bool doingRotation, doingTranslation, doingScale;
 
-	/** generate a list of agents in the given area */
-	void gatherListOfAgentsAt(CircF const & area, TemplateVector<Agent*> & out_agents);
+//	void gatherStaticObstaclesAt(Circf const & area, TemplateSet<Obstacle*> & out_obstacles);
+
+//	void gatherObstaclesAt(Circf const & area, TemplateSet<Obstacle*> & out_obstacles);
+
 	
 // helpful for finding memory by it's ID number (thanks _CrtSetDbgFlag!)
 #define TRACE_MEMORY(mem, debugmessage) \
@@ -54,16 +83,8 @@ public:
 
 	void generateWallBoxesForGraph(AbstractGraph * g, float wallEdgeValue);
 
-#ifdef TESTING_SHAPES
-	// used for testing object types
-	BoxObject * testBox;
-	CircleObject * testCircle;
-	ConeObject * testcone;
-	PolygonObject * testPoly;
-	PolygonObject * testPoly2;
-#endif
-
 	Game();
+	void init();
 	~Game();
 
 	/** assumes that the graph will always have at least one node */
@@ -78,16 +99,26 @@ public:
 	 * @param out_dist how far away the hit happened
 	 * @param out_point where the hit happend
 	 * @param out_normal the direction of the surface at that hit
-	 * @param ignoreList a list of objects to ignore
-	 * @param ignoreCount how many objects to ignore
 	 * @return true if nothing was hit
 	 */
 	bool raycast(Ray ray, RaycastHit & out_rh, float maxDistance, bool dontCareAboutObstacle, 
-		Obstacle * & out_obstacle, Obstacle ** ignoreList, int ignoreCount);
+		Obstacle * & out_obstacle, long mask);
 
-	void display(GLUTRenderingContext & g_screen);
+	void draw(GLUTRenderingContext * g);
 
 	void gatherCollisions(Obstacle * s, TemplateSet<Obstacle*> & out_possibleObstacles);
 
 	void update(int a_ms);
+
+	/**
+	 * @param button GLUT_LEFT_BUTTON, GLUT_MIDDLE_BUTTON, GLUT_RIGHT_BUTTON
+	 * @param state 0: pressed, 1: released, 2: dragged, -1:not actually active
+	 */
+	void mouse(V2f position, int button, int state);
+
+	/**
+	* @param button keycode
+	* @param state 0: pressed, 1: released, 2: dragged, -1:not actually active
+	*/
+	void key(V2f position, int button, int state);
 };

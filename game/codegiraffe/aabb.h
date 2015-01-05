@@ -66,11 +66,21 @@ struct AABB {
 	void addMin(const V2<TYPE> delta) { min.add(delta); }
 	void addMax(const V2<TYPE> delta) { max.add(delta); }
 
+	void translate(V2f const & moveDelta) { addMin(moveDelta); addMax(moveDelta); }
+
+
 	bool isEqual(const AABB<TYPE> & b) const {
 		return min == b.min && max == b.max;
 	}
 
-	bool isValid() const { return min.x <= max.x && min.y <= max.y; }
+	bool isValid() const { return min.x < max.x && min.y < max.y; }
+
+	void invalidate() { max.x = min.x; max.y = min.y; }
+
+	void validate() {
+		if (min.x > max.x) { float temp = min.x; min.x = max.x; max.x = temp; }
+		if (min.y > max.y) { float temp = min.y; min.y = max.y; max.y = temp; }
+	}
 
 	bool operator==(const AABB<TYPE> & b){ return isEqual(b); }
 
@@ -281,57 +291,12 @@ struct AABB {
 	/** used by getField() and setField() */
 	static const int WIDTH = DIMENSION+X, HEIGHT = DIMENSION+Y;
 
-	/** 
-	 * @param point 
-	 * @param out_normal will be set to the normal of the-point-at-the-edge (returned value)
-	 * @return a point on the edge of this AABB that is as close as possible to point
-	 */
-	V2<TYPE> getClosestPointOnEdge(const V2<TYPE> point, V2<TYPE> & out_normal) const {
-		V2<TYPE> p = point;
-		out_normal.setZero();
-		// check if the point is far out of range
-		bool insideXrange = false, insideYrange = false;
-		int justOutsideOfEdge = BAD_VALUE;
-		if (p.x < min.x) { p.x = min.x; justOutsideOfEdge = MINX; }
-		else if (p.x > max.x) { p.x = max.x; justOutsideOfEdge = MAXX; }
-		else insideXrange = true;
-		if (p.y < min.y) { p.y = min.y; justOutsideOfEdge = MINY; }
-		else if (p.y > max.y) { p.y = max.y; justOutsideOfEdge = MAXY; }
-		else insideYrange = true;
-		// if is in neither the x or y range (it's closest to a corner)
-		if (!insideXrange && !insideYrange) {
-			out_normal = (point - p).normal();
-			return p;
-		}
-		// if point is only one of the ranges, and outside another, no problem
-		if ((insideXrange || insideYrange) && insideXrange ^ insideYrange) {
-			out_normal = normalOfEdge(justOutsideOfEdge);
-			return p;
-		}
-		// otherwise, it's inside the aabb. find out which range should be popped to the edge
-		const int sides = V2<TYPE>::NUM_DIMENSIONS * 2;
-		float distance, smallestDistance;
-		int closestSide = BAD_VALUE;
-		// check each side
-		for (int i = 0; i < sides; ++i) {
-			distance = abs(getField(i) - point.getField(i % V2<TYPE>::NUM_DIMENSIONS));
-			// if the distance to this side is the smallest yet, that is the correct side to snap to
-			if (closestSide == BAD_VALUE || distance < smallestDistance) {
-				closestSide = i;
-				smallestDistance = distance;
-			}
-		}
-		out_normal = normalOfEdge(closestSide);
-		p.setField(closestSide % V2<TYPE>::NUM_DIMENSIONS, getField(closestSide));
-		return p;
-	}
-
 	/**
 	* @param point
 	* @param out_rh will be assigned to details about the closest raycast hit to that point
 	* @return true if on linearedge, false if on corner
 	*/
-	bool getClosestRaycastHit(const V2<TYPE> point, RaycastHit_<TYPE> & out_rh) {
+	bool getClosestRaycastHit(V2<TYPE> const & point, RaycastHit_<TYPE> & out_rh) const {
 		V2<TYPE> p = point;
 		out_rh.normal.setZero();
 		// check if the point is far out of range
@@ -514,4 +479,4 @@ struct AABB {
 #endif
 };
 
-typedef AABB<float> RectF;
+typedef AABB<float> AABBf;

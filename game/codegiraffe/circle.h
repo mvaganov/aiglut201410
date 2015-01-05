@@ -91,6 +91,7 @@ struct Circle {
 	 */
 	bool raycast(Ray_<TYPE> const & ray, RaycastHit_<TYPE> & out_rh) const {
 		V2f p1, p2;
+//		if (V2f::raycastCircle(ray.start, ray.direction, center, radius, p1, p2)) {
 		if (raycast(ray, p1, p2)) {
 			V2<TYPE> dp1 = (p1 - ray.start), dp2 = (p2 - ray.start);
 			// check if the points are in the correct direction
@@ -128,45 +129,34 @@ struct Circle {
 	 * @param out_p2 a point on the circle that the given ray interects, may not be different than out_p1
 	 */
 	bool raycast(Ray_<TYPE> const & ray, V2<TYPE> & out_p1, V2<TYPE> & out_p2) const {
-		V2f rayNorm = ray.direction.normal();
-		if (ray.start == center) {
-			out_p1 = out_p2 = center + rayNorm * radius;
-			return true;
-		}
-		TYPE radHit;
-		Ray_<TYPE> radiusLine(center, rayNorm.perp());
-		if (radiusLine.intersection(ray, radHit)) {
-			if (abs(radHit) <= radius) {
-				V2<TYPE> intersection = center + radiusLine.direction * radHit;
-				// pythagorean theorum to get missing triangle side, where radius is the hypontinuse
-				float side = sqrt(radius*radius - radHit*radHit);
-				V2<TYPE> hitDelta = radiusLine.direction * side;
-				// find which of the two solutions is closer to the ray start later
-				out_p1 = intersection + hitDelta;
-				out_p2 = intersection - hitDelta;
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	* @param point
-	* @param out_normal will be set to the normal of the-point-at-the-edge (returned value)
-	* @return a point on the edge of this Circle that is as close as possible to point
-	*/
-	V2<TYPE> getClosestPointOnEdge(const V2<TYPE> point, V2<TYPE> & out_normal) const {
-		out_normal = point - center;
-		if (out_normal.isZero()) out_normal = V2<TYPE>::ZERO_DEGREES();
-		else out_normal.normalize();
-		return center + (out_normal * radius);
+		return V2<TYPE>::raycastCircle(ray.start, ray.direction, center, radius, out_p1, out_p2);
+		//V2f rayNorm = ray.direction.normal();
+		//if (ray.start == center) {
+		//	out_p1 = out_p2 = center + rayNorm * radius;
+		//	return true;
+		//}
+		//TYPE radHit;
+		//Ray_<TYPE> radiusLine(center, rayNorm.perp());
+		//if (radiusLine.intersection(ray, radHit)) {
+		//	if (abs(radHit) <= radius) {
+		//		V2<TYPE> intersection = center + radiusLine.direction * radHit;
+		//		// pythagorean theorum to get missing triangle side, where radius is the hypontinuse
+		//		float side = sqrt(radius*radius - radHit*radHit);
+		//		V2<TYPE> hitDelta = radiusLine.direction * side;
+		//		// find which of the two solutions is closer to the ray start later
+		//		out_p1 = intersection + hitDelta;
+		//		out_p2 = intersection - hitDelta;
+		//		return true;
+		//	}
+		//}
+		//return false;
 	}
 
 	/**
 	 * @param point
 	 * @param out_rh will be assigned to details about the closest raycast hit to that point
 	 */
-	void getClosestRaycastHit(const V2<TYPE> point, RaycastHit_<TYPE> & out_rh) {
+	void getClosestRaycastHit(V2<TYPE> const & point, RaycastHit_<TYPE> & out_rh) const {
 		out_rh.normal = point - center;
 		if (out_rh.normal.isZero()) {
 			out_rh.set(point, V2<TYPE>::ZERO_DEGREES(), 0);
@@ -189,7 +179,7 @@ struct Circle {
 #endif
 };
 
-typedef Circle<float> CircF;
+typedef Circle<float> Circf;
 
 #ifdef __GL_H__
 

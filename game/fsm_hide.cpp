@@ -14,8 +14,9 @@ void FSM_Hide::execute(Agent * a, int a_ms) {
 		a->setFSM(new FSM_Idle());
 		return;
 	}
+return;
 	TemplateSet<Obstacle*> possibleObstacles;
-	a->game->gatherStaticObstaclesAt(CircF(a->body.center, a->body.radius + 5), possibleObstacles);
+//	a->game->gatherStaticObstaclesAt(Circf(a->body.center, a->body.radius + 5), possibleObstacles);
 	for (int i = 0; i < possibleObstacles.size(); ++i)
 		validObstacles.add(possibleObstacles[i]);
 	V2f predLoc = predator->body.center, obsLoc, delta;
@@ -28,7 +29,7 @@ void FSM_Hide::execute(Agent * a, int a_ms) {
 //		float rayDist;
 //		V2f outEdge, outNormal;
 		RaycastHit rh;
-		validObstacles[i]->getShape()->raycast(Ray(obsLoc, delta.normal()), rh);// rayDist, outEdge, outNormal);
+		validObstacles[i]->raycast(Ray(obsLoc, delta.normal()), rh, Obstacle::STATIC);// rayDist, outEdge, outNormal);
 		V2f hideLoc = rh.point + delta.normal() * a->body.radius;
 		hideLocations.add(hideLoc);
 		float thisDist = V2f::distance(a->body.center, hideLoc);
@@ -48,13 +49,13 @@ void FSM_Hide::execute(Agent * a, int a_ms) {
 	}
 	a->direction = (closestLoc - a->body.center).normal();
 }
-void FSM_Hide::draw(Agent * a, GLUTRenderingContext * g_screen) {
+void FSM_Hide::draw(Agent * a, GLUTRenderingContext * g) {
 	for(int i = 0; i < validObstacles.size(); ++i) {
-		validObstacles[i]->getShape()->glDraw(true);
+		validObstacles[i]->getShape()->draw(g, true);
 	}
-	g_screen->setColor(0x0088ff);
+	g->setColor(0x0088ff);
 	for(int i = 0; i < hideLocations.size(); ++i) {
-		g_screen->drawCircle(hideLocations[i], a->body.radius, false);
-		g_screen->printf(hideLocations[i], "%.2f", distance[i]);
+		g->drawCircle(hideLocations[i], a->body.radius, false);
+		g->printf(hideLocations[i], "%.2f", distance[i]);
 	}
 }

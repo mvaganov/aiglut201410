@@ -7,7 +7,7 @@ Bullet * Agent::findClosestBullet() {
 	float closestBulletDistance;
 	float thisBulletDistance;
 	TemplateVector<Agent*> nearbyAgents;
-	game->gatherListOfAgentsAt(CircF(body.center, body.radius * 5), nearbyAgents);
+	//game->gatherListOfAgentsAt(Circf(body.center, body.radius * 5), nearbyAgents);
 	// if there are any bullets nearby
 	for (int i = 0; i < nearbyAgents.size(); ++i) {
 		Bullet * b = dynamic_cast<Bullet*>(nearbyAgents[i]);
@@ -24,18 +24,18 @@ Bullet * Agent::findClosestBullet() {
 Agent * Agent::findClosestPlayerControlledAgent() {
 	Agent * aggroed = NULL;
 	// in a loop, check if any agents 
-	for(int i = 0; i < game->agents.size(); ++i) {
-		Agent * a = game->agents[i];
-		if(a == this)
-			continue;
-			// that are player controlled
-		if(a->playerControlled // are within aggroRadius distance 
-			// (TODO make an aggro cone, TODO make aggroRadius variable)
-		&& V2f::distance(a->body.center, body.center) < (body.radius*5+a->body.radius) ) {
-			aggroed = a;
-			break;
-		}
-	}
+	//for(int i = 0; i < game->agents.size(); ++i) {
+	//	Agent * a = game->agents[i];
+	//	if(a == this)
+	//		continue;
+	//		// that are player controlled
+	//	if(a->playerControlled // are within aggroRadius distance 
+	//		// (TODO make an aggro cone, TODO make aggroRadius variable)
+	//	&& V2f::distance(a->body.center, body.center) < (body.radius*5+a->body.radius) ) {
+	//		aggroed = a;
+	//		break;
+	//	}
+	//}
 	return aggroed;
 }
 
@@ -60,5 +60,5 @@ bool Agent::hasLineOfSight(Obstacle * subject) {
 	Obstacle * obs;
 	RaycastHit rh;
 	V2f hit, norm;
-	return !game->raycast(Ray(body.center, normal), rh, distance, true, obs, agents, numAgents);
+	return !game->raycast(Ray(body.center, normal), rh, distance, true, obs, -1);
 }

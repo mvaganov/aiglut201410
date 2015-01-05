@@ -38,7 +38,7 @@ public:
 		VoronoiFace();
 
 		void refresh(Edge * e);
-		void glDraw() const;
+		void draw(GLUTRenderingContext * g) const;
 		/** positive value on one side, negative on the other. not sure which is which. */
 		float sideValue(V2f const & p);
 
@@ -67,7 +67,7 @@ public:
 		bool isValid() const;
 		Edge();
 		Edge(VoronoiNode *a, VoronoiNode *b);
-		void glDraw() const;
+		void draw(GLUTRenderingContext * g) const;
 		bool isNeighbor(Triangulation * const t) const;
 	};
 
@@ -82,18 +82,18 @@ public:
 		Shape * getShape() { return &shape; }
 		const Shape * getShape() const { return &shape; }
 		/** circumscription of all edges */
-		CircF circum;
+		Circf circum;
 		/** the average point of all of the node locations */
 		V2f centerMass;
 		/** which node to start drawing from */
 		VoronoiNode * startingNode;
-		void glDrawEdges() const;
+		void drawEdges(GLUTRenderingContext * g) const;
 
 		Triangulation & operator=(Triangulation const & t);
 
-		void set(Edge* const * list, const int listCount, CircF const & circumscription);
+		void set(Edge* const * list, const int listCount, Circf const & circumscription);
 
-		Triangulation(Edge* const * list, const int listCount, CircF const & circumscription);
+		Triangulation(Edge* const * list, const int listCount, Circf const & circumscription);
 
 		/** create an invalid triangulation by default */
 		Triangulation();
@@ -253,10 +253,10 @@ public:
 	Triangulation * getTriangle(TemplateSet<VoronoiNode*> & nodeCluster);
 
 	/** call this when you know that this is a valid triangulation... */
-	Triangulation * marshalTriangulation(TemplateSet<VoronoiNode *> & nodeCluster, CircF circumscription);
+	Triangulation * marshalTriangulation(TemplateSet<VoronoiNode *> & nodeCluster, Circf circumscription);
 
 	/** @return true if the given node cluster can be triangulated into a circumscription */
-	bool triangulateFor(TemplateSet<VoronoiNode*> & nodeCluster, float floatingPointRounding, CircF & out_circ);
+	bool triangulateFor(TemplateSet<VoronoiNode*> & nodeCluster, float floatingPointRounding, Circf & out_circ);
 
 	/**
 	 * @param node what to create triangulations around
@@ -264,7 +264,7 @@ public:
 	 */
 	void createTriangulationsFor(VoronoiNode* node, TemplateSet<Triangulation*> * createdTriangles);
 
-	bool createTriangulationInternal(TemplateSet<VoronoiNode*> & nodeCluster, int startIndex, TemplateSet<Triangulation*> * createdTriangles, CircF whereToLookForNodes);
+	bool createTriangulationInternal(TemplateSet<VoronoiNode*> & nodeCluster, int startIndex, TemplateSet<Triangulation*> * createdTriangles, Circf whereToLookForNodes);
 
 	void calculateAllTriangles();
 
@@ -301,11 +301,11 @@ public:
 	 * @param ignoreListCount how many nodes to ignore
 	 * @return a node found in the given location
 	 */
-	VoronoiNode * getNodeAt(CircF const & location, TemplateSet<VoronoiNode*> * out_allNodesHere, VoronoiNode** ignoreList, const int ignoreListCount);
+	VoronoiNode * getNodeAt(Circf const & location, TemplateSet<VoronoiNode*> * out_allNodesHere, VoronoiNode** ignoreList, const int ignoreListCount);
 
 	VoronoiNode * getNodePolyhedronContains(V2f const & point);
 
 	void gatherVoronoi(TemplateVector<VoronoiNode*> & nodes, bool includeBorderPolygons);
 
-	void glDraw(GLUTRenderingContext & g_screen) const;
+	void draw(GLUTRenderingContext * g) const;
 };

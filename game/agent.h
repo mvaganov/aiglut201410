@@ -75,11 +75,11 @@ public:
 	int behavior;
 	static const int BEHAVIOR_NONE = 0, BEHAVIOR_SEEK = 1, BEHAVIOR_AGGRO = 2;
 
-	Agent(CircF circle, Game * game, FiniteStateMachine * newFSMBehavior)
+	Agent(Circf circle, Game * game, FiniteStateMachine * newFSMBehavior)
 		:body(circle),direction(V2f::ZERO_DEGREES()),agentLook(LOOK_BEAK),parent(NULL),
 		behavior(BEHAVIOR_SEEK), alive(true), readyToDelete(false), mass(1), 
 		playerControlled(false), showDebugLines(true), game(game), fsm(newFSMBehavior),
-		sensorArea(BoxF(circle.center, V2f::ZERO(), 0))
+		sensorArea(Boxf(circle.center, V2f::ZERO(), 0), Obstacle::STATIC)
 	{ }
 
 	~Agent() { if (fsm != NULL) delete fsm;  }
@@ -107,7 +107,7 @@ public:
 			}
 			velocity += acceleration * (float)a_ms / 1000.0f;
 			body.center += velocity * (float)a_ms / 1000.0f;
-			sensorArea.getBox()->set(velocity / 2 + body.center,
+			sensorArea.getShapeBox()->set(velocity / 2 + body.center,
 				V2f(velocity.magnitude(), body.radius*2), velocity.normal());
 		}
 	}
@@ -174,23 +174,23 @@ public:
 		}
 	}
 
-	void drawDebug(GLUTRenderingContext & g_screen) {
-		g_screen.setColor(0x00ff00);
-		g_screen.drawLine(body.center, body.center + velocity);
-		g_screen.setColor(0x0000ff);
-		g_screen.drawLine(body.center + velocity,
+	void drawDebug(GLUTRenderingContext * g) {
+		g->setColor(0x00ff00);
+		g->drawLine(body.center, body.center + velocity);
+		g->setColor(0x0000ff);
+		g->drawLine(body.center + velocity,
 			body.center + velocity + acceleration);
 		if (fsm != NULL) {
-			g_screen.setColor(0);
-			g_screen.printf(body.center + V2f(-body.radius, 0), fsm->getName());
-			g_screen.setColor(color);
-			fsm->draw(this, &g_screen);
+			g->setColor(0);
+			g->printf(body.center + V2f(-body.radius, 0), fsm->getName());
+			g->setColor(color);
+			fsm->draw(this, g);
 		}
-		g_screen.setColor(0xff00ff);
-		sensorArea.glDraw(false);
+		g->setColor(0xff00ff);
+		sensorArea.draw(g, false);
 		if (behavior == BEHAVIOR_AGGRO) {
-			g_screen.setColor(0x0000ff);
-			g_screen.drawCircle(body.center, body.radius * 5, false);
+			g->setColor(0x0000ff);
+			g->drawCircle(body.center, body.radius * 5, false);
 		}
 	}
 
@@ -209,9 +209,10 @@ public:
 		}
 		V2f normal;
 		Shape * s = otherObject->getShape();
-		V2f closestPoint = s->getClosestPointOnEdge(body.center, normal);
+		RaycastHit closest;
+		s->getClosestRaycastHit(body.center, closest);
 		//printf("%f %f ", normal.x, normal.y);
-		V2f positionToClipTo = closestPoint + normal * body.radius;
+		V2f positionToClipTo = closest.point + normal * body.radius;
 		V2f clipDelta = positionToClipTo - body.center;
 		V2f * output = (new V2f(clipDelta * myResponsibilityToMove));
 //#define TRACE_MEMORY1(mem, debugmessage) \

@@ -8,6 +8,7 @@
  * and the elements need to stay stationary in memory, because they 
  * are being referenced by pointers elsewhere.
  * TODO write code to force m_allocationSize to be a power of 2, so that use left-shift can replace division, and bitwise-and can replace modulo
+ * TODO write memory pool for m_allocations arrays, and relinquish arrays to the pool as they are not needed
  */
 template <class DATA_TYPE>
 class TemplateVectorList
@@ -47,9 +48,20 @@ public:
 		moveDown(a_index, -1, m_size);
 		setSize(m_size - 1);
 	}
+
+	/**
+	 * @param data index of the given element is replaced by the last element, then size is reduced.
+	 * @return false if the given data element is not in the list
+	 */
+	bool removeDataFast(DATA_TYPE const & data) {
+		int index = indexOf(data);
+		if (index >= 0) removeFast(index);
+		return index >= 0;
+	}
+
 	/** @param a_index is replaced by the last element, then size is reduced. */
 	void removeFast(int const a_index) {
-		swap(a_index, m_size - 1);
+		if (a_index < m_size-1) swap(a_index, m_size - 1);
 		setSize(m_size - 1);
 	}
 	/** swaps to elements */
@@ -113,21 +125,26 @@ public:
 		}
 	}
 	int indexOf(DATA_TYPE const & a_value, int const & a_start) const {
-		int arrIndex = a_start / m_allocationSize;
+		int listIndex = a_start / m_allocationSize;
 		int subIndex = a_start % m_allocationSize;
-		int lastList = m_size / m_allocationSize;
+		int lastListIndex = m_size / m_allocationSize;
 		int maxInList;
 		bool found = false;
-		for(; !found && arrIndex < m_allocations.size(); ++arrIndex)
+		for (; listIndex < m_allocations.size(); ++listIndex)
 		{
-			maxInList = (arrIndex < lastList)?m_allocationSize:(a_start % m_allocationSize);
-			for(; !found && subIndex < maxInList; ++subIndex)
+			maxInList = (listIndex == lastListIndex) ? m_size % m_allocationSize : m_allocationSize;
+			for(; subIndex < maxInList; ++subIndex)
 			{
-				found = m_allocations[arrIndex][subIndex] == a_value;
+				found = m_allocations[listIndex][subIndex] == a_value;
+				if (found) break;
 			}
+			if (found) break;
 			subIndex = 0;
 		}
-		return found?(arrIndex*m_allocationSize+subIndex):-1;
+		if (!found) return false;
+		int result = listIndex * m_allocationSize + subIndex;
+		if (result >= m_size) found = false;
+		return found ? result : -1;
 	}
 	int indexOf(DATA_TYPE const & a_value) const {
 		return indexOf(a_value, 0);

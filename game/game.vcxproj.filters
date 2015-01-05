@@ -10,6 +10,9 @@
     <Filter Include="codegiraffe">
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="fsm">
+      <UniqueIdentifier>{1ae50b88-1b7e-4b53-b638-6a580217c827}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="agent.h">
@@ -51,24 +54,6 @@
     <ClInclude Include="codegiraffe\v2.h">
       <Filter>codegiraffe</Filter>
     </ClInclude>
-    <ClInclude Include="fsm.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_fleebullets.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_followagent.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_hide.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_idle.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_wander.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="graph.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -96,20 +81,41 @@
     <ClInclude Include="codegiraffe\templateset.h">
       <Filter>codegiraffe</Filter>
     </ClInclude>
-    <ClInclude Include="fsm_alignment.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_cohesion.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_separation.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="cellspacepartition.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="codegiraffe\line.h">
       <Filter>codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="updatable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_alignment.h">
+      <Filter>fsm</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_cohesion.h">
+      <Filter>fsm</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_fleebullets.h">
+      <Filter>fsm</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_followagent.h">
+      <Filter>fsm</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_hide.h">
+      <Filter>fsm</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_idle.h">
+      <Filter>fsm</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_separation.h">
+      <Filter>fsm</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_wander.h">
+      <Filter>fsm</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm.h">
+      <Filter>fsm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -134,35 +140,35 @@
     <ClCompile Include="agent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="fsm_fleebullets.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_followagent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_hide.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_idle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_wander.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_alignment.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_cohesion.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_separation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="delauny.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_alignment.cpp">
+      <Filter>fsm</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_cohesion.cpp">
+      <Filter>fsm</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_fleebullets.cpp">
+      <Filter>fsm</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_followagent.cpp">
+      <Filter>fsm</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_hide.cpp">
+      <Filter>fsm</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_idle.cpp">
+      <Filter>fsm</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_separation.cpp">
+      <Filter>fsm</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm_wander.cpp">
+      <Filter>fsm</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

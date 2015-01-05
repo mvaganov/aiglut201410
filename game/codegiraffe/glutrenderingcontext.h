@@ -14,7 +14,7 @@
 struct GLUTRenderingContext {
 	/** how many pixels wide and tall the screen is */
 	V2f dimensionPixels;
-	RectF dimensionCartesian;
+	AABBf dimensionCartesian;
 
 	/** one of these : {
 	 * GLUT_BITMAP_9_BY_15,
@@ -46,11 +46,11 @@ struct GLUTRenderingContext {
 
 	void drawLine(V2f const & a, V2f const & b);
 	void drawLine(const float aX, const float aY, const float bX, const float bY);
-	void drawCircle(CircF const & c, bool filled);
+	void drawCircle(Circf const & c, bool filled);
 	void drawCircle(V2f const & center, const float radius, const bool filled);
-	void drawRect(RectF const & r, const bool filled);
+	void drawRect(AABBf const & r, const bool filled);
 	void drawRect(V2f const & min, V2f const & max, const bool filled);
-	void drawBox(BoxF const & b, const bool filled);
+	void drawBox(Boxf const & b, const bool filled);
 	void drawBox(V2f const & center, V2f const & size, const float rotationInRadians, const bool filled);
 
 	/** sets up the openGL screen according to current variables */

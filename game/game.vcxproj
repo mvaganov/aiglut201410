@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>game</RootNamespace>
+    <ProjectGuid>{23CB23DA-5F13-4A7A-AEEA-5E3F3B5EFDBA}</ProjectGuid>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -90,6 +91,7 @@
     <ClInclude Include="codegiraffe\circle.h" />
     <ClInclude Include="codegiraffe\cone.h" />
     <ClInclude Include="codegiraffe\glutrenderingcontext.h" />
+    <ClInclude Include="codegiraffe\line.h" />
     <ClInclude Include="codegiraffe\polygon.h" />
     <ClInclude Include="codegiraffe\random.h" />
     <ClInclude Include="codegiraffe\templatearray.h" />
@@ -114,6 +116,7 @@
     <ClInclude Include="obstacles.h" />
     <ClInclude Include="steering.h" />
     <ClInclude Include="cellspacepartition.h" />
+    <ClInclude Include="updatable.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="agent.cpp" />

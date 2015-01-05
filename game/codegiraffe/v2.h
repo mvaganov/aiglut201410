@@ -262,12 +262,13 @@ struct V2 {
 
 	/** @return true if this point is within a_radius from a_point */
 	bool isWithin(const TYPE a_radius, const V2<TYPE> & a_point) const {
-		TYPE rr = a_radius*a_radius;
-		return distanceSq(a_point) <= rr; // calculate in quadrance space to avoid sqrt
+//		TYPE rr = a_radius*a_radius;
+//		return distanceSq(a_point) <= rr; // calculate in quadrance space to avoid sqrt
+		return V2<TYPE>::distance(*this, a_point) < a_radius;
 	}
 
 	/** @return if this point is between the Axis-Aligned Bounding Box (rectangle) inscribed by the given corners */
-	bool isBetweenAABB(const V2<TYPE> & a, const V2<TYPE> & b) {
+	bool isBetweenAABB(V2<TYPE> const & a, V2<TYPE> const & b) const {
 		return((a.x <= b.x)?(x>=a.x&&x<=b.x):(x>=b.x&&x<=a.x))
 			&&((a.y <= b.y)?(y>=a.y&&y<=b.y):(y>=b.y&&y<=a.y));
 	}
@@ -275,6 +276,12 @@ struct V2 {
 	/** forces vector to have a length of 1 */
 	V2<TYPE> & normalize() {
 		divide(magnitude());
+		return *this;
+	}
+
+	/** forces vector to have a length of 1 if the vector is not a zero vector */
+	V2<TYPE> & normalizeIfNotZero() {
+		if (!isZero()) divide(magnitude());
 		return *this;
 	}
 
@@ -730,7 +737,7 @@ struct V2 {
 	*
 	* @return false if no collision happened
 	*/
-	static bool raycastCircle(V2<TYPE> rayStart, V2<TYPE> rayDirection,
+	static bool raycastCircle(V2<TYPE> const & rayStart, V2<TYPE> const & rayDirection,
 		V2<TYPE> const center, const TYPE radius, V2<TYPE> & out_p1, V2<TYPE> & out_p2) {
 		V2f rayNorm = rayDirection.normal();
 		if (rayStart == center) {
@@ -867,7 +874,8 @@ struct RaycastHit_ {
 		// done backwards here because normal is a surface normal that ends the ray from->to.
 		normal = from - to;
 		distance = normal.magnitude();
-		normal /= distance;
+		if (distance != 0)
+			normal /= distance;
 	}
 };
 
@@ -877,18 +885,42 @@ template<typename TYPE>
 struct Ray_ {
 	V2<TYPE> start, direction;
 	Ray_(V2<TYPE> const & start, V2<TYPE> const & direction) :start(start), direction(direction){}
+	Ray_(){}
 
 	/**
 	 * @param ray another ray for this ray to intersect with
-	 * @param out_distance how far this ray needs to travel to reach the given ray
+	 * @param out_distance how far this ray needs to travel to reach the given ray as a percentage of the ray.direction length
 	 * @return false if there is no collision possible (the rays are parallel
 	 */
-	bool intersection(Ray_<TYPE> const & ray, TYPE & out_distance) {
+	bool intersection(Ray_<TYPE> const & ray, TYPE & out_distance) const {
 		V2<TYPE> deltaOrigins = start - ray.start;
 		TYPE alignmentDifference = this->direction.sign(ray.direction); // checks the dot product of perpendicular angles
 		if (alignmentDifference == 0) { return false; } // fail if the lines are parallel
 		out_distance = ray.direction.sign(deltaOrigins) / alignmentDifference; // how far along AB the collision happened
 		return true;
+	}
+
+	/**
+	* @param ray another ray for this ray to intersect with
+	* @param out_distance how far this ray needs to travel to reach the given ray as a percentage of the ray.direction length
+	* @return false if there is no collision possible (the rays are parallel
+	*/
+	bool intersection(Ray_<TYPE> const & ray, TYPE & out_distance, TYPE & out_rayDistance) const {
+		V2<TYPE> deltaOrigins = start - ray.start;
+		TYPE alignmentDifference = this->direction.sign(ray.direction); // checks the dot product of perpendicular angles
+		if (alignmentDifference == 0) { return false; } // fail if the lines are parallel
+		out_distance = ray.direction.sign(deltaOrigins) / alignmentDifference; // how far along AB the collision happened
+		out_rayDistance = direction.sign(deltaOrigins) / alignmentDifference; // how far along CD the collision happened
+		return true;
+	}
+
+	void glDraw() const { start.glDrawTo(start + direction); }
+
+	TYPE distanceFrom(V2<TYPE> const & p) const {
+		V2<TYPE> perp = direction.perp();
+		TYPE dist;
+		intersection(Ray(p, perp), dist);
+		return dist;
 	}
 };
 

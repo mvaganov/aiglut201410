@@ -13,11 +13,15 @@ class Polygon2 {
 	TYPE radius, rotation;
 	/** where is the center of the circle that this polygon is inscribed in */
 	V2<TYPE> center;
-	/** where the center of this polygon is TODO how is this different from center? can the two variables be merged? */
+	/** where the center of this polygon is */
 	V2<TYPE> origin;
 public:
 	TYPE getRotation() const { return rotation; }
 	void setRotation(const TYPE rotation) { this->rotation = rotation; }
+	V2<TYPE> getOrigin() const { return origin; }
+	void rotate(const TYPE radians) { rotation += radians; }
+	void translate(V2f const & moveDelta) { origin += moveDelta; }
+
 
 	/** offsets relative to the origin, expected in CW order */
 	TemplateVector< V2<TYPE> > points;
@@ -221,7 +225,7 @@ public:
 		return true;
 	}
 
-	V2<TYPE> getCenter() const { return origin + center; }
+	V2<TYPE> getCenter() const { return origin + center.rotated(rotation); }
 	float getRadius() const { return radius; }
 
 	bool contains(V2<TYPE> const & p) const {
@@ -287,51 +291,12 @@ public:
 		return hitSomething;
 	}
 
-	V2<TYPE> getClosestPointOnEdge(const V2<TYPE> point, V2<TYPE> & out_normal) const {
-		TYPE closestDist = -1, d;
-		V2<TYPE> relativeP = point - origin, a, b;
-		relativeP.rotate(-rotation);
-		V2<TYPE> closestPoint, p, delta;
-		int closestLineIndex = -1;
-		bool isOnLine;
-		// get the closest point in the list
-		closestPoint = points.get(V2<TYPE>::indexOfClosest(relativeP, points.getRawListConst(), points.size()));
-		delta = relativeP - closestPoint;
-		out_normal = delta.normal();
-		closestDist = delta.magnitude();
-		// check the closest point on each line
-		int linesToCheck = getLineCount();
-		for (int i = 0; i < linesToCheck; ++i) {
-			gatherLineRelative(i, a, b);
-			isOnLine = V2<TYPE>::closestPointOnLine(a, b, relativeP, p);
-			if (isOnLine) {
-				delta = p - relativeP;
-				d = delta.magnitude();
-				// keep the closest solution
-				if (d < closestDist) {
-					closestDist = d;
-					closestLineIndex = i;
-					closestPoint = p;
-				}
-			}
-		}
-		// if there are no solutions, give the closest point in the list
-		if (closestLineIndex >= 0) {
-			gatherLineRelative((closestLineIndex + 1) % points.size(), a, b);
-			delta = b - a;
-			out_normal = delta.normal().perp();
-		}
-		closestPoint.rotate(rotation);
-		out_normal.rotate(rotation);
-		return closestPoint + origin;
-	}
-
 	/**
 	* @param point
 	* @param out_rh will be assigned to details about the closest raycast hit to that point
 	* @return true if on linearedge, false if on corner
 	*/
-	bool getClosestRaycastHit(const V2<TYPE> point, RaycastHit_<TYPE> & out_rh) {
+	bool getClosestRaycastHit(V2<TYPE> const & point, RaycastHit_<TYPE> & out_rh) const {
 		TYPE closestDist = -1, d;
 		V2<TYPE> relativeP = point - origin, a, b;
 		relativeP.rotate(-rotation);
@@ -361,12 +326,14 @@ public:
 		}
 		// if there are no solutions, give the closest point in the list
 		if (closestLineIndex >= 0) {
-			gatherLineRelative((closestLineIndex + 1) % points.size(), a, b);
+			gatherLineRelative(closestLineIndex, a, b);
 			delta = b - a;
 			out_rh.normal = delta.normal().perp();
 		}
 		out_rh.point.rotate(rotation);
 		out_rh.normal.rotate(rotation);
+		out_rh.point += origin;
+		return isOnLine;
 	}
 
 	void glDraw(bool filled) const {

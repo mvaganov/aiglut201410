@@ -21,11 +21,13 @@ void DelaunySet::VoronoiFace::refresh(Edge * e) {
 	gatherOppositePoints(va, vb);
 	radius = (vb - va).magnitude();
 }
-void DelaunySet::VoronoiFace::glDraw() const {
+void DelaunySet::VoronoiFace::draw(GLUTRenderingContext * g) const {
 	for (int i = 0; i < points.size(); ++i) {
-		center.glDrawTo(points[i]);
+		g->drawLine(center, points[i]);
+		//center.glDrawTo(points[i]);
 	}
-	center.glDrawTo(center + normal);
+	g->drawLine(center, center + normal);
+	//center.glDrawTo(center + normal);
 }
 /** positive value on one side, negative on the other. not sure which is which. */
 float DelaunySet::VoronoiFace::sideValue(V2f const & p) { return V2f::dot(normal, p - center); }
@@ -86,13 +88,13 @@ void DelaunySet::Edge::invalidateEdge() {
 bool DelaunySet::Edge::isValid() const { return getNode(0) != NULL && getNode(1) != NULL; }
 DelaunySet::Edge::Edge() { nodes[0] = nodes[1] = NULL; invalidateEdge(); }
 DelaunySet::Edge::Edge(VoronoiNode *a, VoronoiNode *b) : GraphEdge(a, b){}// { nodes[0] = a; nodes[1] = b; }
-void DelaunySet::Edge::glDraw() const {
+void DelaunySet::Edge::draw(GLUTRenderingContext * g) const {
 	GraphNode * a = (GraphNode*)getNode(0), *b = (GraphNode*)getNode(1);
 	a->getLocation().glDrawTo(b->getLocation());
 }
 bool DelaunySet::Edge::isNeighbor(Triangulation * const t) const { return neighborTri.indexOf(t) >= 0; }
 
-void DelaunySet::Triangulation::glDrawEdges() const { for (int i = 0; i < edges.size(); ++i) { edges[i]->glDraw(); } }
+void DelaunySet::Triangulation::drawEdges(GLUTRenderingContext * g) const { for (int i = 0; i < edges.size(); ++i) { edges[i]->draw(g); } }
 
 DelaunySet::Triangulation & DelaunySet::Triangulation::operator=(Triangulation const & t) {
 	circum = t.circum;
@@ -103,7 +105,7 @@ DelaunySet::Triangulation & DelaunySet::Triangulation::operator=(Triangulation c
 	return *this;
 }
 
-void DelaunySet::Triangulation::set(Edge* const * list, const int listCount, CircF const & circumscription) {
+void DelaunySet::Triangulation::set(Edge* const * list, const int listCount, Circf const & circumscription) {
 	startingNode = NULL;
 	circum = circumscription;
 	edges.allocateToSize(listCount);
@@ -111,7 +113,7 @@ void DelaunySet::Triangulation::set(Edge* const * list, const int listCount, Cir
 	calculate();
 }
 
-DelaunySet::Triangulation::Triangulation(Edge* const * list, const int listCount, CircF const & circumscription) : startingNode(NULL) {
+DelaunySet::Triangulation::Triangulation(Edge* const * list, const int listCount, Circf const & circumscription) : startingNode(NULL) {
 	set(list, listCount, circumscription);
 }
 
@@ -314,7 +316,7 @@ void DelaunySet::VoronoiNode::calculatePolygon(TemplateVector<V2f> & out_points,
 	Polygon2f::calculatePolygonCW(out_points.getRawList(), out_points.size(), out_center);
 }
 
-/** calculate the Voronoi polygon*/
+/** calculate the Voronoi polygon. TODO make boundary a Shape rather than an obstacle. */
 Polygon2f & DelaunySet::VoronoiNode::getPolygon2f(Obstacle * boundary) {
 	if (needsModelRecalculated) {
 		atBoundaryOf = NULL;
@@ -627,7 +629,7 @@ DelaunySet::Triangulation * DelaunySet::getTriangle(TemplateSet<VoronoiNode*> & 
 }
 
 /** call this when you know that this is a valid triangulation... */
-DelaunySet::Triangulation * DelaunySet::marshalTriangulation(TemplateSet<VoronoiNode *> & nodeCluster, CircF circumscription) {
+DelaunySet::Triangulation * DelaunySet::marshalTriangulation(TemplateSet<VoronoiNode *> & nodeCluster, Circf circumscription) {
 	Triangulation * t = getTriangle(nodeCluster);
 	if (t == NULL) {
 		TemplateVector<Edge*> edges;
@@ -661,7 +663,7 @@ DelaunySet::Triangulation * DelaunySet::marshalTriangulation(TemplateSet<Voronoi
 }
 
 /** @return true if the given node cluster can be triangulated into a circumscription */
-bool DelaunySet::triangulateFor(TemplateSet<VoronoiNode*> & nodeCluster, float floatingPointRounding, CircF & out_circ) {
+bool DelaunySet::triangulateFor(TemplateSet<VoronoiNode*> & nodeCluster, float floatingPointRounding, Circf & out_circ) {
 	switch (nodeCluster.size()) {
 	case 0: case 1: { return false; }
 	case 2: {
@@ -676,7 +678,7 @@ bool DelaunySet::triangulateFor(TemplateSet<VoronoiNode*> & nodeCluster, float f
 	default:
 		bool circumscriptionWorks;
 		// calculate circumscription for each trio of points
-		TemplateArray<CircF> circs(nodeCluster.size());
+		TemplateArray<Circf> circs(nodeCluster.size());
 		float minRad = -1, maxRad = -1;
 		for (int i = 0; i < circs.size(); ++i) {
 			circumscriptionWorks = V2f::circumcenter(nodeCluster[i]->getLocation(),
@@ -714,12 +716,12 @@ bool DelaunySet::triangulateFor(TemplateSet<VoronoiNode*> & nodeCluster, float f
 void DelaunySet::createTriangulationsFor(VoronoiNode* node, TemplateSet<Triangulation*> * createdTriangles) {
 	TemplateSet<VoronoiNode*> nodeCluster;
 	nodeCluster.add(node);
-	createTriangulationInternal(nodeCluster, 0, createdTriangles, CircF(node->getLocation(), -1));
+	createTriangulationInternal(nodeCluster, 0, createdTriangles, Circf(node->getLocation(), -1));
 }
 
-bool DelaunySet::createTriangulationInternal(TemplateSet<VoronoiNode*> & nodeCluster, int startIndex, TemplateSet<Triangulation*> * createdTriangles, CircF whereToLookForNodes) {
+bool DelaunySet::createTriangulationInternal(TemplateSet<VoronoiNode*> & nodeCluster, int startIndex, TemplateSet<Triangulation*> * createdTriangles, Circf whereToLookForNodes) {
 	const float floatingPointRounding = 1 / 32768.0f;
-	CircF circumscription;
+	Circf circumscription;
 	bool triangulationCreated = false;
 	bool triangulationClear = false;
 	bool atLeastOneMoreComplexCreated = false;
@@ -999,7 +1001,7 @@ bool DelaunySet::addNode(V2f point, TemplateSet<VoronoiNode*> & changedNodes) {
 * @param ignoreListCount how many nodes to ignore
 * @return a node found in the given location
 */
-DelaunySet::VoronoiNode * DelaunySet::getNodeAt(CircF const & location, TemplateSet<VoronoiNode*> * out_allNodesHere, VoronoiNode** ignoreList, const int ignoreListCount) {
+DelaunySet::VoronoiNode * DelaunySet::getNodeAt(Circf const & location, TemplateSet<VoronoiNode*> * out_allNodesHere, VoronoiNode** ignoreList, const int ignoreListCount) {
 	VoronoiNode * n, *foundOne = NULL;
 	for (int i = 0; i < currentNodes.size(); ++i) {
 		n = &currentNodes[i];
@@ -1035,16 +1037,16 @@ void DelaunySet::gatherVoronoi(TemplateVector<VoronoiNode*> & nodes, bool includ
 	}
 }
 
-void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
-	if (boundary) boundary->glDraw(false);
+void DelaunySet::draw(GLUTRenderingContext * g) const {
+	if (boundary) boundary->draw(g, false);
 
 #ifndef NO_TEST
 	for (int i = 0; i < currentTriangles.size(); ++i) {
 		if (!currentTriangles[i].isValidTriangle()) continue;
-		g_screen.setColor(0xffddff);
+		g->setColor(0xffddff);
 		currentTriangles[i].circum.glDraw(false);
-		g_screen.setColor(0xff00ff);
-		g_screen.printf(currentTriangles[i].centerMass, "%d", i);
+		g->setColor(0xff00ff);
+		g->printf(currentTriangles[i].centerMass, "%d", i);
 	}
 #endif
 
@@ -1052,19 +1054,19 @@ void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
 		const Edge * e = &currentEdges[i];
 		if (e->isValid()) {
 			if (e->getCost() > 0) {
-				g_screen.setColor(0x88ff88);
-				e->glDraw();
+				g->setColor(0x88ff88);
+				e->draw(g);
 #ifndef NO_TEST
 				// draw which triangles are neighboring the edges. useful for debugging, if you think triangles might be overlapping
-				g_screen.setColor(0x00aa00);
+				g->setColor(0x00aa00);
 				VoronoiNode * a = (VoronoiNode*)e->getNode(0);
 				VoronoiNode * b = (VoronoiNode*)e->getNode(1);
 				V2f c = V2f::between(a->getLocation(), b->getLocation());
-				g_screen.printf(c, "%d %.1f", e->getNeighborTriangulationCount(), e->getCost());
+				g->printf(c, "%d %.1f", e->getNeighborTriangulationCount(), e->getCost());
 				for (int n = 0; n < e->getNeighborTriangulationCount(); ++n) {
 					Triangulation * t = e->getNeighborTriangulation(n);
 					V2f delta = t->centerMass - c;
-					g_screen.drawLine(c, c + delta*0.9f);
+					g->drawLine(c, c + delta*0.9f);
 				}
 #endif
 			}
@@ -1078,7 +1080,7 @@ void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
 		TemplateSet<VoronoiNode*> triangleNodes;
 		for (int i = 0; i < trianglefaces.size(); ++i) {
 			t = trianglefaces[i];
-			g_screen.setColor(0xdddddd);
+			g->setColor(0xdddddd);
 			if (t->getEdgeCount() >= 3) {
 				triangleNodes.clear();
 				t->gatherNodesInto(triangleNodes);
@@ -1090,7 +1092,7 @@ void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
 				glEnd();
 			}
 		}
-		g_screen.setColor(0xff00ff);
+		g->setColor(0xff00ff);
 		for (int i = 0; i < selectedNode->getEdgeCount(); ++i) {
 			const Edge * e = (Edge*)selectedNode->getEdge(i);
 #ifndef NO_TEST
@@ -1098,7 +1100,7 @@ void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
 				ABORT
 			}
 #endif
-			e->glDraw();
+			e->draw(g);
 		}
 	}
 	const Triangulation * selectedTriangle = NULL;
@@ -1109,12 +1111,12 @@ void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
 		}
 	}
 
-	g_screen.setColor(0xaa0000);
+	g->setColor(0xaa0000);
 	for (int i = 0; i < currentNodes.size(); ++i) {
 		const VoronoiNode * n = &currentNodes[i];
 		if (n->isValidNode()) {
 			glDrawCircle(n->getLocation(), 0.2f, false);
-			g_screen.printf(n->getLocation(), "%d", i);
+			g->printf(n->getLocation(), "%d", i);
 		}
 	}
 
@@ -1150,9 +1152,9 @@ void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
 
 			// if this edge has area that is not triangulated
 			if (edgeBorder.size() == 1) {
-				g_screen.setColor(0x0000aa);
-				g_screen.drawCircle(edgeCenter, .1f, false);
-				g_screen.setColor(0xaa0000);
+				g->setColor(0x0000aa);
+				g->drawCircle(edgeCenter, .1f, false);
+				g->setColor(0xaa0000);
 				V2f rayDir = e->getFace().normal.perp(), end;//-(delta.perp().normal()), end;
 				V2f otherPoint;
 				a = (VoronoiNode*)e->getNode(0);
@@ -1185,7 +1187,7 @@ void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
 		V2f center;
 		selectedNode->calculatePolygon(points, center);
 		if (points.size() > 0) {
-			g_screen.setColor(0xff00ff);
+			g->setColor(0xff00ff);
 			glBegin(GL_TRIANGLE_FAN);
 			center.glVertex();
 			V2f::glVertexList(points.getRawList(), points.size());
@@ -1198,7 +1200,7 @@ void DelaunySet::glDraw(GLUTRenderingContext & g_screen) const {
 			}
 		}
 		Polygon2f * calcedPoly = &selectedNode->getPolygon2f(boundary);
-		g_screen.setColor(selectedNode->isBorderPolygon() ? 0x0000ff : 0xffff00);
+		g->setColor(selectedNode->isBorderPolygon() ? 0x0000ff : 0xffff00);
 		calcedPoly->glDraw(true);
 	}
 }

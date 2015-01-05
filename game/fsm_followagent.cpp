@@ -32,18 +32,18 @@ void FSM_FollowAgent::execute(Agent * a, int a_ms) {
 	}
 	//a->acceleration += obstacleAvoidance(&a->game->obstacles, &a->sensorArea, a, &calc) * 10;
 }
-void FSM_FollowAgent::draw(Agent * a, GLUTRenderingContext * g_screen) {
+void FSM_FollowAgent::draw(Agent * a, GLUTRenderingContext * g) {
 	for(int i = 0; i < calc.actualHits.size(); ++i) {
-		calc.actualHits[i]->getShape()->glDraw(true);
+		calc.actualHits[i]->getShape()->draw(g, true);
 	}
 	if (!a->playerControlled && followed) {
-		g_screen->drawLine(followed->body.center, a->body.center);
+		g->drawLine(followed->body.center, a->body.center);
 	}
-	g_screen->setColor(0x0088ff);
+	g->setColor(0x0088ff);
 	for (int i = 0; i < calc.hitLocations.size(); ++i) {
 		V2f start, end;
 		start = calc.hitLocations[i];
 		end = start + calc.hitNormals[i] * calc.hitForce[i];
-		g_screen->drawLine(start, end);
+		g->drawLine(start, end);
 	}
 }

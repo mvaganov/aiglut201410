@@ -89,26 +89,12 @@ struct Box {
 		return Circle<TYPE>(center, size.magnitude() / 2);
 	}
 
-	V2<TYPE> getClosestPointOnEdge(V2<TYPE> const point, V2<TYPE> & out_normal) const {
-		AABB<TYPE> aabb = getLocalSpaceAABB();
-		V2<TYPE> yAxis, xAxis;
-		calculateAxis(xAxis, yAxis);
-		// do math in local space
-		V2<TYPE> close;
-		V2f rotatedPoint = point.toLocalSpace(xAxis, yAxis, center);
-		close = aabb.getClosestPointOnEdge(rotatedPoint, out_normal);
-		// bring results to world space
-		out_normal = out_normal.toWorldSpace(xAxis, yAxis);
-		close = close.toWorldSpace(xAxis, yAxis, center);
-		return close;
-	}
-
 	/**
 	* @param point
 	* @param out_rh will be assigned to details about the closest raycast hit to that point
 	* @return true if on linearedge, false if on corner
 	*/
-	bool getClosestRaycastHit(const V2<TYPE> point, RaycastHit_<TYPE> & out_rh) {
+	bool getClosestRaycastHit(V2<TYPE> const & point, RaycastHit_<TYPE> & out_rh) const {
 		AABB<TYPE> aabb = getLocalSpaceAABB();
 		V2<TYPE> yAxis, xAxis;
 		calculateAxis(xAxis, yAxis);
@@ -215,4 +201,4 @@ struct Box {
 #endif
 };
 
-typedef Box<float> BoxF;
+typedef Box<float> Boxf;

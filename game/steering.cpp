@@ -37,27 +37,28 @@ V2f flee(V2f target, Agent * agent) {
 	return fleeAccel;
 }
 
-// TODO replace the obstacles list with the cellspace partition...
+// TODO replace the obstacles list with the cellspace partition... seriosuly, do this.
 V2f obstacleAvoidance(TemplateVector<Obstacle*> * obstacles, Obstacle * sensorArea, Agent * a, CalculationsFor_ObstacleAvoidance * calc) {
 	if (calc) calc->clear();
 	V2f totalForce;
 	for (int i = 0; i < obstacles->size(); ++i) {
 		Obstacle * actuallyHit = obstacles->get(i);
-		if (actuallyHit != a && actuallyHit->getShape()->intersects(sensorArea->getShape())) {
+		if (actuallyHit != a && actuallyHit->intersects(sensorArea->getShape(), Obstacle::STATIC)) {
 			float totalDistance = a->velocity.magnitude();
 			V2f normal;
-			V2f point = actuallyHit->getShape()->getClosestPointOnEdge(a->body.center, normal);
+			RaycastHit closest;
+			actuallyHit->getShape()->getClosestRaycastHit(a->body.center, closest);
 			V2f closestOnVelocity;
 			V2f::closestPointOnLine(
 				a->body.center, a->body.center + a->velocity,
-				point, closestOnVelocity);
-			V2f delta = closestOnVelocity - point;
+				closest.point, closestOnVelocity);
+			V2f delta = closestOnVelocity - closest.point;
 			delta.normalize();
-			float distFromStart = (point - a->body.center).magnitude();
+			float distFromStart = (closest.point - a->body.center).magnitude();
 			float forceForThisHit = totalDistance - distFromStart;
 			if (calc) {
 				calc->actualHits.add(actuallyHit);
-				calc->hitLocations.add(point);
+				calc->hitLocations.add(closest.point);
 				calc->hitNormals.add(delta);
 				calc->hitForce.add(forceForThisHit);
 			}

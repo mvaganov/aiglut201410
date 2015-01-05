@@ -29,23 +29,23 @@ void GLUTRenderingContext::drawLine(V2f const & a, V2f const & b) {
 	b.glVertex();
 	glEnd();
 }
-void GLUTRenderingContext::drawCircle(CircF const & c, bool filled) {
+void GLUTRenderingContext::drawCircle(Circf const & c, bool filled) {
 	c.glDraw(filled);
 }
 void GLUTRenderingContext::drawCircle(V2f const & center, const float radius, const bool filled) {
 	glDrawCircle(center, radius, filled);
 }
-void GLUTRenderingContext::drawRect(RectF const & r, const bool filled) {
+void GLUTRenderingContext::drawRect(AABBf const & r, const bool filled) {
 	r.glDraw(filled);
 }
 void GLUTRenderingContext::drawRect(V2f const & min, V2f const & max, const bool filled) {
-	RectF(min, max).glDraw(filled);
+	AABBf(min, max).glDraw(filled);
 }
-void GLUTRenderingContext::drawBox(BoxF const & b, const bool filled) {
+void GLUTRenderingContext::drawBox(Boxf const & b, const bool filled) {
 	b.glDraw(filled);
 }
 void GLUTRenderingContext::drawBox(V2f const & center, V2f const & size, const float rotationInRadians, const bool filled) {
-	BoxF(center, size, rotationInRadians).glDraw(filled);
+	Boxf(center, size, rotationInRadians).glDraw(filled);
 }
 
 /** sets up the openGL screen according to current variables */

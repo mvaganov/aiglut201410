@@ -41,4 +41,9 @@ public:
 		}
 		return found;
 	}
+	void addVector(TemplateVector<TYPE> & a_vector) {
+		for (int i = 0; i < a_vector.size(); ++i) {
+			add(a_vector[i]);
+		}
+	}
 };

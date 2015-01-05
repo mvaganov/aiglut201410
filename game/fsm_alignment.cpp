@@ -5,7 +5,7 @@
 #include "game.h"
 #include "steering.h"
 void FSM_Alignment::enter(Agent * a) {
-	a->game->gatherListOfAgentsAt(CircF(a->body.center, flockRadius + a->body.radius), flock);
+	//a->game->gatherListOfAgentsAt(Circf(a->body.center, flockRadius + a->body.radius), flock);
 	flock.removeData(a);
 }
 void FSM_Alignment::execute(Agent * a, int a_ms) {

@@ -2,17 +2,17 @@
 #include "agent.h"
 
 bool ShapeBox::intersects(const Shape * o) const {
-	const ShapeAABB * aabb = dynamic_cast<const ShapeAABB*>(o);		if (aabb != NULL) { return BoxF::intersectsAABB(aabb->min, aabb->max); }
-	const ShapeCircle * circ = dynamic_cast<const ShapeCircle*>(o);	if (circ != NULL) { return BoxF::intersectsCircle(*circ); }
-	const ShapeBox * boxs = dynamic_cast<const ShapeBox*>(o);		if (boxs != NULL) { return ((BoxF*)boxs)->intersects(*this); }
+	const ShapeAABB * aabb = dynamic_cast<const ShapeAABB*>(o);		if (aabb != NULL) { return Boxf::intersectsAABB(aabb->min, aabb->max); }
+	const ShapeCircle * circ = dynamic_cast<const ShapeCircle*>(o);	if (circ != NULL) { return Boxf::intersectsCircle(*circ); }
+	const ShapeBox * boxs = dynamic_cast<const ShapeBox*>(o);		if (boxs != NULL) { return ((Boxf*)boxs)->intersects(*this); }
 	const ShapePolygon * po = dynamic_cast<const ShapePolygon*>(o);	if (po != NULL) { return po->intersectsBox(*this); }
 	const ShapeCone * cone = dynamic_cast<const ShapeCone *>(o);	if (cone != NULL) { return cone->intersectsBox(*this); }
 	return false;
 }
 
 bool ShapeCone::intersects(const Shape * o) const {
-	const ShapeAABB * aabb = dynamic_cast<const ShapeAABB*>(o);		if (aabb != NULL) { return ConeF::intersectsAABB(aabb->min, aabb->max); }
-	const ShapeCircle * circ = dynamic_cast<const ShapeCircle*>(o);	if (circ != NULL) { return ConeF::intersectsCircle(circ->center, circ->radius); }
+	const ShapeAABB * aabb = dynamic_cast<const ShapeAABB*>(o);		if (aabb != NULL) { return Conef::intersectsAABB(aabb->min, aabb->max); }
+	const ShapeCircle * circ = dynamic_cast<const ShapeCircle*>(o);	if (circ != NULL) { return Conef::intersectsCircle(circ->center, circ->radius); }
 	const ShapeBox * boxs = dynamic_cast<const ShapeBox*>(o);		if (boxs != NULL) { return intersectsBox(*boxs); }
 	const ShapePolygon * po = dynamic_cast<const ShapePolygon*>(o);	if (po != NULL) { return po->intersectsCone(*this); }
 	const ShapeCone * cone = dynamic_cast<const ShapeCone *>(o);	if (cone != NULL) { return intersectsCone(*cone); }
@@ -26,4 +26,13 @@ bool ShapePolygon::intersects(const Shape * o) const {
 	const ShapePolygon * po = dynamic_cast<const ShapePolygon*>(o);	if (po != NULL) { return po->intersectsPolygon(*this); }
 	const ShapeCone * cone = dynamic_cast<const ShapeCone *>(o);	if (cone != NULL) { return Polygon2f::intersectsCone(*cone); }
 	return false;
+}
+
+bool ShapeLine::intersects(const Shape * o) const {
+	RaycastHit rh;
+	V2f d = getDelta();
+	float len = d.magnitude();
+	if (len <= 0) return false;
+	bool hit = o->raycast(Ray(start, d / len), rh);
+	return (hit && rh.distance >= 0 && rh.distance < len);
 }

@@ -4,7 +4,7 @@
 class Bullet : public Agent
 {
 public:
-	Bullet(CircF circle, Game * g, V2f direction, float speed)
+	Bullet(Circf circle, Game * g, V2f direction, float speed)
 		:Agent(circle, g, NULL)
 	{
 		this->maximumSpeed = speed;

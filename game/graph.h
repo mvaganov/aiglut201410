@@ -97,7 +97,7 @@ public:
 		return false;
 	}
 	void glDraw(GLUTRenderingContext * g_screen) {
-		BoxF(location, V2f(.5f, .5f), 0).glDraw();
+		Boxf(location, V2f(.5f, .5f), 0).glDraw();
 		for(int i = 0; i < edges.size(); ++i) {
 			if(edges[i]->getCost() >= 0) {
 				V2f a = ((GraphNode*)edges[i]->getNode(0))->location,
