@@ -302,6 +302,7 @@ struct V2 {
 
 	/** @param a_normal cos(theta), sin(theta) as x,y values */
 	void rotate(const V2<TYPE> & a_normal) {
+		if (isZero()) return;
 		TYPE len = magnitude();	// remember length data
 		// normalize()	// turn vector into simple angle, lose length data
 		divide(len);	// same as normalize, but avoids calculating length again

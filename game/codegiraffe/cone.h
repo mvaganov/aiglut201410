@@ -45,6 +45,7 @@ public:
 
 	V2<TYPE> getCenter() const { 
 		TYPE totalAngle = endAngle - startAngle;
+		if (totalAngle >= V_PI) return origin;
 		TYPE middleAngle = totalAngle / 2 + startAngle;
 		V2<TYPE> midRad = V2<TYPE>(middleAngle);
 		TYPE rad = radius / 2;
@@ -53,6 +54,19 @@ public:
 		}
 		return origin + midRad * rad;
 		//return origin;
+	}
+
+	TYPE getExtensionFromCenter() const {
+		TYPE totalAngle = endAngle - startAngle;
+		if (totalAngle >= V_PI) return radius;
+		TYPE middleAngle = totalAngle / 2 + startAngle;
+		V2<TYPE> midRad = V2<TYPE>(middleAngle);
+		TYPE rad = radius / 2;
+		if (totalAngle > V_PI) {
+			rad -= (float)((totalAngle - V_PI) / V_PI * (radius / 2));
+		}
+		V2<TYPE> c = midRad * rad;
+		return c.distance(startPoint);
 	}
 
 	static bool isInAngle(V2<TYPE> testPoint, V2<TYPE> origin, TYPE startAngle, TYPE endAngle) {
@@ -110,8 +124,8 @@ public:
 	bool raycast(Ray_<TYPE> const & ray, RaycastHit & out_rh) const {
 		Circf circ(origin, radius);
 		V2<TYPE> startRadCorner = origin + startPoint, endRadCorner = origin + endPoint;
-		LineP<TYPE> startLine(&startRadCorner, &origin);
-		LineP<TYPE> endLine(&origin, &endRadCorner);
+		LineP<TYPE> startLine(&startRadCorner, &circ.center);
+		LineP<TYPE> endLine(&circ.center, &endRadCorner);
 		RaycastHit_<TYPE> hits[3]; const int ARC = 0, START = 1, END = 2; const int numHits = sizeof(hits) / sizeof(hits[0]);
 		if (!circ.raycast(ray, hits[ARC]) || !isInAngle(hits[ARC].point - origin, startPoint, endPoint)) {
 			hits[ARC].distance = -1;
@@ -136,8 +150,8 @@ public:
 	void getClosestRaycastHit(V2<TYPE> const & point, RaycastHit_<TYPE> & out_rh) const {
 		Circf circ(origin, radius);
 		V2<TYPE> startRadCorner = origin + startPoint, endRadCorner = origin + endPoint;
-		LineP<TYPE> startLine(&startRadCorner, &origin);
-		LineP<TYPE> endLine(&origin, &endRadCorner);
+		LineP<TYPE> startLine(&startRadCorner, &circ.center);
+		LineP<TYPE> endLine(&circ.center, &endRadCorner);
 		RaycastHit_<TYPE> hits[3]; const int ARC = 0, START = 1, END = 2; const int numHits = sizeof(hits) / sizeof(hits[0]);
 		circ.getClosestRaycastHit(point, hits[ARC]);
 		if (!isInAngle(hits[ARC].point - origin, startPoint, endPoint)) {

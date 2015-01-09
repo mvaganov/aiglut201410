@@ -215,13 +215,24 @@ void Game::init() {
 	addObstacle(new CircleObject(Circf(V2f(-4, -4), 2), Obstacle::STATIC));
 	addObstacle(new AABBObject(AABBf(V2f(-4, 1), V2f(-2, 5)), Obstacle::STATIC));
 	addObstacle(new BoxObject(Boxf(V2f(4, 0), V2f(2, 5), V2f(1)), Obstacle::STATIC));
-	addObstacle(new ConeObject(Conef(V2f(0, 1), 1.5f, (float)V_2PI * 1 / 8, (float)V_2PI * 4 / 8), Obstacle::STATIC)); // make the radius of the cone correct based on the calculated center
+	addObstacle(new ConeObject(Conef(V2f(0, 1), 1.5f, (float)V_2PI * 1 / 8, (float)V_2PI * 3 / 8), Obstacle::STATIC)); // make the radius of the cone correct based on the calculated center
 	V2f trapezoid[] = { V2f(-.5f, .5f), V2f(.5f, 1.2f), V2f(.5f, -1.5f), V2f(-.5f, -.8f) };
 	int trapezoidCount = sizeof(trapezoid) / sizeof(trapezoid[0]);
-	addObstacle(new PolygonObject(Polygon2f(V2f(5, -7), 0, trapezoid, trapezoidCount), Obstacle::STATIC)); // TODO raycast does not always hit the shape correctly from all sides
+	addObstacle(new PolygonObject(Polygon2f(V2f(5, -7), V2f((float)V_2PI*0.0f/6), trapezoid, trapezoidCount), Obstacle::STATIC)); // TODO raycast does not always hit the shape correctly from all sides
 	V2f a(-2, -2), b(5, -4);
 	addObstacle(new LineObject(Linef(&a, &b), Obstacle::STATIC));
 	addObstacle(new PointObject(V2f(7, 7), Obstacle::STATIC));
+
+	delaunyBoundary = new CircleObject(Circf(V2f::ZERO(), 100), Obstacle::EVERYTHING);
+	delauny = new DelaunySet(delaunyBoundary);
+	//delauny->addNode(V2f(3, 4));
+	//delauny->addNode(V2f(-3, 4));
+	//delauny->addNode(V2f(-3, -4));
+	//delauny->addNode(V2f(0, -1));
+	for (int i = 0; i < 50; ++i) {
+		delauny->addNode(V2f::randomUnitVector() * Random::PRNGf() * 100);
+	}
+//	delauny->calculateAllTriangles();
 }
 
 Game::~Game() {
@@ -230,6 +241,8 @@ Game::~Game() {
 		obstacles.removeData(o);
 		delete o;
 	}
+	delete delauny;
+	delete delaunyBoundary;
 }
 
 /**
@@ -273,6 +286,8 @@ void Game::draw(GLUTRenderingContext * g) {
 		g->drawLine(operationPoint, mousePosition);
 	}
 
+	delauny->draw(g_screen);
+//	return;
 	// draw selected obstacle indicator
 	if (selectedObstacles.size() > 0) {
 		g->setColor(0xaaffaa);

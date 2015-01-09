@@ -11,7 +11,7 @@
 class Game; // class prototype, forward declaration "I promise game is a class."
 class Bullet;
 
-class Agent : public Obstacle {
+class Agent : public ObstacleConcrete {
 public:
 	const char* getShapeName() const { return "Agent"; }
 	/** where is this? */

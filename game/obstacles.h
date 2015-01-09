@@ -43,13 +43,13 @@ public:
 	virtual V2f getOrigin() const = 0;
 	/** @param moveDelta how to move this shape */
 	virtual void translate(V2f const & moveDelta) = 0;
-	/** how has this been rotated so far */
+	/** how has this been rotated so far TODO use V2<TYPE> instead of float */
 	virtual float getRotation() const = 0;
-	/** return false if this shape cannot rotate */
+	/** return false if this shape cannot rotate TODO use V2<TYPE> instead of float */
 	virtual bool rotate(const float radians) = 0;
-	/** return false if this shape cannot rotate */
+	/** return false if this shape cannot rotate TODO use V2<TYPE> instead of float */
 	virtual bool setRotation(const float radians) = 0;
-	/** if the shape were generalized into a sphere, centered on getCenter, what is the minimum radius required to make sure all of the points of this shape are within the sphere */
+	/** if the shape were generalized into a sphere, centered on getCenter, what is the minimum radius required to make sure all of the points of this shape are within the sphere TODO rename radius extent */
 	virtual float getRadius() const = 0;
 
 	/** used for general-case collision, and spatially aware logic */
@@ -71,12 +71,15 @@ public:
 	virtual void * calculateCollisionResolution(Collidable * otherObject) = 0;
 	/** @param collisionData the result of calculateCollisionResolution. If memory is allocated, this method should de-allocate it */
 	virtual void resolveCollision(Collidable * otherObject, void * & collisionData) = 0;
+	void draw(GLUTRenderingContext * g, bool filled) const { getShape()->draw(g, filled); }
 	virtual ~Collidable(){}
 
 	/** allows a shape to ignore shapes that do not share bits in the mask */
 	virtual long getMask() const = 0;
 	/** allows a shape to ignore shapes that do not share bits in the mask */
 	virtual void setMask(const long a_mask) = 0;
+	/** binary-OR the given mask into this mask */
+	virtual void ensureMaskOverlaps(const int otherMask) = 0;
 	/** should be called before collision checks, to make sure collision is even possible between the given shapes */
 	bool masksCollide(const Collidable * s) const { return (getMask() & s->getMask()) != 0; }
 	bool masksCollide(const long otherMask) const { return (getMask() & otherMask) != 0; }
@@ -84,8 +87,6 @@ public:
 
 /** an obstacle is Collidable, though a basic obstacle doesn't move or change based on collision */
 class Obstacle : public Collidable {
-protected:
-	long mask;
 public:
 	static const int NOTHING = 0;
 	static const int EVERYTHING = -1;
@@ -98,24 +99,13 @@ public:
 	static const int BLOCKS_LOS = 1 << 6;
 	static const int MARKED_FOR_DELETE = 1 << 31;
 
-	/** collide with everything by default (all the bits are set) */
-	Obstacle() : mask(-1){}
-	Obstacle(const long mask) :mask(mask){}
 	void * calculateCollisionResolution(Collidable * otherObject){ return 0; }
 	void resolveCollision(Collidable * o, void * & colledisionData){}
-	void draw(GLUTRenderingContext * g, bool filled) const { getShape()->draw(g, filled); }
-
-	/** allows a shape to ignore shapes that do not share bits in the mask */
-	long getMask() const { return mask; }
-	/** allows a shape to ignore shapes that do not share bits in the mask */
-	void setMask(const long a_mask) { mask = a_mask; }
-	/** binary-OR the given mask into this mask */
-	void ensureMaskOverlaps(const int otherMask) { mask |= otherMask; }
 
 	/**
-	 * @param o the given shape to test collission against
-	 * @param mask the layer to test. -1 for all masks
-	 */
+	* @param o the given shape to test collission against
+	* @param mask the layer to test. -1 for all masks
+	*/
 	bool intersects(const Shaped * o, const long mask) const {
 		return masksCollide(mask) && getShape()->intersects(o->getShape());
 	}
@@ -135,6 +125,22 @@ public:
 	bool raycast(Ray const & ray, RaycastHit & out_rh, const long mask) const {
 		return masksCollide(mask) && getShape()->raycast(ray, out_rh);
 	}
+};
+
+class ObstacleConcrete : public Obstacle {
+protected:
+	long mask;
+public:
+	/** collide with everything by default (all the bits are set) */
+	ObstacleConcrete() : mask(-1){}
+	ObstacleConcrete(const long mask) :mask(mask){}
+
+	/** allows a shape to ignore shapes that do not share bits in the mask */
+	long getMask() const { return mask; }
+	/** allows a shape to ignore shapes that do not share bits in the mask */
+	void setMask(const long a_mask) { mask = a_mask; }
+	/** binary-OR the given mask into this mask */
+	void ensureMaskOverlaps(const int otherMask) { mask |= otherMask; }
 };
 
 class ShapePoint : public V2f, public Shape {
@@ -192,6 +198,31 @@ public:
 	~ShapeLine(){}
 }; 
 
+class ShapeLineP : public LinePf, public Shape {
+public:
+	const char* getShapeName() const { return "LineP"; }
+	ShapeLineP() {}
+	ShapeLineP(V2f * a, V2f * b) :LinePf(a, b){}
+	ShapeLineP(LinePf & line) :LinePf(line){}
+	V2f getCenter() const { return V2f::between(getStart(), getEnd()); }
+	V2f getOrigin() const { return getStart(); }
+	virtual void translate(V2f const & moveDelta) { LinePf::translate(moveDelta); }
+	float getRotation() const { return getDelta().normalizeIfNotZero().piRadians(); }
+	bool rotate(const float radians) { return LinePf::rotate(radians); }
+	bool setRotation(const float radians) { return LinePf::setRotation(radians); }
+	float getRadius() const { return LinePf::length() / 2; }
+	bool intersects(const Shape * o) const;
+	bool intersectsAABB(V2f const & min, V2f const & max) const { return LinePf::intersectsAABB(min, max); }
+	bool intersectsCircle(V2f const & center, const float radius) const { return LinePf::intersectsCircle(center, radius); }
+	bool contains(V2f const & p) const { return p.isCCW(getStart(), getEnd()) && p.distance(getCenter()) < getRadius(); }
+	bool raycast(Ray const & ray, RaycastHit & out_rh) const { return LinePf::raycast(ray, out_rh); }
+	void getClosestRaycastHit(V2f const & point, RaycastHit & out_rh) const { LinePf::getClosestRaycastHit(point, out_rh); }
+	void draw(GLUTRenderingContext * g, bool filled) const { g->drawLine(getStart(), getEnd()); }
+	void * calculateCollisionResolution(Collidable * otherObject){ return 0; }
+	void resolveCollision(Collidable * o, void * & collisionData){}
+	~ShapeLineP(){}
+};
+
 class ShapeAABB : public AABBf, public Shape {
 public:
 	const char* getShapeName() const { return "AABB"; }
@@ -207,7 +238,6 @@ public:
 	bool intersects(const Shape * o) const { return o->intersectsAABB(min, max); }
 	bool intersectsAABB(V2f const & min, V2f const & max) const { return AABBf::intersectsAABB(min, max); }
 	bool intersectsCircle(V2f const & center, const float radius) const { return AABBf::intersectsCircle(center, radius); }
-	// this method needs BoxObject to be defined before the method can be defined
 	bool contains(V2f const & p) const { return AABBf::contains(p); }
 	bool raycast(Ray const & ray, RaycastHit & out_rh) const { return AABBf::raycast(ray, out_rh); }
 	void getClosestRaycastHit(V2f const & point, RaycastHit & out_rh) const { AABBf::getClosestRaycastHit(point, out_rh); }
@@ -268,7 +298,7 @@ public:
 	ShapeCone() {}
 	ShapeCone(Conef c) :Conef(c){}
 	V2f getCenter() const { return Conef::getCenter(); }
-	float getRadius() const { return radius; }
+	float getRadius() const { return Conef::getExtensionFromCenter(); }
 	V2f getOrigin() const { return origin; }
 	void translate(V2f const & moveDelta) { origin += moveDelta; }
 	float getRotation() const { return Conef::getRotation(); }
@@ -292,9 +322,9 @@ public:
 	float getRadius() const { return Polygon2f::getRadius(); }
 	V2f getOrigin() const { return Polygon2f::getOrigin(); }
 	void translate(V2f const & moveDelta) { Polygon2f::translate(moveDelta); }
-	float getRotation() const { return Polygon2f::getRotation(); }
+	float getRotation() const { return Polygon2f::getRotation().piRadians(); }
 	bool rotate(const float radians) { Polygon2f::rotate(radians); return true; }
-	bool setRotation(const float radians) { Polygon2f::setRotation(radians); return true; }
+	bool setRotation(const float radians) { Polygon2f::setRotation(V2f(radians)); return true; }
 	bool intersects(const Shape * o) const;
 	bool intersectsAABB(V2f const & min, V2f const & max) const { return Polygon2f::intersectsAABB(min, max); }
 	bool intersectsCircle(V2f const & center, const float radius) const { return Polygon2f::intersectsCircle(center, radius); }
@@ -306,9 +336,9 @@ public:
 };
 
 #define OBSTACLE_OBJECT(NAME, SHAPETYPE, PRIMITIVESHAPE) \
-class NAME : public Obstacle { \
+class NAME : public ObstacleConcrete { \
 	SHAPETYPE shape; public: Shape * getShape() { return &shape; } const Shape * getShape() const { return &shape; } \
-	NAME(PRIMITIVESHAPE s, const long mask) : Obstacle(mask), shape(s) {}\
+	NAME(PRIMITIVESHAPE s, const long mask) : ObstacleConcrete(mask), shape(s) {}\
 	~NAME(){} \
 	SHAPETYPE * get##SHAPETYPE() { return &shape; } \
 	const SHAPETYPE * get##SHAPETYPE() const { return &shape; } \

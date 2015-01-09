@@ -42,8 +42,6 @@ public:
 	TemplateVector<Obstacle*> obstacles;
 //	TemplateVector<Agent*> agents;
 
-//	CellSpacePartition * staticObstaclesMap;
-//	CellSpacePartition * movingObstaclesMap;
 	LayeredPartitions objectMap;
 
 	//Graph * mapGraph;
@@ -56,10 +54,10 @@ public:
 	///** generate a list of agents in the given area */
 	//void gatherListOfAgentsAt(Circf const & area, TemplateVector<Agent*> & out_agents);
 
-
-	//DelaunySet * delauny;
+	Obstacle * delaunyBoundary;
+	DelaunySet * delauny;
 	//DelaunySet * delaunyEdit;
-	//TemplateVector<DelaunySet::VoronoiNode*> voronoiNodes;
+	TemplateVector<DelaunySet::VoronoiNode*> voronoiNodes;
 
 	/** whether or not to draw debug lines for FSM steering behaviors */
 	bool drawDebug;

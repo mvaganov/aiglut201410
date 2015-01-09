@@ -4,7 +4,7 @@
 #include "obstacles.h"
 #include "codegiraffe/glutrenderingcontext.h"
 
-class Cell_I : public Obstacle {
+class Cell_I : public ObstacleConcrete {
 public:
 	virtual void gatherAtAABB(const AABBf location, TemplateSet<Obstacle*> & result, const long mask) const = 0;
 	virtual void gatherAtCircle(const Circf location, TemplateSet<Obstacle*> & result, const long mask) const = 0;
@@ -135,6 +135,10 @@ public:
 	V2i gridSize;
 	/** how big each sub-cell is */
 	V2f cellDimensions;
+
+	CellSpacePartition(){
+		printf(".");
+	}
 
 	CellSpacePartition(AABBf totalArea, V2i gridSize) : aabb(totalArea) {
 		this->gridSize.set(gridSize);

@@ -10,6 +10,8 @@
 #include "obstacles.h"
 #include "graph.h"
 #include "cellspacepartition.h"
+#include "mempool.h"
+#include "obstacles.h"
 
 // TODO voronoi around obstacles to make a nav mesh
 // TODO profile and optimize
@@ -27,8 +29,10 @@ public:
 	class Triangulation;
 
 	/** the faces of a VoronoiNode, which lie on the edges between nodes TODO make this a polygon... */
-	class VoronoiFace {
+	class VoronoiFace : public Obstacle {
 	public:
+		// TODO replace points, center, normal, radius with shape.
+		ShapePolygon shape;
 		/** the points that determine the ends of the separating edge. in a 3D shape these will be the coordinates of the polygon face between voronoi nodes */
 		TemplateVector<V2f> points;
 		/** where the separating face is, and it's normal */
@@ -43,14 +47,25 @@ public:
 		float sideValue(V2f const & p);
 
 		void gatherOppositePoints(V2f & out_a, V2f & out_b);
+
+		/** allows a shape to ignore shapes that do not share bits in the mask */
+		long getMask() const { return Obstacle::VORONOI_EDGE; }
+		/** allows a shape to ignore shapes that do not share bits in the mask */
+		void setMask(const long a_mask) { int i = 0; i = 1 / i; }
+		/** binary-OR the given mask into this mask */
+		void ensureMaskOverlaps(const int otherMask) { int i = 0; i = 1 / i; }
+
+		Shape * getShape() { return &shape; }
+		const Shape * getShape() const { return &shape; }
 	};
 
 	/** the graph edge of the voronoi node, used to calculate the delauny triangulation */
-	class Edge : public GraphEdge {
+	class Edge : public GraphEdge, public Obstacle {
 		/** the triangulations that neighbor this edge */
 		TemplateSet<Triangulation*> neighborTri;
 		/** the face that was calculated for this edge */
 		VoronoiFace voronoiFace;
+		ShapeLineP shape;
 	public:
 		VoronoiFace & getFace();
 
@@ -69,9 +84,19 @@ public:
 		Edge(VoronoiNode *a, VoronoiNode *b);
 		void draw(GLUTRenderingContext * g) const;
 		bool isNeighbor(Triangulation * const t) const;
+
+		/** allows a shape to ignore shapes that do not share bits in the mask */
+		long getMask() const { return Obstacle::VORONOI_EDGE; }
+		/** allows a shape to ignore shapes that do not share bits in the mask */
+		void setMask(const long a_mask) { int i = 0; i = 1 / i; }
+		/** binary-OR the given mask into this mask */
+		void ensureMaskOverlaps(const int otherMask) { int i = 0; i = 1 / i; }
+
+		Shape * getShape() { return &shape; }
+		const Shape * getShape() const { return &shape; }
 	};
 
-	class Triangulation : public Shaped {
+	class Triangulation : public ObstacleConcrete {
 	private:
 		ShapePolygon shape;
 		/** not a set because the order matters. edges are stored in clockwise fashion. */
@@ -111,7 +136,7 @@ public:
 		bool isValidTriangle() const;
 
 		/** make this an invalid triangulation. put any edges freed (nolonger referenced by any triangles) into the given set */
-		void invalidate(TemplateSet<Edge*> & freeEdges);
+		void invalidate(MemPool<Edge> & freeEdges);
 
 		/** put all of the nodes from referenced edges into the given set */
 		void gatherNodesInto(TemplateSet<VoronoiNode*> & nodes) const;
@@ -150,10 +175,18 @@ public:
 		bool equals(const Triangulation & t) const;
 		bool operator==(Triangulation const & t) const;
 		bool operator!=(Triangulation const & t) const;
+
+		/** allows a shape to ignore shapes that do not share bits in the mask */
+		long getMask() const { return Obstacle::DELAUNY_TRIANGULATION; }
+		/** allows a shape to ignore shapes that do not share bits in the mask */
+		void setMask(const long a_mask) { int i = 0; i = 1 / i; }
+		/** binary-OR the given mask into this mask */
+		void ensureMaskOverlaps(const int otherMask) { int i = 0; i = 1 / i; }
 	};
 
-	class VoronoiNode : public GraphNode, public Shaped {
-		ShapePolygon polygon;
+	class VoronoiNode : public GraphNode, public Obstacle  {
+		ShapePolygon calculatedPolygon;
+		ShapePoint point;
 		/** identifies if this is on the edge of the voronoi diagram (near the boundaries) */
 		Obstacle * atBoundaryOf;
 		/** */
@@ -162,11 +195,19 @@ public:
 		bool needsModelRecalculated;
 
 	public:
-		Shape * getShape() { return &polygon; }
-		const Shape * getShape() const { return &polygon; }
+		/** allows a shape to ignore shapes that do not share bits in the mask */
+		long getMask() const { return Obstacle::VORONOI_NODE; }
+		/** allows a shape to ignore shapes that do not share bits in the mask */
+		void setMask(const long a_mask) { int i = 0; i = 1 / i; }
+		/** binary-OR the given mask into this mask */
+		void ensureMaskOverlaps(const int otherMask) { int i = 0; i = 1 / i; }
+
+		Shape * getShape() { return &point; }
+		const Shape * getShape() const { return &point; }
 		VoronoiNode();
 		VoronoiNode(V2f const & p);
 
+		V2f & getLocation();
 		const V2f & getLocation() const;
 
 		/** @return whether the polygon needs to be recalculated */
@@ -218,13 +259,12 @@ public:
 	void connectNodes(AbstractGraphNode * from, AbstractGraphNode * to);
 	AbstractGraphEdge * getEdge(AbstractGraphNode * a, AbstractGraphNode * b, bool createIfNotThere);
 
-	TemplateVectorList<VoronoiNode> currentNodes;
-	TemplateVectorList<Edge> currentEdges;
-	TemplateVectorList<Triangulation> currentTriangles;
+	MemPool<VoronoiNode> nodePool;
+	MemPool<Edge> edgePool;
+	MemPool<Triangulation> triangulationPool;
 
-	TemplateSet<VoronoiNode*> freeNodes;
-	TemplateSet<Triangulation*> freeTriangles;
-	TemplateSet<Edge*> freeEdges;
+	CellSpacePartition * csp;
+
 	VoronoiNode * selectedNode;
 	Obstacle * boundary;
 

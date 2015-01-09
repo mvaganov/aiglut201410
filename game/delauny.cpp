@@ -87,7 +87,7 @@ void DelaunySet::Edge::invalidateEdge() {
 }
 bool DelaunySet::Edge::isValid() const { return getNode(0) != NULL && getNode(1) != NULL; }
 DelaunySet::Edge::Edge() { nodes[0] = nodes[1] = NULL; invalidateEdge(); }
-DelaunySet::Edge::Edge(VoronoiNode *a, VoronoiNode *b) : GraphEdge(a, b){}// { nodes[0] = a; nodes[1] = b; }
+DelaunySet::Edge::Edge(VoronoiNode *a, VoronoiNode *b) : GraphEdge(a, b), shape(&a->getLocation(), &b->getLocation()){}// { nodes[0] = a; nodes[1] = b; }
 void DelaunySet::Edge::draw(GLUTRenderingContext * g) const {
 	GraphNode * a = (GraphNode*)getNode(0), *b = (GraphNode*)getNode(1);
 	a->getLocation().glDrawTo(b->getLocation());
@@ -151,7 +151,7 @@ bool DelaunySet::Triangulation::calculate() {
 bool DelaunySet::Triangulation::isValidTriangle() const { return circum.radius >= 0; }
 
 /** make this an invalid triangulation. put any edges freed (nolonger referenced by any triangles) into the given set */
-void DelaunySet::Triangulation::invalidate(TemplateSet<Edge*> & freeEdges) {
+void DelaunySet::Triangulation::invalidate(MemPool<Edge> & edgePool) {
 	circum.radius = -1;
 	startingNode = NULL;
 	for (int i = edges.size() - 1; i >= 0; --i) {
@@ -163,7 +163,7 @@ void DelaunySet::Triangulation::invalidate(TemplateSet<Edge*> & freeEdges) {
 		}
 		if (e->getNeighborTriangulationCount() == 0) {
 			e->invalidateEdge();
-			freeEdges.add(e);
+			edgePool.markFree(e);
 		}
 		edges[i] = NULL; // don't de-allocate the edges, this triangulation will probably be used again, and might need the same number of edges
 	}
@@ -269,6 +269,7 @@ bool DelaunySet::Triangulation::operator!=(Triangulation const & t) const { retu
 DelaunySet::VoronoiNode::VoronoiNode() : atBoundaryOf(NULL), valid(false), needsModelRecalculated(true){}
 DelaunySet::VoronoiNode::VoronoiNode(V2f const & p) { set(p); }
 
+V2f & DelaunySet::VoronoiNode::getLocation() { return location; }
 const V2f & DelaunySet::VoronoiNode::getLocation() const { return location; }
 
 /** @return whether the polygon needs to be recalculated */
@@ -294,8 +295,8 @@ void DelaunySet::VoronoiNode::invalidate(DelaunySet & D, TemplateSet<VoronoiNode
 		for (int i = e->getNeighborTriangulationCount() - 1; i >= 0; --i) {
 			Triangulation * t = e->getNeighborTriangulation(i);
 			t->gatherNodesInto(changedNodes);
-			t->invalidate(D.freeEdges);
-			D.freeTriangles.add(t);
+			t->invalidate(D.edgePool);
+			D.triangulationPool.markFree(t);//D.freeTriangles.add(t);
 		}
 		int sizeAtEnd = edges.size();
 		if (sizeAtStart == sizeAtEnd)
@@ -322,7 +323,7 @@ Polygon2f & DelaunySet::VoronoiNode::getPolygon2f(Obstacle * boundary) {
 		atBoundaryOf = NULL;
 		//printf("-------------------\n");
 		//TemplateVector<LineF> lines;
-		polygon.points.clear();
+		calculatedPolygon.points.clear();
 		TemplateSet<VoronoiNode*> nodes;
 		// get all the triangulations that this node is bordering
 		TemplateSet<Triangulation*> triangles;
@@ -412,11 +413,11 @@ Polygon2f & DelaunySet::VoronoiNode::getPolygon2f(Obstacle * boundary) {
 		}
 		//printf("\n");
 		// that should be all the data needed for a polygon
-		polygon.set(this->location, 0, points.getRawListConst(), points.size(), pairs.getRawListConst(), pairs.size(), true);
+		calculatedPolygon.set(this->location, V2f::ZERO_DEGREES(), points.getRawListConst(), points.size(), pairs.getRawListConst(), pairs.size(), true);
 		//for (int i = 0; i < polygon.points.size(); ++i) { printf("(%.1f %.1f)", polygon.points[i].x, polygon.points[i].y); } printf("\n");
 		needsModelRecalculated = false;
 	}
-	return polygon;
+	return calculatedPolygon;
 }
 
 bool DelaunySet::VoronoiNode::polyhedronContains(V2f const & a_position) const {
@@ -491,8 +492,8 @@ void DelaunySet::orderNodesClockwise(VoronoiNode*const* nodes, const int nodeCou
 	}
 }
 
-int DelaunySet::getNodeCount() const { return currentNodes.size(); }
-AbstractGraphNode * DelaunySet::getNode(const int index) { return &currentNodes[index]; }
+int DelaunySet::getNodeCount() const { return nodePool.countUsed(); }//currentNodes.size(); }
+AbstractGraphNode * DelaunySet::getNode(const int index) { return &nodePool.get(index); }//currentNodes[index]; }
 
 void DelaunySet::connectNodes(AbstractGraphNode * from, AbstractGraphNode * to) {
 	getEdge(from, to, true);
@@ -508,26 +509,32 @@ AbstractGraphEdge * DelaunySet::getEdge(AbstractGraphNode * a, AbstractGraphNode
 	return e;
 }
 
-DelaunySet::DelaunySet(Obstacle * boundary) :selectedNode(0), boundary(boundary){}
+DelaunySet::DelaunySet(Obstacle * boundary) :selectedNode(0), boundary(boundary), csp(0){}
 
-DelaunySet::~DelaunySet() { }
+DelaunySet::~DelaunySet() { 
+	if (csp) {
+		delete csp;
+		csp = 0;
+	}
+}
 
 DelaunySet::Triangulation * DelaunySet::addTriangle(Triangulation const & t) {
-	Triangulation * tri;
-	if (freeTriangles.size() > 0) {
-		tri = freeTriangles.pop();
-	}
-	else {
-		currentTriangles.add();
-		tri = &currentTriangles.getLast();
-	}
-	*tri = t;
-	return tri;
+	//Triangulation * tri;
+	//if (freeTriangles.size() > 0) {
+	//	tri = freeTriangles.pop();
+	//}
+	//else {
+	//	currentTriangles.add();
+	//	tri = &currentTriangles.getLast();
+	//}
+	//*tri = t;
+	//return tri;
+	return &triangulationPool.add(t);
 }
 
 void DelaunySet::removeTriangle(Triangulation * toRemove) {
-	toRemove->invalidate(freeEdges);
-	freeTriangles.add(toRemove);
+	toRemove->invalidate(edgePool);
+	triangulationPool.markFree(toRemove);//freeTriangles.add(toRemove);
 #ifndef NO_TEST
 	// check to see if anything references the bad triangle still.
 	for (int i = 0; i < currentTriangles.size(); ++i) {
@@ -553,7 +560,7 @@ void DelaunySet::removeNode(VoronoiNode * toRemove) {
 
 void DelaunySet::removeNode(VoronoiNode * toRemove, TemplateSet<VoronoiNode*> & changedNodes) {
 	toRemove->invalidate(*this, changedNodes);
-	freeNodes.add(toRemove);
+	nodePool.markFree(toRemove);//freeNodes.add(toRemove);
 	changedNodes.removeData(toRemove);
 }
 
@@ -565,19 +572,27 @@ void DelaunySet::moveNode(VoronoiNode * toMove, V2f newPosition) {
 }
 
 DelaunySet::Edge * DelaunySet::findEdge(VoronoiNode * a, VoronoiNode * b) {
-	for (int i = 0; i < currentEdges.size(); ++i) {
-		if (currentEdges[i].hasBoth(a, b)) return &currentEdges[i];
+	//DelaunySet::Edge * eA = a->getEdgeTo(b);
+	//DelaunySet::Edge * eB = a->getEdgeTo(b);
+	//if (eA != eB) {
+	//	ABORT
+	//}
+	//if (eA != NULL)
+	//	return eA;
+	for (int i = 0; i < edgePool.size(); ++i) {
+		if (edgePool[i].hasBoth(a, b)) return &edgePool[i];
 	}
 	return NULL;
+//	return a->getEdgeTo(b);
 }
 
 DelaunySet::Edge* DelaunySet::addEdge(Edge const & e) {
-	if (freeEdges.size() > 0) {
-		Edge * ed = freeEdges.pop();
-		*ed = e;
-		return ed;
-	}
-	currentEdges.add(e); return &currentEdges.getLast();
+	//if (freeEdges.size() > 0) {
+	//	Edge * ed = freeEdges.pop();
+	//	*ed = e;
+	//	return ed;
+	//}
+	return &edgePool.add(e); //return &edgePool.getLast();
 }
 
 DelaunySet::Edge* DelaunySet::marshalEdge(VoronoiNode * a, VoronoiNode * b) {
@@ -619,8 +634,8 @@ DelaunySet::Triangulation * DelaunySet::getTriangle(TemplateSet<VoronoiNode*> & 
 				// or if this triangle we're looking for is a bigger triangle, that has all of these nodes
 				else if (nodeCluster.size() > nodes.size() && nodeCluster.containsAll(nodes.getRawListConst(), nodes.size())) {
 					// this one will replace the smaller one
-					tri->invalidate(freeEdges);
-					freeTriangles.add(tri);
+					tri->invalidate(edgePool);
+					triangulationPool.markFree(tri);//freeTriangles.add(tri);
 				}
 			}
 		}
@@ -726,9 +741,9 @@ bool DelaunySet::createTriangulationInternal(TemplateSet<VoronoiNode*> & nodeClu
 	bool triangulationClear = false;
 	bool atLeastOneMoreComplexCreated = false;
 	float dist;
-	for (int i = startIndex; i < currentNodes.size(); ++i) {
+	for (int i = startIndex; i < nodePool.size()/*currentNodes.size()*/; ++i) {
 		// grab the next node in the list
-		VoronoiNode * n = &currentNodes[i];
+		VoronoiNode * n = &nodePool[i];// currentNodes[i];
 		// don't consider invalid nodes or duplicates in the node cluster
 		if (!n->isValidNode() || nodeCluster.indexOf(n) >= 0) continue;
 		// don't consider nodes that are too far away
@@ -767,9 +782,9 @@ bool DelaunySet::createTriangulationInternal(TemplateSet<VoronoiNode*> & nodeClu
 }
 
 void DelaunySet::calculateAllTriangles() {
-	if (currentNodes.size() > 2) {
-		for (int i = 0; i < currentNodes.size(); ++i) {
-			createTriangulationsFor(&currentNodes[i], NULL);
+	if (/*currentNodes*/nodePool.size() > 2) {
+		for (int i = 0; i < /*currentNodes*/nodePool.size(); ++i) {
+			createTriangulationsFor(&/*currentNodes*/nodePool[i], NULL);
 		}
 #ifndef NO_TEST
 		dupTest();
@@ -799,7 +814,7 @@ void DelaunySet::makeRandom(int count) {
 		float x = Random::PRNGf(), y = Random::PRNGf();
 		V2f randomPoint = V2f(x*d.x + min.x, y*d.y + min.y);
 		if (boundary->getShape()->contains(randomPoint)) {
-			currentNodes.add(VoronoiNode(randomPoint));
+			/*currentNodes*/nodePool.add(VoronoiNode(randomPoint));
 		}
 		else {
 			--i;
@@ -808,8 +823,8 @@ void DelaunySet::makeRandom(int count) {
 }
 
 void DelaunySet::gatherTrianglesContaining(V2f const & point, TemplateSet<Triangulation*> & out_triangleSet) {
-	for (int i = 0; i < currentTriangles.size(); ++i) {
-		Triangulation * t = &currentTriangles[i];
+	for (int i = 0; i < triangulationPool.size(); ++i) {
+		Triangulation * t = &triangulationPool[i];
 		if (t->circumscriptionContains(point)) {
 			out_triangleSet.add(t);
 		}
@@ -825,11 +840,11 @@ int DelaunySet::indexOf(const Triangulation * t, TemplateVector<const Triangulat
 
 bool DelaunySet::findDuplicateTriangle(int startIndex, int & a, int & b) {
 	Triangulation * ta, *tb;
-	for (a = startIndex; a < currentTriangles.size(); ++a) {
-		ta = &currentTriangles[a];
+	for (a = startIndex; a < triangulationPool.size(); ++a) {
+		ta = &triangulationPool[a];
 		if (ta->isValidTriangle()) {
-			for (b = a + 1; b < currentTriangles.size(); ++b) {
-				tb = &currentTriangles[b];
+			for (b = a + 1; b < triangulationPool.size(); ++b) {
+				tb = &triangulationPool[b];
 				if (tb->isValidTriangle() && ta->equals(*tb)) {
 					return true;
 				}
@@ -935,15 +950,16 @@ void DelaunySet::bigValidationTest() {
 }
 
 AbstractGraphNode * DelaunySet::createNode() {
-	VoronoiNode * newNode;
-	if (freeNodes.size() > 0) {
-		newNode = freeNodes.pop();
-	}
-	else {
-		currentNodes.add();
-		newNode = &currentNodes.getLast();
-	}
-	return newNode;
+	//VoronoiNode * newNode;
+	//if (freeNodes.size() > 0) {
+	//	newNode = freeNodes.pop();
+	//}
+	//else {
+	//	currentNodes.add();
+	//	newNode = &currentNodes.getLast();
+	//}
+	//return newNode;
+	return nodePool.add();
 }
 
 bool DelaunySet::addNode(V2f point) {
@@ -965,8 +981,8 @@ bool DelaunySet::addNode(V2f point, TemplateSet<VoronoiNode*> & changedNodes) {
 	// if this node is not in the bondaries of this diagram, ignore it
 	if (boundary && !boundary->getShape()->contains(point)) return false;
 	// if this node already exists, ignore it
-	for (int i = 0; i < currentNodes.size(); ++i) {
-		if (currentNodes[i].getLocation() == point){
+	for (int i = 0; i < /*currentNodes*/nodePool.size(); ++i) {
+		if (/*currentNodes*/nodePool[i].getLocation() == point){
 			return false;
 		}
 	}
@@ -1003,8 +1019,8 @@ bool DelaunySet::addNode(V2f point, TemplateSet<VoronoiNode*> & changedNodes) {
 */
 DelaunySet::VoronoiNode * DelaunySet::getNodeAt(Circf const & location, TemplateSet<VoronoiNode*> * out_allNodesHere, VoronoiNode** ignoreList, const int ignoreListCount) {
 	VoronoiNode * n, *foundOne = NULL;
-	for (int i = 0; i < currentNodes.size(); ++i) {
-		n = &currentNodes[i];
+	for (int i = 0; i < /*currentNodes*/nodePool.size(); ++i) {
+		n = &/*currentNodes*/nodePool[i];
 		if (ignoreList && TemplateArray<VoronoiNode*>::indexOf(n, ignoreList, 0, ignoreListCount) >= 0) continue;
 		if (n->isValidNode() && location.contains(n->getLocation())) {
 			foundOne = n;
@@ -1016,8 +1032,8 @@ DelaunySet::VoronoiNode * DelaunySet::getNodeAt(Circf const & location, Template
 }
 
 DelaunySet::VoronoiNode * DelaunySet::getNodePolyhedronContains(V2f const & point) {
-	for (int i = 0; i < currentNodes.size(); ++i) {
-		VoronoiNode * n = &currentNodes[i];
+	for (int i = 0; i < /*currentNodes*/nodePool.size(); ++i) {
+		VoronoiNode * n = &/*currentNodes*/nodePool[i];
 		if (n->isValidNode() && n->polyhedronContains(point)) {
 			return n;
 		}
@@ -1026,8 +1042,8 @@ DelaunySet::VoronoiNode * DelaunySet::getNodePolyhedronContains(V2f const & poin
 }
 
 void DelaunySet::gatherVoronoi(TemplateVector<VoronoiNode*> & nodes, bool includeBorderPolygons) {
-	for (int i = 0; i < currentNodes.size(); ++i) {
-		VoronoiNode * vn = &currentNodes[i];
+	for (int i = 0; i < /*currentNodes*/nodePool.size(); ++i) {
+		VoronoiNode * vn = &/*currentNodes*/nodePool[i];
 		if (vn->isValidNode()) {
 			vn->getPolygon2f(boundary);
 			if (includeBorderPolygons || !vn->isBorderPolygon()) {
@@ -1050,8 +1066,8 @@ void DelaunySet::draw(GLUTRenderingContext * g) const {
 	}
 #endif
 
-	for (int i = 0; i < currentEdges.size(); ++i) {
-		const Edge * e = &currentEdges[i];
+	for (int i = 0; i < edgePool.size(); ++i) {
+		const Edge * e = &edgePool[i];
 		if (e->isValid()) {
 			if (e->getCost() > 0) {
 				g->setColor(0x88ff88);
@@ -1104,16 +1120,16 @@ void DelaunySet::draw(GLUTRenderingContext * g) const {
 		}
 	}
 	const Triangulation * selectedTriangle = NULL;
-	for (int i = 0; i < currentTriangles.size(); ++i) {
-		const Triangulation* t = &currentTriangles[i];
+	for (int i = 0; i < triangulationPool.size(); ++i) {
+		const Triangulation* t = &triangulationPool[i];
 		if (t->isValidTriangle() && t->polygonContains(specialCursor)) {
 			selectedTriangle = t;
 		}
 	}
 
 	g->setColor(0xaa0000);
-	for (int i = 0; i < currentNodes.size(); ++i) {
-		const VoronoiNode * n = &currentNodes[i];
+	for (int i = 0; i < /*currentNodes*/nodePool.size(); ++i) {
+		const VoronoiNode * n = &/*currentNodes*/nodePool[i];
 		if (n->isValidNode()) {
 			glDrawCircle(n->getLocation(), 0.2f, false);
 			g->printf(n->getLocation(), "%d", i);
@@ -1121,12 +1137,12 @@ void DelaunySet::draw(GLUTRenderingContext * g) const {
 	}
 
 	TemplateVector<V2f> edgeBorder;
-	for (int i = 0; i < currentTriangles.size(); ++i) {
-		if (!currentTriangles[i].isValidTriangle()) continue;
+	for (int i = 0; i < triangulationPool.size(); ++i) {
+		if (!triangulationPool[i].isValidTriangle()) continue;
 
-		glDrawCircle(currentTriangles[i].circum.center, .05f, false);
+		glDrawCircle(triangulationPool[i].circum.center, .05f, false);
 
-		const Triangulation * t = &currentTriangles[i];
+		const Triangulation * t = &triangulationPool[i];
 
 		for (int n = 0; n < t->getEdgeCount(); ++n) {
 			Edge * e = t->getEdge(n);

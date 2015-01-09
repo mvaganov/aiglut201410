@@ -10,16 +10,18 @@
 template <typename TYPE>
 class Polygon2 {
 	/** if there was a circle that this polygon were instribed in, what would it's radius be */
-	TYPE radius, rotation;
+	TYPE radius;
+	V2<TYPE> rotation;
 	/** where is the center of the circle that this polygon is inscribed in */
 	V2<TYPE> center;
 	/** where the center of this polygon is */
 	V2<TYPE> origin;
 public:
-	TYPE getRotation() const { return rotation; }
-	void setRotation(const TYPE rotation) { this->rotation = rotation; }
+	V2<TYPE> getRotation() const { return rotation; }
+	void setRotation(const V2<TYPE> rotation) { this->rotation = rotation; }
 	V2<TYPE> getOrigin() const { return origin; }
-	void rotate(const TYPE radians) { rotation += radians; }
+	void rotate(const V2<TYPE> radians) { rotation.rotate(radians); }
+	void rotate(const TYPE radians) { rotation.rotate(radians); }//rotation += radians; }
 	void translate(V2f const & moveDelta) { origin += moveDelta; }
 
 
@@ -47,7 +49,7 @@ public:
 	/** how the points connect. If this is size 0 then the points are considered a line loop */
 	TemplateSet<pair> connectionPairs;
 
-	Polygon2() : radius(0) {}
+	Polygon2() : radius(0), rotation(V2<TYPE>::ZERO_DEGREES()) {}
 	Polygon2(V2<TYPE> const & origin, V2<TYPE> const & rotation) : origin(origin), rotation(rotation) : radius(0) {}
 
 	bool isValid() const { return radius > 0; }
@@ -94,7 +96,7 @@ public:
 		}
 	}
 
-	Polygon2(V2<TYPE> const & origin, TYPE const & rotation, V2<TYPE> * const & list, const int count)
+	Polygon2(V2<TYPE> const & origin, V2<TYPE> const & rotation, V2<TYPE> * const & list, const int count)
 		:radius(0), origin(origin), rotation(rotation) {
 		setPoints(list, count);
 		// TODO implement the inscribed-circle center
@@ -108,16 +110,16 @@ public:
 		}
 	}
 
-	Polygon2(Box<TYPE> box):radius(0),origin(box.center),rotation(box.rotation.piRadians()) {
+	Polygon2(Box<TYPE> box):radius(0),origin(box.center),rotation(box.rotation) {
 		V2<TYPE> boxP[4];
 		box.writePointsRelative(boxP, 4);
 		setPoints(boxP, 4);
 	}
-	Polygon2(V2<TYPE> const & origin, TYPE const & rotation, const V2<TYPE> * const & list, const int count, const pair * const & pairs, const int pairsCount) {
+	Polygon2(V2<TYPE> const & origin, V2<TYPE> const & rotation, const V2<TYPE> * const & list, const int count, const pair * const & pairs, const int pairsCount) {
 		set(origin, rotation, list, count, pairs, pairsCount, true);
 	}
 
-	void set(V2<TYPE> const & origin, TYPE const & rotation, const V2<TYPE> * const & list, const int count, const pair * const & pairs, const int pairsCount, bool attemptClockwiseOptimization) {
+	void set(V2<TYPE> const & origin, V2<TYPE> const & rotation, const V2<TYPE> * const & list, const int count, const pair * const & pairs, const int pairsCount, bool attemptClockwiseOptimization) {
 		this->origin = origin;
 		this->rotation = rotation;
 		bool clockwiseOptimize = attemptClockwiseOptimization;
@@ -230,7 +232,8 @@ public:
 
 	bool contains(V2<TYPE> const & p) const {
 		V2<TYPE> relativeP = p - origin, a, b, lineP, lineC, lineDelta;
-		relativeP.rotate(-rotation);
+		TYPE unrotate = -rotation.piRadians();
+		relativeP.rotate(unrotate);
 		bool knownToBeClockwise = this->isLineStripPolygon();
 		bool isClockwise = knownToBeClockwise;
 		TYPE pSign, cSign;
@@ -254,8 +257,9 @@ public:
 
 	bool raycast(Ray_<TYPE> const & ray, RaycastHit_<TYPE> & out_rh) const {
 		V2<TYPE> relativeRayStart = ray.start - origin;
-		relativeRayStart.rotate(-rotation);
-		V2<TYPE> relativeRayDirection = ray.direction.rotated(-rotation);
+		TYPE unrotate = -rotation.piRadians();
+		relativeRayStart.rotate(unrotate);
+		V2<TYPE> relativeRayDirection = ray.direction.rotated(unrotate);
 		bool hitSomething = false;
 		// test if the ray would hit a sphere that contains this polygon
 		if (V2<TYPE>::rayCrossesCircle(relativeRayStart, relativeRayDirection, center, radius)) {
@@ -299,7 +303,8 @@ public:
 	bool getClosestRaycastHit(V2<TYPE> const & point, RaycastHit_<TYPE> & out_rh) const {
 		TYPE closestDist = -1, d;
 		V2<TYPE> relativeP = point - origin, a, b;
-		relativeP.rotate(-rotation);
+		TYPE unrotate = -rotation.piRadians();
+		relativeP.rotate(unrotate);
 		V2<TYPE> closestPoint, p, delta;
 		int closestLineIndex = -1;
 		bool isOnLine;
@@ -339,7 +344,7 @@ public:
 	void glDraw(bool filled) const {
 		glPushMatrix();
 		origin.glTranslate();
-		TYPE degrees = rotation * 180 / (TYPE)V_PI;
+		TYPE degrees = rotation.degrees();// piRadians() * 180 / (TYPE)V_PI;
 		glRotatef(degrees, 0, 0, 1);
 		if (isLineStripPolygon()) {
 			//glDrawCircle(center, radius, false);
@@ -394,7 +399,8 @@ public:
 
 	bool intersectsCircle(const V2<TYPE> & circCenter, const TYPE circRadius) const {
 		V2<TYPE> relativeP = circCenter - origin;
-		relativeP.rotate(-rotation);
+		TYPE unrotate = -rotation.piRadians();
+		relativeP.rotate(unrotate);
 		V2<TYPE> delta = center - relativeP, a, b;
 		TYPE dist = delta.magnitude();
 		// check if the circle approximation would collide.

@@ -5,13 +5,13 @@
 template<typename TYPE>
 class _LineRef {
 public:
-	const V2<TYPE> * start;
-	const V2<TYPE> * end;
+	V2<TYPE> * start;
+	V2<TYPE> * end;
 	const V2<TYPE> & getStart() const { return *start; }
 	const V2<TYPE> & getEnd() const { return *end; }
 	void setStart(V2<TYPE> const & v) { *start = v; }
 	void setEnd(V2<TYPE> const & v) { *end = v; }
-	_LineRef(const V2<TYPE> * s, const V2<TYPE> * e) :start(s), end(e) {}
+	_LineRef(V2<TYPE> * s, V2<TYPE> * e) :start(s), end(e) {}
 	_LineRef(){}
 };
 
@@ -32,7 +32,7 @@ template<typename TYPE, typename REFTYPE>
 class Line : public REFTYPE {
 public:
 	Line(){}
-	Line(const V2<TYPE> * s, const V2<TYPE> * e) : REFTYPE(s, e){}
+	Line(V2<TYPE> * s, V2<TYPE> * e) : REFTYPE(s, e){}
 
 	V2<TYPE> getDelta() const { return getEnd() - getStart(); }
 
@@ -106,7 +106,8 @@ public:
 		V2<TYPE> d = getDelta();
 		TYPE len = d.magnitude();
 		if (len <= 0) return false;
-		bool hit = r.raycast(Ray(start, d / len), rh);
+		Ray_<TYPE> line = Ray_<TYPE>(getStart(), d / len);
+		bool hit = r.raycast(line, rh);
 		return (hit && rh.distance >= 0 && rh.distance < len);
 	}
 
@@ -117,12 +118,12 @@ public:
 
 };
 
-typedef Line<float, _LineRef<float> > LinePF;
+typedef Line<float, _LineRef<float> > LinePf;
 typedef Line<float, _LinePoints<float> > Linef;
 
 template<typename TYPE>
 class LineP : public Line<TYPE, _LineRef<TYPE> >{
 public:
 	LineP(){}
-	LineP(const V2<TYPE> * s, const V2<TYPE> * e) : Line<TYPE, _LineRef<TYPE> >(s, e){}
+	LineP(V2<TYPE> * s, V2<TYPE> * e) : Line<TYPE, _LineRef<TYPE> >(s, e){}
 };

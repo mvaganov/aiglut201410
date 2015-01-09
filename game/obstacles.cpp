@@ -33,6 +33,15 @@ bool ShapeLine::intersects(const Shape * o) const {
 	V2f d = getDelta();
 	float len = d.magnitude();
 	if (len <= 0) return false;
-	bool hit = o->raycast(Ray(start, d / len), rh);
+	bool hit = o->raycast(Ray(getStart(), d / len), rh);
+	return (hit && rh.distance >= 0 && rh.distance < len);
+}
+
+bool ShapeLineP::intersects(const Shape * o) const {
+	RaycastHit rh;
+	V2f d = getDelta();
+	float len = d.magnitude();
+	if (len <= 0) return false;
+	bool hit = o->raycast(Ray(getStart(), d / len), rh);
 	return (hit && rh.distance >= 0 && rh.distance < len);
 }

@@ -113,6 +113,7 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="graph.h" />
     <ClInclude Include="mazegen.h" />
+    <ClInclude Include="mempool.h" />
     <ClInclude Include="obstacles.h" />
     <ClInclude Include="steering.h" />
     <ClInclude Include="cellspacepartition.h" />
