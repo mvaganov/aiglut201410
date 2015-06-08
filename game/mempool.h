@@ -48,4 +48,5 @@ public:
 	TYPE& get(const int index) { return list[index]; }
 	TYPE& operator[](const int i) { return list[i]; }
 	const TYPE& operator[](const int i) const { return list[i]; }
+	bool isMarkedFree(TYPE * data) const { return freeList.has(data); }
 };

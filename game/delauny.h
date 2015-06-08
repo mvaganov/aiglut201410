@@ -98,16 +98,17 @@ public:
 
 	class Triangulation : public ObstacleConcrete {
 	private:
-		ShapePolygon shape;
 		/** not a set because the order matters. edges are stored in clockwise fashion. */
 		TemplateArray<Edge*> edges;
 		/** cached calculation of nodes in this Triangulation */
 		TemplateSet<VoronoiNode*> nodeSet;
+		long mask;
 	public:
-		Shape * getShape() { return &shape; }
-		const Shape * getShape() const { return &shape; }
+		Shape * getShape() { return &circum; }
+		const Shape * getShape() const { return &circum; }
 		/** circumscription of all edges */
-		Circf circum;
+		ShapeCircle circum;
+//		Circf circum;
 		/** the average point of all of the node locations */
 		V2f centerMass;
 		/** which node to start drawing from */
@@ -177,11 +178,11 @@ public:
 		bool operator!=(Triangulation const & t) const;
 
 		/** allows a shape to ignore shapes that do not share bits in the mask */
-		long getMask() const { return Obstacle::DELAUNY_TRIANGULATION; }
+		long getMask() const { return mask; }
 		/** allows a shape to ignore shapes that do not share bits in the mask */
-		void setMask(const long a_mask) { int i = 0; i = 1 / i; }
+		void setMask(const long a_mask) { mask = a_mask; }
 		/** binary-OR the given mask into this mask */
-		void ensureMaskOverlaps(const int otherMask) { int i = 0; i = 1 / i; }
+		void ensureMaskOverlaps(const int otherMask) { mask |= otherMask; }
 	};
 
 	class VoronoiNode : public GraphNode, public Obstacle  {
@@ -193,14 +194,16 @@ public:
 		bool valid;
 		/** whenever data changes, the node should flag itself as needed recalculation */
 		bool needsModelRecalculated;
-
+		long mask;
 	public:
 		/** allows a shape to ignore shapes that do not share bits in the mask */
-		long getMask() const { return Obstacle::VORONOI_NODE; }
+		long getMask() const {
+			return mask;
+		}
 		/** allows a shape to ignore shapes that do not share bits in the mask */
-		void setMask(const long a_mask) { int i = 0; i = 1 / i; }
+		void setMask(const long a_mask) { mask = a_mask; }
 		/** binary-OR the given mask into this mask */
-		void ensureMaskOverlaps(const int otherMask) { int i = 0; i = 1 / i; }
+		void ensureMaskOverlaps(const int otherMask) { mask |= otherMask; }
 
 		Shape * getShape() { return &point; }
 		const Shape * getShape() const { return &point; }
@@ -259,7 +262,7 @@ public:
 	void connectNodes(AbstractGraphNode * from, AbstractGraphNode * to);
 	AbstractGraphEdge * getEdge(AbstractGraphNode * a, AbstractGraphNode * b, bool createIfNotThere);
 
-	MemPool<VoronoiNode> nodePool;
+	MemPool<VoronoiNode> m_nodePool;
 	MemPool<Edge> edgePool;
 	MemPool<Triangulation> triangulationPool;
 
@@ -342,10 +345,11 @@ public:
 	 * @return a node found in the given location
 	 */
 	VoronoiNode * getNodeAt(Circf const & location, TemplateSet<VoronoiNode*> * out_allNodesHere, VoronoiNode** ignoreList, const int ignoreListCount);
+	Obstacle * DelaunySet::getNodeAt(Circf const & location, TemplateSet<Obstacle*> & out_allNodesHere);
 
-	VoronoiNode * getNodePolyhedronContains(V2f const & point);
+	//VoronoiNode * getNodePolyhedronContains(V2f const & point);
 
-	void gatherVoronoi(TemplateVector<VoronoiNode*> & nodes, bool includeBorderPolygons);
+	//void gatherVoronoi(TemplateVector<VoronoiNode*> & nodes, bool includeBorderPolygons);
 
 	void draw(GLUTRenderingContext * g) const;
 };

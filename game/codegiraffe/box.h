@@ -141,7 +141,7 @@ struct Box {
 			writePoints(ap, NUM_POINTS);
 			if (b.contains(ap, NUM_POINTS))
 				return true;
-			// check if any lines cross
+			// check if any lines cross TODO check if the inscribed X's cross (2 lines instead of 4)
 			V2<TYPE> point;
 			TYPE dist;
 			for (int a = 0; a < NUM_POINTS; ++a) {

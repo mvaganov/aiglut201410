@@ -46,4 +46,6 @@ public:
 			add(a_vector[i]);
 		}
 	}
+	// TODO make one of these that expects both lists to be sets (sorted). that could be O(N) instead of O(N^2)
+	bool removeListFast(TemplateVector<TYPE> const & a_listToExclude) { return TemplateVector::removeListFast(a_listToExclude); }
 };

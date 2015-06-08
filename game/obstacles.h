@@ -81,8 +81,14 @@ public:
 	/** binary-OR the given mask into this mask */
 	virtual void ensureMaskOverlaps(const int otherMask) = 0;
 	/** should be called before collision checks, to make sure collision is even possible between the given shapes */
-	bool masksCollide(const Collidable * s) const { return (getMask() & s->getMask()) != 0; }
-	bool masksCollide(const long otherMask) const { return (getMask() & otherMask) != 0; }
+	bool masksCollide(const Collidable * s) const {
+		long a = getMask(), b = s->getMask();
+		return (a & b) != 0;
+	}
+	bool masksCollide(const long otherMask) const {
+		long a = getMask();
+		return (a & otherMask) != 0;
+	}
 };
 
 /** an obstacle is Collidable, though a basic obstacle doesn't move or change based on collision */

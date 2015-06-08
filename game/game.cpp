@@ -193,6 +193,9 @@ void Game::key(V2f position, int key, int state) {
 		break;
 	case 'd':	// TODO if control is down, duplicate the shapes like in blender
 		break;
+	case '`':
+		delauny->addNode(mousePosition);
+		break;
 	}
 }
 
@@ -229,10 +232,11 @@ void Game::init() {
 	//delauny->addNode(V2f(-3, 4));
 	//delauny->addNode(V2f(-3, -4));
 	//delauny->addNode(V2f(0, -1));
-	for (int i = 0; i < 50; ++i) {
-		delauny->addNode(V2f::randomUnitVector() * Random::PRNGf() * 100);
-	}
-//	delauny->calculateAllTriangles();
+//	for (int i = 0; i < 10; ++i) {
+//		delauny->addNode(V2f::randomUnitVector() * Random::PRNGf() * 100);
+//	}
+	delauny->makeRandom(6);
+	delauny->calculateAllTriangles();
 }
 
 Game::~Game() {
@@ -302,9 +306,9 @@ void Game::draw(GLUTRenderingContext * g) {
 	g->setColor(0x00aaff);
 	g->printf(mousePosition, "%.2f, %.2f", mousePosition.x, mousePosition.y);
 	g->drawCircle(mousePosition, .1f, false);
-	int layerColors[] = { 0x0088aa, 0x66aa88, 0x88aa22, 0x123456 };
-	int layerColorsCount = sizeof(layerColors) / sizeof(layerColors[0]);
-	objectMap.draw(g, layerColors, layerColorsCount);
+//	int layerColors[] = { 0x0088aa, 0x66aa88, 0x88aa22, 0x123456 };
+//	int layerColorsCount = sizeof(layerColors) / sizeof(layerColors[0]);
+//	objectMap.draw(g, layerColors, layerColorsCount);
 
 	// testing cone stuff
 	RaycastHit rh;

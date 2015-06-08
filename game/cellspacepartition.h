@@ -12,6 +12,8 @@ public:
 	virtual void gatherAtLayer(TemplateSet<Obstacle*> & result, const long mask) const = 0;
 	/** mask parameter not included because each Obstacle already has a mask to use. */
 	virtual void gatherCollisions(Obstacle * subject, TemplateSet<Obstacle*> & out_list) const = 0;
+	/** returns the first thing collided with, or NULL if nothing collides with the given subjet */
+	virtual Obstacle * collidesWithSomething(Obstacle * subject) const = 0;
 	virtual void add(Obstacle* s) = 0;
 	virtual bool remove(Obstacle * s) = 0;
 	virtual void removeObstaclesMarked(const long mask) = 0;
@@ -119,6 +121,16 @@ public:
 			}
 		}
 	}
+
+	Obstacle * collidesWithSomething(Obstacle * area) const {
+		for (int i = 0; i < list.size(); ++i) {
+			if (area != list[i] && area->intersects(list[i], list[i]->getMask())) {
+				return list[i];
+			}
+		}
+		return NULL;
+	}
+
 };
 
 /** manages a grid-arranged array of cells (which are either PartitionCell or CellSparePartition objects) */
@@ -206,6 +218,20 @@ public:
 				}
 			}
 		}
+	}
+	Obstacle * collidesWithSomething(Obstacle * subject) const {
+		AABBf location(subject->getShape()->getCenter(), subject->getShape()->getRadius());
+		AABBf rect = getGridIndexeRange(location);
+		int index;
+		Obstacle * o;
+		for (int r = (int)rect.min.y; r <= rect.max.y; ++r) {
+			for (int c = (int)rect.min.x; c <= rect.max.x; ++c) {
+				index = getIndex(r, c);
+				o = cells[index]->collidesWithSomething(subject);
+				if (o != NULL) return o;
+			}
+		}
+		return NULL;
 	}
 
 	// used to test the minimal-cell-testing raycasting algorithm
@@ -564,6 +590,16 @@ public:
 				mapLayer[i]->gatherCollisions(subject, out_list);
 			}
 		}
+	}
+	Obstacle * collidesWithSomething(Obstacle * subject) const {
+		Obstacle * o = NULL;
+		for (int i = 0; i < mapLayer.size(); ++i) {
+			if (mapLayer[i]->masksCollide(subject->getMask())) {
+				o = mapLayer[i]->collidesWithSomething(subject);
+				if (o != NULL) return o;
+			}
+		}
+		return NULL;
 	}
 	void add(Obstacle* s) {
 		bool added = false;

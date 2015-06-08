@@ -480,7 +480,7 @@ struct V2 {
 	 * @param percentage 0 is a, 1 is b, .5 is between(a,b). any numeric value should work.
 	 * @return an interpolated point between points a and b.
 	 */
-	static V2<TYPE> lerp(V2<TYPE> const & a, V2<TYPE> const & b, const float percentage) {
+	static V2<TYPE> lerp(V2<TYPE> const & a, V2<TYPE> const & b, const TYPE percentage) {
 		V2<TYPE> delta = b - a;
 		delta *= percentage;
 		return a + delta;
