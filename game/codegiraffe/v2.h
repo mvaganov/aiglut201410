@@ -321,6 +321,8 @@ struct V2 {
 	/**
 	 * @param a_normal cos(theta),sin(theta) as x,y values 
 	 * NOTE: only use if this is a unit vector!
+	 * NOTE: also, interestingly, this is the same as ComplexNumber multiplication 
+	 * (real and imaginary parts, like "4 + 5i"). x is the real part, y is imaginary
 	 */
 	void rotateUnitVectors(const V2<TYPE> a_normal) {
 		// x_ = x*cos(theta) - y*sin(theta)
