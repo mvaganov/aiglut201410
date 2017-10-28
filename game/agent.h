@@ -150,7 +150,7 @@ public:
 				V2f top = right.rotated((float)V_PI / 4);
 				V2f bottom = right.rotated((float)-V_PI / 4);
 				float rr = body.radius * body.radius;
-				float squareDiagonal = sqrt( rr + rr );
+				float squareDiagonal = (float)sqrt( rr + rr );
 				right = direction * squareDiagonal;
 				right += body.center;
 				top += body.center;

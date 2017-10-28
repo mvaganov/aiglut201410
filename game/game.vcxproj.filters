@@ -1,127 +1,59 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="codegiraffe">
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="fsm">
-      <UniqueIdentifier>{1ae50b88-1b7e-4b53-b638-6a580217c827}</UniqueIdentifier>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\codegiraffe">
+      <UniqueIdentifier>{fb2c2f76-3767-47bd-8061-a59df0b621b6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="agent.h">
+    <ClCompile Include="agent.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="bullet.h">
+    </ClCompile>
+    <ClCompile Include="delauny.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="game.h">
+    </ClCompile>
+    <ClCompile Include="fsm_alignment.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="obstacles.h">
+    </ClCompile>
+    <ClCompile Include="fsm_astar.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="steering.h">
+    </ClCompile>
+    <ClCompile Include="fsm_cohesion.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\aabb.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\box.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\circle.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\glutrenderingcontext.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\random.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\templatearray.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\templatevector.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\v2.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="graph.h">
+    </ClCompile>
+    <ClCompile Include="fsm_fleebullets.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mazegen.h">
+    </ClCompile>
+    <ClCompile Include="fsm_followagent.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\cone.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\templatehashmap.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="astar.h">
+    </ClCompile>
+    <ClCompile Include="fsm_hide.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\polygon.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="delauny.h">
+    </ClCompile>
+    <ClCompile Include="fsm_idle.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\templatevectorlist.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\templateset.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="cellspacepartition.h">
+    </ClCompile>
+    <ClCompile Include="fsm_separation.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="codegiraffe\line.h">
-      <Filter>codegiraffe</Filter>
-    </ClInclude>
-    <ClInclude Include="updatable.h">
+    </ClCompile>
+    <ClCompile Include="fsm_wander.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_alignment.h">
-      <Filter>fsm</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_cohesion.h">
-      <Filter>fsm</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_fleebullets.h">
-      <Filter>fsm</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_followagent.h">
-      <Filter>fsm</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_hide.h">
-      <Filter>fsm</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_idle.h">
-      <Filter>fsm</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_separation.h">
-      <Filter>fsm</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm_wander.h">
-      <Filter>fsm</Filter>
-    </ClInclude>
-    <ClInclude Include="fsm.h">
-      <Filter>fsm</Filter>
-    </ClInclude>
-    <ClInclude Include="mempool.h">
+    </ClCompile>
+    <ClCompile Include="game.cpp">
       <Filter>Source Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
+    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -132,46 +64,129 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="codegiraffe\circle.cpp">
-      <Filter>codegiraffe</Filter>
+      <Filter>Source Files\codegiraffe</Filter>
     </ClCompile>
     <ClCompile Include="codegiraffe\glutrenderingcontext.cpp">
-      <Filter>codegiraffe</Filter>
+      <Filter>Source Files\codegiraffe</Filter>
     </ClCompile>
     <ClCompile Include="codegiraffe\random.cpp">
-      <Filter>codegiraffe</Filter>
+      <Filter>Source Files\codegiraffe</Filter>
     </ClCompile>
-    <ClCompile Include="agent.cpp">
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="agent.h">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="game.cpp">
+    </ClInclude>
+    <ClInclude Include="astar.h">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="delauny.cpp">
+    </ClInclude>
+    <ClInclude Include="bullet.h">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_alignment.cpp">
-      <Filter>fsm</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_cohesion.cpp">
-      <Filter>fsm</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_fleebullets.cpp">
-      <Filter>fsm</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_followagent.cpp">
-      <Filter>fsm</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_hide.cpp">
-      <Filter>fsm</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_idle.cpp">
-      <Filter>fsm</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_separation.cpp">
-      <Filter>fsm</Filter>
-    </ClCompile>
-    <ClCompile Include="fsm_wander.cpp">
-      <Filter>fsm</Filter>
-    </ClCompile>
+    </ClInclude>
+    <ClInclude Include="cellspacepartition.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="delauny.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_alignment.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_astar.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_cohesion.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_fleebullets.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_followagent.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_hide.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_idle.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_separation.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm_wander.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="game.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="graph.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mazegen.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mempool.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="obstacles.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="steering.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="updatable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\aabb.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\Angle_.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\box.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\circle.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\cone.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\glutrenderingcontext.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\line.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\polygon.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\random.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\templatearray.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\templatehashmap.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\templateset.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\templatevector.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\templatevectorlist.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\v2.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
+    <ClInclude Include="codegiraffe\m.h">
+      <Filter>Source Files\codegiraffe</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

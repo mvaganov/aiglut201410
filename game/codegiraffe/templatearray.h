@@ -10,52 +10,65 @@
 template<typename DATA_TYPE>
 class TemplateArray {
 protected:
-	/** pointer to the allocated data for the vector */
+	/** pointer to the allocated data */
 	DATA_TYPE * m_data;
 
 	/** actual number of allocated elements that we can use */
 	int m_allocated;
 public:
+	/** sets all fields to an initial data state. WARNING: can cause memory leaks if used without care */
+	void init() {
+		m_data = nullptr;
+		m_allocated = 0;
+	}
+
+	/** @return the size of the list */
+	int const size() const { return m_allocated; }
+	
 	/** @return value from the list at given index */
 	DATA_TYPE get(int const a_index) const {
-		if (a_index < 0 || a_index >= m_allocated) { int i = 0; i = 1 / i; }
-		return m_data[a_index];
+		if (a_index < 0 || a_index >= size()) { int i = 0; i = 1 / i; }
+		return m_data[a_index]; // (*this)[a_index] should also work as long as m_data is the first property
 	}
 
 	/** @return value from the list at given index explicitly by reference */
 	DATA_TYPE & getByRef(int const a_index) {
-		if (a_index < 0 || a_index >= m_allocated) { int i = 0; i = 1 / i; }
+		if (a_index < 0 || a_index >= size()) { int i = 0; i = 1 / i; }
 		return m_data[a_index];
 	}
 
-	DATA_TYPE & operator[](int const a_index) {
-		if (a_index < 0 || a_index >= m_allocated) { int i = 0; i = 1 / i; }
-		return m_data[a_index];
+	/** simple mutator sets a value in the list */
+	void set(int const a_index, DATA_TYPE const a_value) {
+		// complex types must overload DATA_TYPE & operator=(const DATA_TYPE &)
+		m_data[a_index] = a_value;
 	}
+
+	/** cleans up memory */
+	void release() {
+		if(m_data) {
+			delete [] m_data;
+			init();
+		}
+	}
+
+	/** proxy for getByRef */
+	DATA_TYPE & operator[](int const a_index) { return getByRef(a_index); }
 
 	/** use for const TemplateArray objects */
-	const DATA_TYPE & operator[](int const a_index) const {
-		if (a_index < 0 || a_index >= m_allocated) { int i = 0; i = 1 / i; }
-		return m_data[a_index];
-	}
+	const DATA_TYPE & operator[](int const a_index) const { return getByRef(a_index); }
 
-	/** deep copy with assignment operator, so allocated arrays don't have duplicate references */
+	/** deep copy with assignment operator, so allocated have their own references */
 	TemplateArray<DATA_TYPE> & operator=(TemplateArray<DATA_TYPE> const & src) { copy(src); return *this; }
 
-	/** @return true if this array and the given array contain the same data */
+	/** @return true if this array and the given array contain the same data in the same order */
 	bool operator==(TemplateArray<DATA_TYPE> const & arr) const {
-		if (m_allocated != arr.m_allocated) return false;
-		for (int i = 0; i < m_allocated; ++i) {
-			if ((*this)[i] != arr[i]) return false;
+		if (size() != arr.size()) return false;
+		for (int i = 0; i < size(); ++i) {
+			if (get(i) != arr.get(i)) return false;
 		}
 		return true;
 	}
 
-	/** simple mutator sets a value in the list */
-	void set(int const a_index, DATA_TYPE const & a_value) {
-		// complex types must overload DATA_TYPE & operator=(const DATA_TYPE &)
-		(*this)[a_index] = a_value;
-	}
 	/** used for deleting elements */
 	void moveDown(int const a_from, int const a_offset, int a_last) {
 		for(int i = a_from-a_offset; i < a_last; ++i)
@@ -74,7 +87,7 @@ public:
 		// reallocate a new list with the given size
 		DATA_TYPE * newList = new DATA_TYPE[a_size];
 		// if the list could not allocate, fail...
-		if(!newList)	return false;
+		if(!newList) { return false; }
 		// the temp list is the one we will keep, while the old list will be dropped.
 		DATA_TYPE * oldList = m_data;
 		// swap done here so set(index, value) can be called instead of the equals operator
@@ -106,23 +119,6 @@ public:
 		allocateToSize(size()+1);
 		return &get(size()-1);
 	}
-
-	/** sets all fields to an initial data state. WARNING: can cause memory leaks if used without care */
-	void init() {
-		m_data = 0;
-		m_allocated = 0;
-	}
-
-	/** cleans up memory */
-	void release() {
-		if(m_data) {
-			delete [] m_data;
-			m_data = 0;
-			m_allocated = 0;
-		}
-	}
-
-	~TemplateArray(){ release(); }
 
 	/** @return true if vector allocated this size */
 	bool ensureCapacity(int const a_size) {
@@ -176,9 +172,8 @@ public:
 			set(i, a_defaultValues[i]);
 	}
 
-	/** @return the size of the list */
-	int const size() const { return m_allocated; }
-
+	~TemplateArray(){ release(); }
+	
 	/** @return the last value in the list */
 	DATA_TYPE & getLast() { return get(size()-1); }
 
@@ -205,8 +200,7 @@ public:
 	 * @param a_index where to insert a_value. shifts elements in the vector.
 	 * @note this operation is memory intensive!
 	 */
-	void insert(int const a_index, DATA_TYPE const & a_value)
-	{
+	void insert(int const a_index, DATA_TYPE const & a_value) {
 		setSize(m_size+1);
 		moveUp(m_data, a_index, 1, size());
 		set(a_index, a_value);
@@ -220,22 +214,23 @@ public:
 	}
 
 
-	/** @return index of 1st a_value range: [a_startingIndex, a_endingIndex). uses == */
-	static int indexOf(DATA_TYPE const & a_value, const DATA_TYPE * a_list, int const a_startingIndex, int const a_endingIndex) {
-		for (int i = a_startingIndex; i < a_endingIndex; ++i) { if (a_list[i] == a_value) return i; }
+	/** @return index of 1st a_value range: [a_startingIndex, a_endingIndex). uses == TODO move a_list to initial param*/
+	static int indexOf(DATA_TYPE const & a_value, const DATA_TYPE * const a_list, int const a_startingIndex, int const a_endingIndex) {
+		for (int i = a_startingIndex; i < a_endingIndex; ++i) {
+			if (a_list[i] == a_value) { return i; }
+		}
 		return -1;
 	}
 
 	/** @return index of 1st a_value at or after a_startingIndex. uses == */
 	int indexOf(DATA_TYPE const & a_value, int const a_startingIndex, int const a_endingIndex) const {
 		for(int i = a_startingIndex; i < a_endingIndex; ++i) {
-			if(get(i) == a_value)
-				return i;
+			if(get(i) == a_value) { return i; }
 		}
 		return -1;
 	}
 
-	/** @return index of 1st a_value at or after a_startingIndex. uses == */
+	/** @return index of 1st a_value at or after a_startingIndex. uses operator== */
 	int indexOf(DATA_TYPE const & a_value, int const a_startingIndex) const {
 		return indexOf(a_value, a_startingIndex, size());
 	}
@@ -246,7 +241,7 @@ public:
 	}
 
 	/**
-	 * will only work correctly if the TemplateVector is sorted.
+	 * will only work correctly if the data is sorted.
 	 * @return the index of the given value, -1 if the value is not in the list
 	 */
 	int indexOfWithBinarySearch(DATA_TYPE const & a_value, int const a_first, int const a_limit) const {
@@ -254,9 +249,9 @@ public:
 			int first = a_first, last = a_limit;
 			while (first <= last) {
 				int mid = (first + last) / 2;  // compute mid point.
-				if (a_value > (*this)[mid])
+				if (a_value > get(mid))
 					first = mid + 1;  // repeat search in top half.
-				else if (a_value < (*this)[mid])
+				else if (a_value < get(mid))
 					last = mid - 1; // repeat search in bottom half.
 				else return mid;     // found it. return position
 			}
@@ -265,8 +260,7 @@ public:
 	}
 
 	void setAll(DATA_TYPE const & a_value) {
-		for(int i = 0; i < size(); ++i)
-			set(i, a_value);
+		for(int i = 0; i < size(); ++i) { set(i, a_value); }
 	}
 
 	/** @return true if the given range is in order */
@@ -278,7 +272,7 @@ public:
 		return sorted;
 	}
 
-	bool isSorted() { return isSorted(0, size()); }
+	bool isSorted() const { return isSorted(0, size()); }
 
 	void reverse() {
 		int half = size() / 2;
@@ -286,7 +280,7 @@ public:
 			swap(i, size() - 1 - i);
 		}
 	}
-	static void reverse(DATA_TYPE * list, int count) {
+	static void reverse(DATA_TYPE * const list, const int count) {
 		int half = count / 2;
 		DATA_TYPE temp;
 		for (int i = 0; i < half; ++i) {
@@ -299,17 +293,17 @@ public:
 	void quicksort() { quicksort(0, size()-1); }
 
 	/**
-	* Quicksort. http://www.sorting-algorithms.com/static/QuicksortIsOptimal.pdf
+	* Quicksort. requires operator<. http://www.sorting-algorithms.com/static/QuicksortIsOptimal.pdf
 	* @param first - The start of the sequence to be sorted (inclusive).
 	* @param last - The end of the sequence to be sorted (inclusive).
 	*/
-	void quicksort(int first, int last) {
+	void quicksort(const int first, const int last) {
 		int i = first - 1, j = last;
-		DATA_TYPE v = (*this)[last];
+		DATA_TYPE v = get(last);
 		if (last <= first) return;
 		do {
-			while ((*this)[++i] < v);
-			while (v < (*this)[--j]) if (j == first) break;
+			while (get(++i) < v);
+			while (v < get(--j)) if (j == first) break;
 			if (i >= j) break;
 			swap(i, j);
 		} while (true);
@@ -319,7 +313,7 @@ public:
 	}
 
 	bool containsDuplicates() const {
-		for (int i = 0; i < size(); ++i) { if (indexOf((*this)[i], i + 1) >= 0) { return true; } }
+		for (int i = 0; i < size(); ++i) { if (indexOf(get(i), i + 1) >= 0) { return true; } }
 		return false;
 	}
 

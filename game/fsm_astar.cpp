@@ -18,10 +18,10 @@ void FSM_Astar::execute(Agent * a, int a_ms) {
 	float dist = delta.magnitude();
 	V2f normal = delta / dist;
 	Obstacle * obs;
-	float d;
 	V2f hit, norm;
 	Obstacle * ignoreMe = a;
-	if (dist < (a->body.radius * 4) && !a->game->raycast(a->body.center, normal, dist, true, obs, d, hit, norm, &ignoreMe, 1)){
+	RaycastHit rh;
+	if (dist < (a->body.radius * 4) && !a->game->raycast(Ray(a->body.center, normal), rh, dist, true, obs, 1)) {
 		//delta.magnitude() < a->body.radius) {
 		path->remove(path->size()-1);
 	}

@@ -57,3 +57,5 @@ ExportedObj/
 .Trashes
 Icon?
 *.~*
+*.db
+*.opendb

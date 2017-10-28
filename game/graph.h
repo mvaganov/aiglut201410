@@ -68,8 +68,8 @@ public:
 class GraphNode : public AbstractGraphNode {
 protected:
 	TemplateVector<AbstractGraphEdge*> edges;
-	V2f location;
 public:
+	V2f location; // TODO make less public...
 	~GraphNode(){}
 	const V2f & getLocation() const { return location; }
 	void setLocation(const V2f loc) { location = loc; }
