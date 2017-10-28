@@ -216,14 +216,14 @@ void GLUTRenderingContext::drawGrid(V2f const gridScale) {
 */
 void GLUTRenderingContext::print(const V2f position, const char * a_string) {
 	float lineHeight = 30;
-	switch ((int)glutFont) {
-	case (int)GLUT_BITMAP_9_BY_15:        lineHeight = 15;	break;
-	case (int)GLUT_BITMAP_8_BY_13:        lineHeight = 13;	break;
-	case (int)GLUT_BITMAP_TIMES_ROMAN_10: lineHeight = 10;	break;
-	case (int)GLUT_BITMAP_TIMES_ROMAN_24: lineHeight = 24;	break;
-	case (int)GLUT_BITMAP_HELVETICA_10:   lineHeight = 10;	break;
-	case (int)GLUT_BITMAP_HELVETICA_12:   lineHeight = 12;	break;
-	case (int)GLUT_BITMAP_HELVETICA_18:   lineHeight = 18;	break;
+	switch ((size_t)glutFont) {
+	case (size_t)GLUT_BITMAP_9_BY_15:        lineHeight = 15;	break;
+	case (size_t)GLUT_BITMAP_8_BY_13:        lineHeight = 13;	break;
+	case (size_t)GLUT_BITMAP_TIMES_ROMAN_10: lineHeight = 10;	break;
+	case (size_t)GLUT_BITMAP_TIMES_ROMAN_24: lineHeight = 24;	break;
+	case (size_t)GLUT_BITMAP_HELVETICA_10:   lineHeight = 10;	break;
+	case (size_t)GLUT_BITMAP_HELVETICA_12:   lineHeight = 12;	break;
+	case (size_t)GLUT_BITMAP_HELVETICA_18:   lineHeight = 18;	break;
 	}
 	const int distanceBetweenLines = 3;
 	lineHeight += distanceBetweenLines;

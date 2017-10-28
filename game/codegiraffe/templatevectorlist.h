@@ -156,9 +156,9 @@ public:
 			end = start+m_allocationSize;
 			if(a_memoryLocation >= start && a_memoryLocation < end)
 			{
-				int index = (size_t)a_memoryLocation - (size_t)start;
+				size_t index = (size_t)a_memoryLocation - (size_t)start;
 				index /= sizeof(DATA_TYPE);
-				return index + i*m_allocationSize;
+				return (int)(index + i*m_allocationSize);
 			}
 		}
 		return -1;
