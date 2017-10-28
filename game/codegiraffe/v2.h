@@ -1,6 +1,7 @@
 #pragma once
 #include <GL/freeglut.h>
 #include <math.h>
+#include "m.h"
 #include "random.h"
 
 // TODO move polygon-related code into Polygon2
@@ -61,7 +62,7 @@ struct V2 {
 	/** de-serialization constructor */
 	explicit V2(TYPE * a_twoValues):x(a_twoValues[0]),y(a_twoValues[1]){}
 	/** turns a pi-radians angle into a vector. explicit so that scalars are not all-of-the-sudden turned into vectors */
-	explicit V2(TYPE a_piRadians):x(cos(a_piRadians)), y(sin(a_piRadians)){}
+	explicit V2(TYPE a_piRadians):x((TYPE)cos(a_piRadians)), y((TYPE)sin(a_piRadians)){}
 	/** copy constructor */
 	V2(const V2<TYPE> & v):x(v.x),y(v.y){}
 
@@ -90,7 +91,7 @@ struct V2 {
 	TYPE magnitudeSq() const { return (TYPE)(x*x+y*y); }
 
 	/** @return the length of the vector (uses sqrt) */
-	TYPE magnitude() const { return sqrt((TYPE)magnitudeSq()); }
+	TYPE magnitude() const { return (TYPE)sqrt((TYPE)magnitudeSq()); }
 
 	/** @return dot product of v1 and v2. how "aligned" are these two? 0 = perp, +1 = same dir, -1 = opposite dir */
 	static TYPE dot(V2<TYPE> const & v1, V2<TYPE> const & v2) { return (TYPE)(v1.x * v2.x + v1.y * v2.y); }
@@ -230,17 +231,17 @@ struct V2 {
 	/** @return a new V2<TYPE> that is the quotient of this V2<TYPE> and the given vector */
 	V2<TYPE> operator/(V2<TYPE> const & v) const { return V2<TYPE>(x / v.x, y / v.y); }
 	/** @return this V2<TYPE> after adding v */
-	V2<TYPE> operator+=(V2<TYPE> const & v){ x += v.x; y += v.y; return *this; }
+	V2<TYPE> & operator+=(V2<TYPE> const & v){ x += v.x; y += v.y; return *this; }
 	/** @return this V2<TYPE> after subtracting v */
-	V2<TYPE> operator-=(V2<TYPE> const & v){ x -= v.x; y -= v.y; return *this; }
+	V2<TYPE> & operator-=(V2<TYPE> const & v){ x -= v.x; y -= v.y; return *this; }
 	/** @return this V2<TYPE> after multiplying v */
-	V2<TYPE> operator*=(V2<TYPE> const & v){ x *= v.x; y *= v.y; return *this; }
+	V2<TYPE> & operator*=(V2<TYPE> const & v){ x *= v.x; y *= v.y; return *this; }
 	/** @return this V2<TYPE> after multiplying the given scalar */
-	V2<TYPE> operator*=(TYPE const a_scalar){ x *= a_scalar; y *= a_scalar; return *this; }
+	V2<TYPE> & operator*=(TYPE const a_scalar){ x *= a_scalar; y *= a_scalar; return *this; }
 	/** @return this V2<TYPE> after dividing v */
-	V2<TYPE> operator/=(TYPE const a_scalar){ x /= a_scalar; y /= a_scalar; return *this; }
+	V2<TYPE> & operator/=(TYPE const a_scalar){ x /= a_scalar; y /= a_scalar; return *this; }
 	/** @return this V2<TYPE> after dividing the given scalar */
-	V2<TYPE> operator/=(V2<TYPE> const & v){ x /= v.x; y /= v.y; return *this; }
+	V2<TYPE> & operator/=(V2<TYPE> const & v){ x /= v.x; y /= v.y; return *this; }
 	/** @return if this V2<TYPE> is equal to v */
 	bool operator==(V2<TYPE> const & v) const { return (x == v.x && y == v.y); }
 	/** @return if this V2<TYPE> is not equal to v */
@@ -292,13 +293,13 @@ struct V2 {
 	}
 
 	/** @return radians between these normalized vector is (accounts for negative rotation) */
-	TYPE piRadians(V2<TYPE> const & v) const { return ((sign(v) < 0) ? 1 : -1) * acos(dot(*this, v)); }
+	TYPE piRadians(V2<TYPE> const & v) const { return ((sign(v) < 0) ? 1 : -1) * (TYPE)acos(dot(*this, v)); }
 
 	/** @return radians that this normalized vector is, using ZERO_DEGREES() as the starting point */
-	TYPE piRadians() const { return ((y > 0) ? 1 : -1) * acos(x); }
+	TYPE piRadians() const { return ((y > 0) ? 1 : -1) * (TYPE)acos(x); }
 	
 	/** @return how many degrees (standard 360 degree scale) this is */
-	TYPE degrees() const { return ((y > 0) ? 1 : -1) * acos(x) * 180 / (TYPE)V_PI; }
+	TYPE degrees() const { return ((y > 0) ? 1 : -1) * (TYPE)acos(x) * 180 / (TYPE)V_PI; }
 
 	/** @param a_normal cos(theta), sin(theta) as x,y values */
 	void rotate(const V2<TYPE> & a_normal) {
@@ -337,7 +338,7 @@ struct V2 {
 	 * @param a_degreePiRadians in piRadians
 	 */
 	void rotate(const TYPE a_degreePiRadians) {
-		rotate(V2<TYPE>(cos(a_degreePiRadians), sin(a_degreePiRadians)));
+		rotate(V2<TYPE>((TYPE)cos(a_degreePiRadians), (TYPE)sin(a_degreePiRadians)));
 	}
 
 	/**
@@ -346,7 +347,7 @@ struct V2 {
 	 */
 	V2<TYPE> rotated(const TYPE a_degreePiRadians) const {
 		V2<TYPE> result(*this);
-		if (!result.isZero()) result.rotate(V2<TYPE>(cos(a_degreePiRadians), sin(a_degreePiRadians)));
+		if (!result.isZero()) result.rotate(V2<TYPE>((TYPE)cos(a_degreePiRadians), (TYPE)sin(a_degreePiRadians)));
 		return result;
 	}
 
@@ -753,7 +754,7 @@ struct V2 {
 			if (abs(radHit) <= radius) {
 				V2<TYPE> intersection = center + radiusDirection * radHit;
 				// pythagorean theorum to get missing triangle side, where radius is the hypontinuse
-				float side = sqrt(radius*radius - radHit*radHit);
+				float side = (float)sqrt(radius*radius - radHit*radHit);
 				V2<TYPE> hitDelta = rayDirection * side;
 				// find which of the two solutions is closer to the ra start
 				out_p1 = intersection + hitDelta;

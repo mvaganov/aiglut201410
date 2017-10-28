@@ -22,19 +22,25 @@ public:
 		m_allocated = 0;
 	}
 
+	/** cause a crash if the index is out of bounds. */
+	void validateIndex(const int a_index) const { if (a_index < 0 || a_index >= size()) { int i = 0; i = 1 / i; } }
+
 	/** @return the size of the list */
 	int const size() const { return m_allocated; }
 	
 	/** @return value from the list at given index */
 	DATA_TYPE get(int const a_index) const {
-		if (a_index < 0 || a_index >= size()) { int i = 0; i = 1 / i; }
-		return m_data[a_index]; // (*this)[a_index] should also work as long as m_data is the first property
+		validateIndex(a_index < 0); return m_data[a_index]; // (*this)[a_index] should also work as long as m_data is the first property
 	}
 
 	/** @return value from the list at given index explicitly by reference */
 	DATA_TYPE & getByRef(int const a_index) {
-		if (a_index < 0 || a_index >= size()) { int i = 0; i = 1 / i; }
-		return m_data[a_index];
+		validateIndex(a_index); return m_data[a_index];
+	}
+
+	/** use for const TemplateArray objects */
+	const DATA_TYPE & getByRef(int const a_index) const {
+		validateIndex(a_index); return m_data[a_index];
 	}
 
 	/** simple mutator sets a value in the list */

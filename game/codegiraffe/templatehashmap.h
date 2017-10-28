@@ -19,7 +19,7 @@ struct KeyValuePair {
 		// addresses that are int-aligned into possibly consecutive keys, and
 		// essentially modulo 32, accomplished here by bitwise-and-ing 32-1
 		// TODO ptrdiff_t
-		return (((int)k) >> (sizeof(int) >> 1)) & 31;
+		return (((size_t)k) >> (sizeof(int) >> 1)) & 31L;
 	}
 };
 
